@@ -1,0 +1,494 @@
+{
+  "_comment": "Données anonymisées issues d'un bulletin annuel réel (élève, enseignants et matricule remplacés). Les valeurs sous 'printed' sont celles imprimées par l'ancien logiciel : elles servent de référence au test de rejeu.",
+  "fixture": "bulletin-6eme-fr",
+  "section": "FRANCOPHONE",
+  "reportLanguage": "FR",
+  "className": "6EME (exemple)",
+  "levelCode": "6EME",
+  "student": {
+    "code": "ELEVE-FR-01"
+  },
+  "gradingSchemeObserved": {
+    "maxScore": 20,
+    "passMark": 10,
+    "classSuccessThreshold": 12,
+    "decimals": 2,
+    "appreciationBands": [
+      {
+        "code": "A",
+        "minInclusive": 16
+      },
+      {
+        "code": "B+",
+        "minInclusive": 14
+      },
+      {
+        "code": "B",
+        "minInclusive": 12
+      },
+      {
+        "code": "C",
+        "minInclusive": 0
+      }
+    ],
+    "termMapping": {
+      "1": [
+        1,
+        2
+      ],
+      "2": [
+        3,
+        4
+      ],
+      "3": [
+        5,
+        6
+      ]
+    }
+  },
+  "groups": [
+    {
+      "groupCode": "LANG_LIT",
+      "groupName": "LANGUES ET LITTERATURES",
+      "displayOrder": 1,
+      "printed": {
+        "totalCoefficient": 13.0,
+        "totalPoints": 115.7,
+        "average": 8.9
+      },
+      "lines": [
+        {
+          "subjectCode": "ANG",
+          "subjectName": "ANGLAIS",
+          "teacherCode": "T1",
+          "coefficient": 3.0,
+          "sequenceMarks": [
+            6.5,
+            8.0,
+            6.0,
+            8.5,
+            9.0,
+            7.0
+          ],
+          "printed": {
+            "average": 7.5,
+            "total": 22.5,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "EXP_ECR",
+          "subjectName": "EXPRESSION ECRITE",
+          "teacherCode": "T2",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            11.0,
+            8.0,
+            11.33,
+            8.0,
+            7.5,
+            5.5
+          ],
+          "printed": {
+            "average": 8.55,
+            "total": 17.11,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "EXP_ORA",
+          "subjectName": "EXPRESSION ORALE",
+          "teacherCode": "T2",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            8.66,
+            8.75,
+            7.66,
+            11.33,
+            8.0,
+            3.0
+          ],
+          "printed": {
+            "average": 7.9,
+            "total": 7.9,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "CORR_ORTH",
+          "subjectName": "CORRECTION ORTHOGRAPHIQUE",
+          "teacherCode": "T3",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            8.0,
+            6.0,
+            6.5,
+            6.5,
+            4.0,
+            3.0
+          ],
+          "printed": {
+            "average": 5.67,
+            "total": 5.67,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "ETUDE_TXT",
+          "subjectName": "ETUDE DE TEXTE",
+          "teacherCode": "T3",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            14.0,
+            12.0,
+            10.0,
+            14.5,
+            13.5,
+            9.0
+          ],
+          "printed": {
+            "average": 12.17,
+            "total": 24.33,
+            "appreciation": "B"
+          }
+        },
+        {
+          "subjectCode": "ALL",
+          "subjectName": "ALLEMAND",
+          "teacherCode": "T2",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            7.0,
+            9.66,
+            6.0,
+            7.0,
+            4.5,
+            4.0
+          ],
+          "printed": {
+            "average": 6.36,
+            "total": 6.36,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "EDU_ART",
+          "subjectName": "EDUCATION ARTISTIQUE",
+          "teacherCode": "T4",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            11.0,
+            12.0,
+            10.0,
+            15.3,
+            15.0,
+            7.0
+          ],
+          "printed": {
+            "average": 11.72,
+            "total": 11.72,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "LCN",
+          "subjectName": "LANGUES ET CULTURES NATIONALES",
+          "teacherCode": "T5",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            8.0,
+            12.0,
+            9.0,
+            9.33,
+            13.0,
+            9.0
+          ],
+          "printed": {
+            "average": 10.05,
+            "total": 20.11,
+            "appreciation": "C"
+          }
+        }
+      ]
+    },
+    {
+      "groupCode": "SCI_TECH",
+      "groupName": "SCIENCES ET TECHNOLOGIE",
+      "displayOrder": 2,
+      "printed": {
+        "totalCoefficient": 16.0,
+        "totalPoints": 125.42,
+        "average": 7.84
+      },
+      "lines": [
+        {
+          "subjectCode": "ECM",
+          "subjectName": "EDUCATION A LA CITOYENNETE",
+          "teacherCode": "T6",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            11.7,
+            9.3,
+            10.0,
+            12.0,
+            11.0,
+            11.5
+          ],
+          "printed": {
+            "average": 10.92,
+            "total": 21.83,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "GEO",
+          "subjectName": "GEOGRAPHIE",
+          "teacherCode": "T3",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            10.0,
+            8.0,
+            10.0,
+            7.5,
+            2.5,
+            7.0
+          ],
+          "printed": {
+            "average": 7.5,
+            "total": 15.0,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "HIST",
+          "subjectName": "HISTOIRE",
+          "teacherCode": "T6",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            11.0,
+            10.0,
+            12.3,
+            12.0,
+            7.5,
+            8.0
+          ],
+          "printed": {
+            "average": 10.13,
+            "total": 20.27,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "INFO",
+          "subjectName": "INFORMATIQUE",
+          "teacherCode": "T7",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            12.5,
+            8.0,
+            5.5,
+            10.5,
+            10.0,
+            4.5
+          ],
+          "printed": {
+            "average": 8.5,
+            "total": 17.0,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "MATH",
+          "subjectName": "MATHEMATIQUES",
+          "teacherCode": "T8",
+          "coefficient": 4.0,
+          "sequenceMarks": [
+            9.13,
+            9.27,
+            5.35,
+            6.4,
+            3.0,
+            4.0
+          ],
+          "printed": {
+            "average": 6.19,
+            "total": 24.77,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "PCT",
+          "subjectName": "PHYSIQUE-CHIMIE-TECHNOLOGIE",
+          "teacherCode": "T9",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            5.33,
+            6.33,
+            6.67,
+            11.0,
+            4.0,
+            9.5
+          ],
+          "printed": {
+            "average": 7.14,
+            "total": 14.28,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "SCI",
+          "subjectName": "SCIENCES",
+          "teacherCode": "T10",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            4.66,
+            7.0,
+            8.66,
+            8.0,
+            3.5,
+            5.0
+          ],
+          "printed": {
+            "average": 6.14,
+            "total": 12.27,
+            "appreciation": "C"
+          }
+        }
+      ]
+    },
+    {
+      "groupCode": "DEV_PERS",
+      "groupName": "DEVELOPPEMENT PERSONNEL",
+      "displayOrder": 3,
+      "printed": {
+        "totalCoefficient": 5.0,
+        "totalPoints": 58.45,
+        "average": 11.69
+      },
+      "lines": [
+        {
+          "subjectCode": "ESF",
+          "subjectName": "ECONOMIE SOCIALE ET FAMILIALE",
+          "teacherCode": "T6",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            4.0,
+            6.6,
+            10.3,
+            12.3,
+            12.0,
+            13.5
+          ],
+          "printed": {
+            "average": 9.78,
+            "total": 9.78,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "EPS",
+          "subjectName": "EDUCATION PHYSIQUE ET SPORTIVE",
+          "teacherCode": "T2",
+          "coefficient": 2.0,
+          "sequenceMarks": [
+            13.66,
+            9.66,
+            11.66,
+            11.66,
+            14.0,
+            11.0
+          ],
+          "printed": {
+            "average": 11.94,
+            "total": 23.88,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "APT_VIE",
+          "subjectName": "APTITUDE DE VIE",
+          "teacherCode": "T9",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            12.0,
+            11.25,
+            9.0,
+            10.5,
+            11.0,
+            11.0
+          ],
+          "printed": {
+            "average": 10.79,
+            "total": 10.79,
+            "appreciation": "C"
+          }
+        },
+        {
+          "subjectCode": "TRAV_MAN",
+          "subjectName": "TRAVAIL MANUEL",
+          "teacherCode": "T11",
+          "coefficient": 1.0,
+          "sequenceMarks": [
+            12.0,
+            15.0,
+            15.0,
+            14.0,
+            15.0,
+            13.0
+          ],
+          "printed": {
+            "average": 14.0,
+            "total": 14.0,
+            "appreciation": "B+"
+          }
+        }
+      ]
+    }
+  ],
+  "printedResults": {
+    "annualAverage": 8.81,
+    "rank": 12,
+    "rankedCount": 12,
+    "effectif": 13,
+    "termRecaps": [
+      {
+        "termNumber": 1,
+        "average": 9.31,
+        "rank": 12
+      },
+      {
+        "termNumber": 2,
+        "average": 9.28,
+        "rank": 12
+      },
+      {
+        "termNumber": 3,
+        "average": 7.84,
+        "rank": 12
+      }
+    ],
+    "classProfile": {
+      "countAtOrAboveThreshold": 5,
+      "classAverage": 12.2,
+      "successRatePercent": 41.67,
+      "highestAverage": 14.63,
+      "lowestAverage": 8.81
+    }
+  },
+  "knownDeviations": [
+    {
+      "subjectCode": "EXP_ECR",
+      "field": "average",
+      "exact": 8.555,
+      "printed": 8.55,
+      "note": "Demi-centième : l'ancien logiciel arrondit en double précision (8.55). HALF_UP exact donne 8.56."
+    },
+    {
+      "subjectCode": "LCN",
+      "field": "average",
+      "exact": 10.055,
+      "printed": 10.05,
+      "note": "Même cas : double précision -> 10.05, HALF_UP exact -> 10.06."
+    }
+  ]
+}
