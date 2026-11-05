@@ -1,54 +1,62 @@
 # 02 — Domaine métier
 
-## 1. Glossaire bilingue
+> Mis à jour avec les 7 bulletins, l'emploi du temps et les réponses de Ben (Q-01, 02, 03, 08, 10, 11, 14, 17, 19, 20).
+> Chaque terme du glossaire renvoie au **module** qui le possède (futur microservice, voir `08-architecture-modulaire.md`).
 
-| Français | English | Dans le modèle |
-|---|---|---|
-| Établissement | School | `School` |
-| Année scolaire | Academic year | `AcademicYear` |
-| Trimestre | Term | `Term` (dans `AcademicYear.terms`) |
-| Séquence (DEV1..DEV6) | Evaluation session / sequence | `EvaluationSession` |
-| Niveau (6ème, Tle, Form 3) | Level / Form | `Level` |
-| Classe | Class | `SchoolClass` |
-| Série / filière | Track / series | `SchoolClass.trackCode` |
-| Discipline / matière | Subject | `Subject` |
-| Groupe de matières | Subject group | `SubjectGroup` |
-| Matière d'une classe (coef., enseignant) | Class subject (teaching assignment) | `ClassSubject` |
-| Enseignant / personnel | Teacher / staff | `Staff` |
-| Professeur principal | Class master / mistress | `SchoolClass.mainTeacherId` |
-| Élève | Student / pupil | `Student` |
-| Parent / tuteur | Parent / guardian | `Guardian` |
-| Inscription | Enrollment | `Enrollment` |
-| Matricule | Matricule number | `Student.matricule` |
-| Redoublant | Repeater | `Enrollment.repeater` |
-| Effectif | Class size / roll | `ClassSnapshot.effectif` |
-| Évaluation (devoir, interro) | Assessment (test, quiz) | `Assessment` |
-| Note | Grade / mark | `Grade` |
-| Coefficient | Coefficient / weight | `ClassSubject.coefficient` |
-| Moyenne | Average | calculé |
-| Rang | Rank | calculé |
-| Appréciation | Appreciation | `ScoreBand` |
-| Bulletin | Report card | `ReportCard` |
-| Conseil de classe | Class council | `StudentPeriodReview.councilDecision` |
-| Tableau d'honneur | Honour roll | `DistinctionLevel` |
-| Avertissement / Blâme | Warning / Blame | `SanctionLevel` |
-| Clôture de séquence | Closing of a session | `SessionStatus.CLOSED` |
-| Barème | Grading scheme | `GradingScheme` |
+## 1. Principe directeur
 
-## 2. Acteurs
+Le logiciel permet de **tout configurer depuis l'interface graphique, dans les deux langues** : créer des matières, des notes, modifier n'importe quelle donnée, y compris les barèmes, les gabarits de bulletin et les mentions. Aucune règle de l'école n'est figée dans le code ; elle est une donnée. Import des élèves : plus tard (sinon création un par un).
 
-| Acteur | Rôle d'accès (`Role`) | Ce qu'il fait |
+## 2. Glossaire bilingue
+
+| Français | English | Module | Dans le modèle |
+|---|---|---|---|
+| Établissement | School | academic | `School` |
+| Année scolaire | Academic year | academic | `AcademicYear` |
+| Trimestre | Term | academic | `Term` (dans `AcademicYear.terms`) |
+| Séquence (DEV1..DEV6) | Evaluation session / sequence | grading | `EvaluationSession` |
+| Niveau (6ème, Tle, Form 3) | Level / Form | academic | `Level` |
+| Classe | Class | academic | `SchoolClass` |
+| Série / filière (C, ALL, ARTS, SC) | Track / series | academic | `SchoolClass.trackCode` |
+| Discipline / matière | Subject | academic | `Subject` |
+| Groupe de matières | Subject group | academic | `SubjectGroup` |
+| Matière d'une classe (coef., enseignant, heures) | Class subject | academic | `ClassSubject` |
+| Compétence visée | Competency | academic | `TermCompetency` |
+| Salle | Room | academic | `Room` |
+| Enseignant / personnel | Teacher / staff | staff | `Staff` |
+| Professeur principal | Class master / mistress | academic | `SchoolClass.mainTeacherId` |
+| Élève | Student / pupil | student | `Student` |
+| Parent / tuteur | Parent / guardian | student | `Guardian` |
+| Inscription | Enrollment | student | `Enrollment` |
+| Effectif (N° ON ROLL) | Class size / roll | student → reporting | nombre d'inscrits (`ClassSnapshot.effectif`) |
+| Fiche de notes (d'un enseignant) | Grade sheet | grading | `GradeSheet` |
+| Colonne de la fiche : note, bonus, malus | Assessment column | grading | `Assessment` |
+| Note brute | Grade / mark | grading | `Grade` |
+| Note de séquence (DEVn) | Sequence mark | grading | `SequenceMark` |
+| Barème | Grading scheme | grading | `GradingScheme` |
+| Gabarit de bulletin | Report card template | reporting | `ReportTemplate` |
+| Bulletin | Report card | reporting | `ReportCard` |
+| Conseil de classe | Class council | reporting | `StudentPeriodReview.councilDecision` |
+| Tableau d'honneur | Honour roll | reporting | `DistinctionLevel` |
+| Avertissement / Blâme | Warning / Blame | reporting | `SanctionLevel` |
+| Emploi du temps | Timetable | timetable | `Timetable` + `TimetableEntry` |
+| Grille horaire | Time slot grid | timetable | `TimeSlotGrid` |
+| Compte de connexion | User account | iam | `UserAccount` |
+
+## 3. Acteurs
+
+| Acteur | `Role` | Ce qu'il fait |
 |---|---|---|
 | Élève | `STUDENT` | Plus tard : se connecte avec son matricule, suit ses notes en temps réel |
-| Parent / tuteur | `PARENT` | Suit les notes de ses enfants en temps réel ; télécharge le bulletin annuel publié |
-| Enseignant | `TEACHER` | Saisit et modifie les notes de **ses** matières et classes tant que la séquence est ouverte |
-| Administration (secrétariat, censeur, surveillants) | `ADMINISTRATION` | Tout ce que fait l'enseignant ; corrige après clôture ; gère matières, coefficients, enseignants, élèves, inscriptions ; génère et imprime les bulletins |
-| Directeur / chef d'établissement | `DIRECTOR` | Accès complet ; gère les comptes d'administration |
+| Parent / tuteur | `PARENT` | **Navigateur uniquement** (réponse Q-20) : se connecte à son compte et voit automatiquement les notes et les bulletins de **tous ses enfants, et uniquement les siens** ; télécharge le bulletin annuel publié |
+| Enseignant | `TEACHER` | Remplit les **fiches de notes** de ses matières et classes tant que la séquence est ouverte ; consulte son emploi du temps |
+| Administration | `ADMINISTRATION` | Tout ce que fait l'enseignant ; corrige après clôture ; gère matières, coefficients, enseignants, élèves, inscriptions, emplois du temps ; génère et imprime les bulletins |
+| Directeur | `DIRECTOR` | Accès complet ; gère les comptes d'administration |
 | Développeur | `SUPER_ADMIN` | Accès plateforme et support |
 
-Détail des droits : `05-roles-permissions.md`.
+Détail : `05-roles-permissions.md`.
 
-## 3. Relations entre les entités
+## 4. Relations entre les entités
 
 ```mermaid
 erDiagram
@@ -60,50 +68,61 @@ erDiagram
   SUBJECT ||--o{ CLASS_SUBJECT : "catalogue"
   SUBJECT_GROUP ||--o{ CLASS_SUBJECT : "bloc de sous-total"
   STAFF ||--o{ CLASS_SUBJECT : "enseigne"
-  STAFF ||--o{ SCHOOL_CLASS : "professeur principal"
+  CLASS_SUBJECT ||--o{ TERM_COMPETENCY : "compétence du trimestre"
   STUDENT ||--o{ ENROLLMENT : "une par année"
   SCHOOL_CLASS ||--o{ ENROLLMENT : "élèves inscrits"
-  CLASS_SUBJECT ||--o{ ASSESSMENT : "évaluations"
-  EVALUATION_SESSION ||--o{ ASSESSMENT : "dans une séquence"
+  CLASS_SUBJECT ||--o{ GRADE_SHEET : "une fiche par séquence"
+  EVALUATION_SESSION ||--o{ GRADE_SHEET : ""
+  GRADE_SHEET ||--o{ ASSESSMENT : "colonnes (notes, bonus, malus)"
   ASSESSMENT ||--o{ GRADE : "une note par élève"
-  ENROLLMENT ||--o{ GRADE : ""
+  GRADE_SHEET ||--o{ SEQUENCE_MARK : "note de séquence totalisée"
+  ENROLLMENT ||--o{ SEQUENCE_MARK : ""
   GRADE ||--o{ GRADE_AUDIT_ENTRY : "journal"
   ENROLLMENT ||--o{ STUDENT_PERIOD_REVIEW : "absences, sanctions"
   ENROLLMENT ||--o{ REPORT_CARD : "bulletins"
+  REPORT_TEMPLATE ||--o{ REPORT_CARD : "mise en page"
   GRADING_SCHEME ||--o{ SCHOOL_CLASS : "barème"
+  TIMETABLE ||--o{ TIMETABLE_ENTRY : "cases"
+  SCHOOL_CLASS ||--o{ TIMETABLE_ENTRY : ""
+  CLASS_SUBJECT ||--o{ TIMETABLE_ENTRY : "matière placée"
+  TIME_SLOT_GRID ||--o{ TIMETABLE : "grille"
   GUARDIAN }o--o{ STUDENT : "via Student.guardians"
   USER_ACCOUNT }o--o| STAFF : "profil"
 ```
 
-Lecture clé : **`ClassSubject` est le pivot.** C'est lui qui répond à « qui enseigne quoi, à quelle classe, avec quel coefficient, dans quel groupe » et qui autorise la saisie des notes.
+Lecture clé : **`ClassSubject` est le pivot** (qui enseigne quoi, à quelle classe, avec quel coefficient, dans quel groupe, combien d'heures). Il autorise la saisie des notes **et** alimente l'emploi du temps. Entre modules, les liens ci-dessus sont des **identifiants**, jamais des jointures.
 
-## 4. Règles métier
+## 5. Règles métier
 
-### 4.1 Enseignants, matières, classes, salles
+### 5.1 Enseignants, matières, classes, salles
 - **BR-01** Un enseignant peut avoir plusieurs `ClassSubject` : plusieurs matières, dans plusieurs classes, dans plusieurs sections.
-- **BR-02** Un `ClassSubject` a au plus un enseignant titulaire à la fois (`teacherId`, vide tant que non affecté).
+- **BR-02** Un `ClassSubject` a au plus un enseignant titulaire à la fois (vide tant que non affecté : cas observé).
 - **BR-03** Une matière n'existe qu'une fois par classe et par année (unicité classe + matière).
-- **BR-04** Le groupe de sous-total et le coefficient d'une matière se décident **par classe**, jamais globalement.
-- **BR-05** Un enseignant ne peut créer ou modifier des notes que pour les `ClassSubject` dont il est `teacherId`.
-- **BR-06** Une classe a au plus un professeur principal, qui peut enseigner ou non dans cette classe.
-- **BR-07** Une personne peut cumuler les fonctions (enseignant + chef d'établissement, enseignant + censeur). Une seule fiche `Staff`.
-- **BR-08** Un enseignant remplacé en cours d'année : on change `ClassSubject.teacherId`. Les bulletins déjà générés gardent le nom figé ; les anciennes saisies gardent leur auteur dans `GradeAuditEntry`. (Q-22)
-- **BR-09** *(module emplois du temps)* Un enseignant, une salle et une classe ne peuvent pas être dans deux créneaux simultanés.
+- **BR-04** Le groupe de sous-total et le coefficient d'une matière se décident **par classe**.
+- **BR-05** Un enseignant ne peut modifier une fiche de notes que pour les `ClassSubject` dont il est `teacherId`.
+- **BR-06** Une classe a au plus un professeur principal ; une même personne peut être professeur principal de plusieurs classes (observé : 2NDE C et 2NDE ALL).
+- **BR-07** Une personne peut cumuler les fonctions (enseignant + chef d'établissement). Une seule fiche `Staff`.
+- **BR-08** Enseignant remplacé : on change `ClassSubject.teacherId`. Les bulletins déjà générés gardent le nom figé. (Q-22)
+- **BR-09** Un enseignant, une salle et une classe ne peuvent pas être dans deux créneaux simultanés de l'emploi du temps (module timetable, voir `09-emploi-du-temps.md`).
+- **BR-10** Une matière `kind = ACTIVITY` (club, bibliothèque, musique, ménage général) n'est jamais notée ni imprimée sur un bulletin.
 
-### 4.2 Évaluations et notes
-- **BR-10** Une note est comprise entre 0 et le barème de l'évaluation (20 par défaut), avec 2 décimales au plus.
-- **BR-11** Une seule note par élève et par évaluation.
-- **BR-12** Un élève ne peut recevoir une note que s'il a une inscription `ENROLLED` dans la classe de l'évaluation.
-- **BR-13** Statuts d'une note : saisie, en attente, absent, absent justifié, dispensé. La valeur n'existe que pour « saisie ». La façon de compter un absent ou une note manquante vient du `GradingScheme`.
-- **BR-14** Les notes publiées sont visibles immédiatement par l'élève et ses parents (temps réel). Une évaluation en brouillon (`published = false`) reste invisible.
-- **BR-15** Toute création, modification ou suppression de note écrit une ligne dans `GradeAuditEntry` (qui, quand, ancienne et nouvelle valeur).
+### 5.2 Fiches de notes et notes (réponse Q-02)
+- **BR-11** Il existe une **fiche de notes par séquence et par `ClassSubject`** (`GradeSheet`). L'enseignant y saisit pour chaque élève les notes, les bonus, les malus, etc. (`Assessment` = colonnes, `Grade` = valeurs).
+- **BR-12** Le logiciel **totalise automatiquement** chaque élève en une **note de séquence** (`SequenceMark`) ; c'est cette note qui s'imprime dans DEVn. La formule exacte de totalisation est paramétrable (`TotalizationRule`, Q-25).
+- **BR-13** Une note est comprise entre 0 et le barème de la colonne (20 par défaut), 2 décimales au plus ; une note de séquence aussi (plafond 20 après bonus).
+- **BR-14** Une seule note par élève et par colonne ; un seul `SequenceMark` par élève et par fiche.
+- **BR-15** Un élève ne reçoit une note que s'il a une inscription `ENROLLED` dans la classe de la fiche.
+- **BR-16** Statuts : saisie, en attente (« - »), absent, absent justifié, dispensé. La valeur n'existe que pour « saisie ». **Une note non saisie n'est jamais un zéro.** (Q-31)
+- **BR-17** Les notes de séquence publiées sont visibles en temps réel par l'élève et ses parents.
+- **BR-18** Toute création, modification, suppression de note, de bonus, de malus ou de note de séquence écrit une ligne dans `GradeAuditEntry` (qui, quand, avant, après, rôle, motif, après clôture ?).
+- **BR-19** La fiche peut être exportée sur **plusieurs pages** (document personnel de l'enseignant) ; ce n'est pas un bulletin.
 
-### 4.3 Séquences et clôture
-- **BR-20** Une année compte 6 séquences ; les séquences 1-2, 3-4 et 5-6 forment les trimestres 1, 2, 3.
-- **BR-21** Une séquence `OPEN` accepte les saisies des enseignants (CRUD complet sur leurs notes).
-- **BR-22** Une séquence `CLOSED` refuse toute saisie d'enseignant. Seule l'administration peut corriger, avec un **motif obligatoire**, et la correction est tracée avec `afterSessionClosed = true`.
-- **BR-23** Clôturer et rouvrir une séquence sont des actions de l'administration (rouvrir : à réserver au directeur, à confirmer, Q-04).
-- **BR-24** Les bulletins d'une période ne se génèrent définitivement que lorsque ses séquences sont clôturées (génération de brouillon possible avant).
+### 5.3 Séquences et clôture
+- **BR-20** Une année compte 6 séquences ; 1-2, 3-4, 5-6 forment les trimestres 1, 2, 3.
+- **BR-21** Séquence `OPEN` : l'enseignant a le CRUD complet sur les notes de ses fiches.
+- **BR-22** Séquence `CLOSED` : plus aucune saisie d'enseignant. L'administration (et le directeur) peut corriger avec **motif obligatoire** ; trace `afterSessionClosed = true`.
+- **BR-23** Clôturer : administration ; rouvrir : directeur (provisoire, Q-04).
+- **BR-24** Le bulletin d'une période ne se génère définitivement que lorsque ses séquences sont clôturées (brouillon possible avant).
 
 ```mermaid
 stateDiagram-v2
@@ -114,43 +133,47 @@ stateDiagram-v2
   CLOSED --> CLOSED: correction par l'administration (motif + trace)
 ```
 
-### 4.4 Bulletins
-- **BR-30** Un bulletin généré est une **photographie figée** (`ReportCard`) : noms de matières, d'enseignants, coefficients et résultats y sont recopiés.
-- **BR-31** Si une note change après génération, on génère une nouvelle révision ; l'ancienne passe en `SUPERSEDED`. On n'écrase jamais un bulletin publié.
-- **BR-32** Un élève ou un parent ne télécharge que le bulletin **annuel** au statut `PUBLISHED`, uniquement pour l'élève concerné (et pour un parent : seulement ses enfants avec `canDownloadReportCards`).
-- **BR-33** La langue du bulletin est celle de la classe (`SchoolClass.reportLanguage`). L'en-tête officiel reste bilingue.
-- **BR-34** Un élève sans moyenne calculable n'est pas classé : il compte dans l'effectif, pas dans `rankedCount` ni dans les statistiques de la classe.
-- **BR-35** Chaque bulletin reçoit un `verificationCode` aléatoire et unique, imprimé en code-barres / QR, pour contrôler son authenticité.
-- **BR-36** Absences, retards, sanctions, distinctions et décision du conseil sont **saisis** (`StudentPeriodReview`), pas calculés.
+### 5.4 Bulletins (une seule page A4)
+- **BR-30** Un bulletin généré est une **photographie figée** (`ReportCard`).
+- **BR-31** Si une note change après génération : nouvelle révision, l'ancienne passe en `SUPERSEDED`. On n'écrase jamais un bulletin publié.
+- **BR-32** Un élève ou un parent ne télécharge que le bulletin **annuel** `PUBLISHED`, uniquement pour l'élève concerné ; un parent voit **tous ses enfants**, jamais ceux d'un autre (réponse Q-20).
+- **BR-33** Le bulletin se génère **dans les deux langues** ; la langue de la section est prioritaire (`SchoolClass.defaultLanguage`) ; pour une classe bilingue les deux sont opérationnelles (réponse Q-01). L'en-tête officiel reste bilingue. Tous les libellés existent en FR et en EN.
+- **BR-34** Un élève sans moyenne n'est pas classé : il compte dans l'effectif, pas dans `rankedCount` ni dans les statistiques de la classe.
+- **BR-35** Chaque bulletin reçoit un `verificationCode` aléatoire unique à 13 chiffres imprimé en code-barres / QR.
+- **BR-36** Absences, retards, sanctions, distinctions et décision du conseil sont **saisis** (`StudentPeriodReview`), pas calculés (sauf tableau d'honneur proposé par la règle des 12/20, BR-37).
+- **BR-37** Tableau d'honneur : moyenne >= 12 (paramétrable) ; hypothèse : bloqué par un avertissement ou un blâme (Q-29).
+- **BR-38** **Un bulletin tient sur UNE SEULE page A4 portrait.** Le générateur ajuste la taille de police et la hauteur des lignes (bornes dans `ReportTemplate`) ; si le contenu ne tient pas au minimum, la génération échoue avec un message clair, elle ne produit jamais une seconde page.
+- **BR-39** Le gabarit (colonnes, compétence, rang par matière, échelle d'appréciation, seuil du profil de classe) est une donnée (`ReportTemplate`), choisie selon la période, le niveau et la section.
 
-### 4.5 Élèves et inscriptions
-- **BR-40** Le matricule est unique dans l'école.
+### 5.5 Élèves et inscriptions
+- **BR-40** Le matricule est unique dans l'école (texte libre : numérique ou alphanumérique, Q-05).
 - **BR-41** Un élève a au plus une inscription par année scolaire.
-- **BR-42** On désactive (`active = false`) un élève ou un enseignant plutôt que de le supprimer : notes et bulletins le référencent.
+- **BR-42** On désactive plutôt que de supprimer (élève, enseignant, matière, classe).
 - **BR-43** Les données des élèves (mineurs) ne figurent jamais dans les logs, jeux de test ou dépôts Git.
 
-### 4.6 Bilinguisme
-- **BR-50** Les noms de matières, de groupes, de trimestres sont stockés en `LocalizedText(fr, en)`.
-- **BR-51** Une classe francophone imprime en français, une classe anglophone en anglais ; le comportement d'une classe « bilingue » est à décider (Q-01).
-- **BR-52** L'interface (libellés, messages d'erreur) est bilingue ; la langue de l'utilisateur est indépendante de celle du bulletin.
+### 5.6 Bilinguisme
+- **BR-50** Noms de matières, groupes, trimestres, mentions, légendes : `LocalizedText(fr, en)`.
+- **BR-51** Matières : certaines sont enseignées entièrement en français, d'autres entièrement en anglais (`Subject.teachingLanguage`, `ClassSubject.teachingLanguage`).
+- **BR-52** L'interface (libellés, messages d'erreur) est bilingue ; la langue de l'utilisateur est indépendante de celle du document.
+- **BR-53** Tout est modifiable depuis l'interface graphique dans les deux langues.
 
-## 5. Parcours principal : de la saisie au bulletin
+### 5.7 Emploi du temps (une seule page A4)
+- **BR-60** L'emploi du temps est **généré une seule fois par an** (`Timetable`, une version publiée par année) ; semaine type répétée toute l'année.
+- **BR-61** Une case = classe + jour + période de départ (+ nombre de périodes) + matière + enseignant (+ salle). Cases spéciales : activité sans note, case mixte, TD, cours hors grille (samedi).
+- **BR-62** **Impression : une seule page A4 paysage par classe** (et par enseignant ou par salle sur demande), jamais de seconde page.
+- **BR-63** Le nombre de périodes d'une matière doit correspondre à `ClassSubject.weeklyHours` (avertissement, pas blocage).
 
-1. **Préparation (administration)** : créer l'année et ses 3 trimestres et 6 séquences ; créer les classes ; affecter à chaque classe ses matières (`ClassSubject`) avec coefficient, groupe et enseignant ; inscrire les élèves.
-2. **Ouverture** de la séquence n.
-3. **Saisie (enseignants)** : pour chaque `ClassSubject` dont ils sont titulaires, créer l'évaluation puis saisir une note par élève. Les notes sont visibles en temps réel pour l'élève et ses parents.
-4. **Clôture** de la séquence par l'administration. Les corrections ultérieures passent par l'administration, avec motif et trace.
-5. **Saisie des éléments hors notes** : absences, retards, sanctions, distinctions (`StudentPeriodReview`).
-6. **Génération** des bulletins : calcul (voir `04-regles-de-calcul.md`), création des `ReportCard` en `DRAFT`.
-7. **Validation** par l'administration, puis **impression** (PDF) ou **publication** du bulletin annuel pour les parents.
-8. En fin d'année : conseil de classe, décision de passage, publication, clôture de l'année.
+## 6. Parcours principal : de la saisie au bulletin
 
-## 6. Modules suivants (hors modèle actuel)
+1. **Préparation (administration)** : année, classes, matières de classe (coefficient, groupe, enseignant, heures), inscription des élèves, grille horaire et emploi du temps.
+2. **Ouverture** de la séquence n ; création automatique des fiches de notes.
+3. **Saisie (enseignants)** : chaque enseignant remplit sa fiche ; le logiciel totalise la note de séquence ; les notes sont visibles en temps réel pour l'élève et ses parents.
+4. **Clôture** de la séquence (administration) ; corrections ensuite avec motif et trace.
+5. **Éléments hors notes** : absences, retards, sanctions, distinctions, compétences du trimestre.
+6. **Génération** des bulletins : calcul (`04-regles-de-calcul.md`), `ReportCard` en `DRAFT`, PDF une page.
+7. **Validation**, impression, publication du bulletin annuel pour les parents.
+8. Fin d'année : conseil de classe, décision de passage, clôture.
 
-| Module | Ce qui sera ajouté |
-|---|---|
-| Emplois du temps | `TimetableSlot` (jour, heure, classe, matière, enseignant, salle), contrôle de conflits, vues enseignant / élève / salle |
-| Cartes d'élèves | Gabarit de carte, génération PDF, code QR vers `Student` |
-| Inscriptions | Dossier d'inscription, pièces, réinscription, génération du matricule |
-| Frais de scolarité (si retenu) | Barème, versements, reçus, lien avec l'inscription (Mobile Money) |
-| Portail élève / parent | Consultation des notes et téléchargement des bulletins |
+## 7. Modules (futurs microservices)
+
+Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `iam`, `academic`, `student`, `staff`, `grading`, `reporting`, `timetable` (+ `shared`). Modules suivants : cartes d'élèves, inscriptions/matricule, frais de scolarité, notifications, stockage de fichiers, import des élèves.

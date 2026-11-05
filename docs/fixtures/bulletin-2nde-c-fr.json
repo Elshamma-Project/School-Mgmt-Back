@@ -1,0 +1,428 @@
+{
+ "_comment": "Données anonymisées issues d'un bulletin réel (élève, enseignants, matricule remplacés). Valeurs 'printed' = imprimées par l'ancien logiciel. null = note absente (« - » sur le bulletin) ; 0.0 = zéro réel. Voir docs/04-regles-de-calcul.md § 2 à § 4.",
+ "fixture": "bulletin-2nde-c-fr",
+ "section": "FRANCOPHONE",
+ "reportLanguage": "FR",
+ "className": "2NDE C",
+ "levelCode": "2NDE",
+ "trackCode": "C",
+ "student": {
+  "code": "ELEVE-FR-03",
+  "repeater": false
+ },
+ "gradingSchemeObserved": {
+  "maxScore": 20,
+  "passMark": 10,
+  "decimals": 2,
+  "appreciationBands": [
+   {
+    "code": "A",
+    "minInclusive": 16
+   },
+   {
+    "code": "B+",
+    "minInclusive": 14
+   },
+   {
+    "code": "B",
+    "minInclusive": 12
+   },
+   {
+    "code": "C",
+    "minInclusive": 0
+   }
+  ],
+  "termMapping": {
+   "1": [
+    1,
+    2
+   ],
+   "2": [
+    3,
+    4
+   ],
+   "3": [
+    5,
+    6
+   ]
+  },
+  "classSuccessThreshold": 12
+ },
+ "printedResults": {
+  "annualAverage": 12.3,
+  "rank": 3,
+  "rankedCount": 4,
+  "effectif": 4,
+  "mention": "ASSEZ BON TRAVAIL",
+  "termRecaps": [
+   {
+    "termNumber": 1,
+    "rank": 3,
+    "average": 12.29
+   },
+   {
+    "termNumber": 2,
+    "rank": 3,
+    "average": 13.06
+   },
+   {
+    "termNumber": 3,
+    "rank": 3,
+    "average": 11.56
+   }
+  ],
+  "classProfile": {
+   "countAtOrAboveThreshold": 3,
+   "classAverage": 12.44,
+   "successRatePercent": 75.0,
+   "highestAverage": 13.36,
+   "lowestAverage": 11.13
+  },
+  "review": {
+   "absenceHoursTotal": 9,
+   "absenceHoursUnjustified": 9,
+   "lateCount": 0,
+   "honourRoll": false,
+   "conductWarning": true
+  }
+ },
+ "observations": [
+  "Moyenne 12.30 sans tableau d'honneur alors que >= 12 : l'avertissement de conduite (Oui) semble l'empêcher (Q-11b).",
+  "Le trimestre 3 imprimé (11.56) est exactement la moyenne pondérée de DEV5 seul ; Σ totaux / Σ coefficients donnerait 12.56. Voir Q-24.",
+  "Lignes : toutes retrouvées avec 'moyenne des moyennes de trimestre arrondies à 2 décimales' (arrondi au pair) ; une seule ligne (MATHEMATIQUES 39.78 imprimé) diffère d'un centime avec HALF_UP (39.80)."
+ ],
+ "groups": [
+  {
+   "groupCode": "L",
+   "groupName": "LANGUES ET LITTERATURES",
+   "lines": [
+    {
+     "subjectCode": "LIT",
+     "subjectName": "LITTERATURE",
+     "teacherCode": "TT01",
+     "coefficient": 2,
+     "sequenceMarks": [
+      18.75,
+      13.33,
+      13.66,
+      14.66,
+      17.0,
+      15.0
+     ],
+     "printed": {
+      "average": 15.4,
+      "total": 30.8
+     }
+    },
+    {
+     "subjectCode": "LF",
+     "subjectName": "LANGUE FRANCAISE",
+     "teacherCode": "TT02",
+     "coefficient": 1,
+     "sequenceMarks": [
+      13.5,
+      13.5,
+      9.5,
+      10.0,
+      9.5,
+      10.0
+     ],
+     "printed": {
+      "average": 11.0,
+      "total": 11.0
+     }
+    },
+    {
+     "subjectCode": "ANG",
+     "subjectName": "ANGLAIS",
+     "teacherCode": "TT03",
+     "coefficient": 3,
+     "sequenceMarks": [
+      15.0,
+      14.0,
+      14.5,
+      15.0,
+      15.0,
+      14.5
+     ],
+     "printed": {
+      "average": 14.67,
+      "total": 44.0
+     }
+    },
+    {
+     "subjectCode": "HIST",
+     "subjectName": "HISTOIRE",
+     "teacherCode": "TT06",
+     "coefficient": 2,
+     "sequenceMarks": [
+      15.0,
+      12.0,
+      15.0,
+      13.0,
+      14.0,
+      15.0
+     ],
+     "printed": {
+      "average": 14.0,
+      "total": 28.0
+     }
+    },
+    {
+     "subjectCode": "GEO",
+     "subjectName": "GEOGRAPHIE",
+     "teacherCode": "TT07",
+     "coefficient": 2,
+     "sequenceMarks": [
+      12.66,
+      11.0,
+      16.8,
+      14.33,
+      15.0,
+      15.0
+     ],
+     "printed": {
+      "average": 14.13,
+      "total": 28.27
+     }
+    },
+    {
+     "subjectCode": "ECM",
+     "subjectName": "EDUCATION A LA CITOYENNETE ET A LA MORALE",
+     "teacherCode": "TT06",
+     "coefficient": 1,
+     "sequenceMarks": [
+      17.0,
+      16.0,
+      14.5,
+      14.5,
+      16.0,
+      15.5
+     ],
+     "printed": {
+      "average": 15.58,
+      "total": 15.58
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 11,
+    "totalPoints": 157.65,
+    "average": 14.33
+   }
+  },
+  {
+   "groupCode": "S",
+   "groupName": "SCIENCES ET TECHNOLOGIE",
+   "lines": [
+    {
+     "subjectCode": "MATH",
+     "subjectName": "MATHEMATIQUES",
+     "teacherCode": "TT09",
+     "coefficient": 5,
+     "sequenceMarks": [
+      6.0,
+      10.0,
+      9.5,
+      5.0,
+      4.0,
+      13.25
+     ],
+     "printed": {
+      "average": 7.96,
+      "total": 39.78
+     }
+    },
+    {
+     "subjectCode": "PHY",
+     "subjectName": "PHYSIQUE",
+     "teacherCode": "TT14",
+     "coefficient": 3,
+     "sequenceMarks": [
+      10.0,
+      11.0,
+      15.0,
+      12.5,
+      8.0,
+      11.0
+     ],
+     "printed": {
+      "average": 11.25,
+      "total": 33.75
+     }
+    },
+    {
+     "subjectCode": "CHIM",
+     "subjectName": "CHIMIE",
+     "teacherCode": "TT07",
+     "coefficient": 3,
+     "sequenceMarks": [
+      9.66,
+      9.66,
+      12.3,
+      15.0,
+      9.5,
+      5.0
+     ],
+     "printed": {
+      "average": 10.19,
+      "total": 30.56
+     }
+    },
+    {
+     "subjectCode": "INFO",
+     "subjectName": "INFORMATIQUE",
+     "teacherCode": "TT08",
+     "coefficient": 3,
+     "sequenceMarks": [
+      15.5,
+      16.0,
+      18.0,
+      16.5,
+      14.5,
+      15.5
+     ],
+     "printed": {
+      "average": 16.0,
+      "total": 48.0
+     }
+    },
+    {
+     "subjectCode": "SVT",
+     "subjectName": "SVTEEHB",
+     "teacherCode": "TT10",
+     "coefficient": 2,
+     "sequenceMarks": [
+      13.0,
+      13.0,
+      9.75,
+      10.0,
+      10.5,
+      10.25
+     ],
+     "printed": {
+      "average": 11.09,
+      "total": 22.17
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 16,
+    "totalPoints": 174.27,
+    "average": 10.89
+   }
+  },
+  {
+   "groupCode": "D",
+   "groupName": "DEVELOPPEMENT PERSONNEL",
+   "lines": [
+    {
+     "subjectCode": "EPS",
+     "subjectName": "EDUCATION PHYSIQUE ET SPORTIVE",
+     "teacherCode": null,
+     "coefficient": 2,
+     "sequenceMarks": [
+      12.0,
+      12.33,
+      14.0,
+      13.33,
+      12.0,
+      17.0
+     ],
+     "printed": {
+      "average": 13.44,
+      "total": 26.88
+     }
+    },
+    {
+     "subjectCode": "ESF",
+     "subjectName": "ECONOMIE SOCIALE ET FAMILIALE",
+     "teacherCode": null,
+     "coefficient": 1,
+     "sequenceMarks": [
+      14.0,
+      14.6,
+      17.0,
+      12.0,
+      17.0,
+      16.5
+     ],
+     "printed": {
+      "average": 15.18,
+      "total": 15.18
+     }
+    },
+    {
+     "subjectCode": "AV",
+     "subjectName": "APTITUDE DE VIE",
+     "teacherCode": "TT07",
+     "coefficient": 1,
+     "sequenceMarks": [
+      12.0,
+      14.5,
+      17.5,
+      18.0,
+      10.0,
+      null
+     ],
+     "printed": {
+      "average": 13.67,
+      "total": 13.67
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 4,
+    "totalPoints": 56.47,
+    "average": 14.12
+   }
+  },
+  {
+   "groupCode": "A",
+   "groupName": "ARTS AND NATIONAL CULTURE",
+   "lines": [
+    {
+     "subjectCode": "EA",
+     "subjectName": "EDUCATION ARTISTIQUE",
+     "teacherCode": "TT12",
+     "coefficient": 1,
+     "sequenceMarks": [
+      9.3,
+      12.0,
+      13.0,
+      12.0,
+      16.0,
+      null
+     ],
+     "printed": {
+      "average": 13.05,
+      "total": 13.05
+     }
+    },
+    {
+     "subjectCode": "TM",
+     "subjectName": "TRAVAIL MANUEL",
+     "teacherCode": "TT15",
+     "coefficient": 1,
+     "sequenceMarks": [
+      12.0,
+      14.0,
+      13.0,
+      13.0,
+      15.0,
+      14.0
+     ],
+     "printed": {
+      "average": 13.5,
+      "total": 13.5
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 2,
+    "totalPoints": 25.96,
+    "average": 12.98
+   }
+  }
+ ]
+}

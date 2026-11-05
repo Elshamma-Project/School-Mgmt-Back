@@ -1,70 +1,84 @@
-# 07 — Questions ouvertes et décisions provisoires
+# 07 — Questions ouvertes, réponses reçues et décisions provisoires
 
-> Les questions sont posées **à Ben**, qui les transforme en vraies questions simples pour la directrice (jamais en questionnaire à remplir).
-> Colonne « Défaut retenu » : ce que le modèle suppose en attendant la réponse. « Impact » : ce qui changerait si la réponse est autre.
-> Les identifiants Q-xx sont cités dans le code (KDoc) et dans les autres documents.
+> Les questions sont posées **à Ben**, qui les transforme en questions simples pour la directrice (jamais en questionnaire à remplir).
+> **Statuts** : ✅ répondue · 🟡 partielle (le reste doit être clarifié plus tard) · ❓ ouverte (pas de réponse) · 💡 proposition à valider.
+> Conformément à la demande de Ben, **toute question non répondue en totalité reste dans cette liste** jusqu'à clarification. Les identifiants Q-xx sont cités dans le code (KDoc) et dans les autres documents.
 
-## 1. Questions bloquantes pour la démo de décembre
+## 1. Tableau de suivi
 
-| N° | Question | Pourquoi c'est important | Défaut retenu | Impact si autre |
+| N° | Sujet | Statut | Décision / défaut retenu en attendant |
+|---|---|---|---|
+| Q-01 | « Bilingue » | 🟡 | Réponse : certaines matières entièrement dans une langue, d'autres dans l'autre ; documents dans les 2 langues, langue de la section prioritaire. **Reste** : un bulletin de classe bilingue affiche-t-il les matières des deux langues ensemble ? un élève peut-il choisir sa langue de bulletin ? |
+| Q-02 | Note de séquence | 🟡 | Réponse : une fiche par séquence ; notes, bonus, malus ; totalisation automatique. **Reste** : formule exacte → Q-25 |
+| Q-03 | Bulletin de trimestre / séquence | 🟡 | Réponse : le bulletin de trimestre existe (Form 1, T1). **Reste** : bulletin de séquence ? T2 et T3 identiques à T1 ? gabarit pour les autres classes → Q-26 |
+| Q-04 | Clôture d'une séquence : globale ou par classe ? qui clôture, qui rouvre ? | ❓ | Globale ; administration clôture ; directeur rouvre |
+| Q-05 | Matricule : règle, génération, conservation entre années | ❓ | Texte libre unique dans l'école. Observé : « 250369841 » (numérique) et « 25F4A327 » (« 25 » + code de classe + numéro ?) |
+| Q-06 | Classement en cas d'ex aequo | 💡 | Proposition : mêmes rang et saut ensuite (1, 2, 2, 4), sur la moyenne **exacte** ; `RankingPolicy.DENSE` si l'école préfère 1, 2, 2, 3 |
+| Q-07 | Pourquoi un élève n'est pas classé (effectif 13 / 12 classés ; rang « 0/0 ») | ❓ | Non classé = pas de moyenne calculable. Hypothèse : pas de moyenne de trimestre 1 (cas FORM 4 ARTS) ; option `HAS_ALL_TERMS` |
+| Q-08 | « N° ON ROLL » | ✅ | C'est l'**effectif de la classe** |
+| Q-09 | Mention générale : seuils et libellés | 🟡 | Valeurs observées + barème proposé (`01` § 6) ; libellés EN manquants à valider ; borne INSUFFISANT/MÉDIOCRE entre 8,81 et 9,62 (9 par défaut) |
+| Q-10 | Appréciation par matière | ✅ | À ma charge : échelle `LETTER` (A >= 16, B+ >= 14, B >= 12, C en dessous) et échelle `COMPETENCY` (NA < 10, ECA [10,14[, A >= 14, A+ au-dessus) ; **modifiable plus tard depuis l'interface** |
+| Q-11 | Tableau d'honneur, encouragements, félicitations, avertissements, blâmes | 🟡 | Réponse : tableau d'honneur à partir de **12/20** de moyenne (paramétrable). **Reste** : seuils des encouragements et félicitations ; avertissements et blâmes (automatiques ou décidés ?) → Q-29 |
+| Q-12 | Note manquante / absent : divise-t-on par les séquences notées ou compte-t-on 0 ? | ❓ | `IGNORE` (conforme à l'ancien logiciel : le « - » est ignoré, un « 0.0 » compte) |
+| Q-13 | Élève dispensé (EPS...) | ❓ | Matière exclue de la moyenne de cet élève |
+| Q-14 | Arrondi | ✅ | Arrondi mathématique (`HALF_UP`) et on **accepte les écarts de centimes** ; pas de troncature |
+| Q-15 | Couleurs des notes (bleu, rouge, noir) | ❓ | Sans sens fonctionnel (basse priorité) |
+| Q-16 | Maternelle et primaire : notation et bulletins | ❓ | Non modélisé : secondaire seulement |
+| Q-17 | 2nd cycle : séries avec coefficients différents | ✅ | **Oui** (confirmé par 2NDE C / 2NDE ALL, FORM 4 ARTS / SC) ; `SchoolClass.trackCode` + `ClassSubject` par classe |
+| Q-18 | Passage en classe supérieure, procès-verbal du conseil | ❓ | `councilDecision` saisi à la main |
+| Q-19 | Relation avec SKYSOFT / Easy School Mobile | 🟡 | Réponse : ces logiciels sont bien ceux de l'école ; l'ancien prestataire n'a plus de contrat ; l'école veut changer de prestataire (l'école ne dit pas pourquoi). **Reste** : peut-on récupérer les données (élèves, notes, historique) ? en quel format ? |
+| Q-20 | Consultation par les parents | ✅ | **Navigateur uniquement** ; connexion à leur compte ; ils voient automatiquement le ou les bulletins de **tous leurs enfants, et uniquement les leurs** |
+| Q-21 | Absences et retards : qui saisit, unité, justifiées | ❓ | Heures entières, saisies par l'administration |
+| Q-22 | Enseignant remplacé en cours d'année | ❓ | Dernier enseignant, nom figé à la génération |
+| Q-23 | Signature, cachet, copies du bulletin | ❓ | Zone de signature, nom du chef imprimé ; signature manuscrite après impression |
+
+## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
+
+| N° | Question | Statut | Défaut retenu | Pourquoi |
 |---|---|---|---|---|
-| **Q-02** | La colonne DEV1..DEV6 est-elle une **note unique saisie** par l'enseignant, ou la **moyenne de plusieurs évaluations** (devoir, interro...) ? Où sont-elles calculées aujourd'hui (Excel) ? | Détermine l'écran de saisie et l'entité `Assessment` | Les deux cas sont supportés ; une évaluation `SEQUENCE_MARK` par séquence suffit | Si moyenne de plusieurs notes : règle d'arrondi à fixer (les notes observées ne sont ni toutes tronquées ni toutes arrondies) |
-| **Q-03** | Existe-t-il un **bulletin de trimestre** ou **de séquence** imprimé ? Sa mise en page ? | Le modèle les gère (`ReportPeriodType`), mais le gabarit n'est pas connu | Seul l'annuel est connu | Gabarits PDF supplémentaires |
-| **Q-14** | Pour la démo : faut-il **retrouver exactement** les bulletins déjà imprimés (arrondi de l'ancien logiciel) ou accepter un écart d'un centième sur 2 moyennes ? | Choix de `LEGACY_DOUBLE` ou `HALF_UP` | `HALF_UP` en production ; `LEGACY_DOUBLE` pour le rejeu | Aucun changement de modèle |
-| **Q-19** | Quelle est la relation de l'école avec **SKYSOFT / Easy School Mobile** ? Garde-t-elle ce service (USSD, application parents) ? Peut-on exporter ses données ? Ces bulletins sont-ils bien ceux de l'école cliente ? | Positionnement commercial, migration, périmètre « portail parents » | Hypothèse : l'école imprime ses bulletins avec ce logiciel ; notes sur Excel | Périmètre et argumentaire de l'offre |
-| **Q-01** | Que veut dire **« bilingue / les deux »** pour une classe : classe mixte avec matières dans les deux langues ? Une langue de bulletin par classe ou par élève ? | Langue du bulletin et catalogue de matières | `SchoolClass.reportLanguage` unique par classe, choisi à la création | Langue par élève → champ sur `Enrollment` |
+| Q-24 | **Règle de calcul avec notes manquantes** : l'ancien logiciel calcule les lignes (moyenne des trimestres arrondis), les groupes (moyenne de toutes les notes présentes) et la moyenne annuelle (moyenne des trimestres imprimés, parfois calculée avant la dernière saisie) de trois façons différentes. Faut-il une règle unique ? Laquelle est « juste » aux yeux de l'école ? Le trimestre 3 imprimé n'inclut-il vraiment pas DEV6 ? D'où vient 7,42 (FORM 4 ARTS) ? | 💡 | Règle unique : lignes comme imprimées, groupes = somme des lignes, moyenne annuelle = Σ totaux ÷ Σ coefficients, tout en une passe | Les bulletins avec notes manquantes ne se retrouveront pas au centime ; voir `01` § 7 |
+| Q-25 | **Totalisation de la fiche de notes** : comment se combinent notes, bonus, malus ? (moyenne des notes + bonus − malus ? bonus plafonné ? malus par absence ? pondération entre devoirs ?) Un exemplaire de fiche Excel serait idéal | ❓ | `AVERAGE_PLUS_BONUS_MINUS_MALUS`, plafonné à 20 | Détermine `SequenceMark` |
+| Q-26 | **Gabarits de bulletin** : le bulletin de trimestre de Form 1 vaut-il pour toutes les classes ? Les bulletins de T2 et T3 ? Les classes de 6ème à 3ème francophones ont-elles aussi un bulletin de trimestre par compétences ? Un bulletin de séquence existe-t-il ? | ❓ | Deux gabarits : `ANNUAL_STANDARD` et `TERM_COMPETENCY`, choisis par période et niveau | Quels gabarits PDF écrire |
+| Q-27 | **Seuil de A+** (parfaitement acquis) sur l'échelle des compétences | ❓ | Seuil vide (A au-dessus de 14) | Observé : A jusqu'à 17,25 |
+| Q-28 | **« MAKE EFFORT IN »** : quelle règle (moyenne < 8 ?) et combien de matières au maximum ? | 💡 | Moyenne < 8 | Observé : 7,5 et 6,0 listées, 8,5 non listée |
+| Q-29 | **Tableau d'honneur et sanctions** : un avertissement / blâme de conduite empêche-t-il le tableau d'honneur ? Seuils des encouragements et félicitations ? Avertissements automatiques sous un seuil de moyenne ? Pourquoi le profil de classe utilise-t-il 10 en Form 1 (trimestre) et 12 ailleurs ? | ❓ | Tableau d'honneur >= 12 et bloqué par une sanction ; seuil de classe 12 (annuel) / 10 (trimestre Form 1) ; le reste saisi à la main | Observé : élève à 12,30 sans tableau d'honneur avec « Avertissement conduite : Oui » |
+| Q-30 | **Matière « F/N »** de Form 4 (Etoundi) : French/National language ? Et « LCN », « PCT », « H.BIOLOGY », « SVTEEHB » : noms complets FR et EN ? | ❓ | Alias d'emploi du temps libres | Catalogue de matières bilingue |
+| Q-31 | **Zéro et « non saisi »** : dans l'ancien logiciel, une séquence non faite apparaît parfois comme 0.0 (FORM 4 ARTS). Faut-il distinguer « absent / 0 réel / pas encore noté » sur les fiches ? | 💡 | Oui : `PENDING` n'est jamais un zéro | Évite des moyennes fausses |
+| Q-32 | **Génération de l'emploi du temps** : saisie manuelle avec contrôle de conflits, ou génération automatique ? Contraintes (disponibilités, salles, maximum d'heures par jour) ? Qui le fait aujourd'hui, avec quel outil ? | ❓ | Saisie manuelle guidée + duplication d'une année sur l'autre | Périmètre du module timetable |
+| Q-33 | **Samedi et remplacements** : le cours du samedi (1ère C/D) est-il régulier ? Un remplacement ponctuel d'enseignant modifie-t-il l'emploi du temps annuel ? | ❓ | Cours hors grille régulier ; pas de remplacement ponctuel | `customStart` / `customEnd` |
+| Q-34 | **Reprise des données** (élèves, historique de notes) : format fourni par l'ancien prestataire ? Import des élèves plus tard ou création un par un ? | ❓ | Création un par un au début | Hors périmètre actuel |
 
-## 2. Règles de bulletin
-
-| N° | Question | Défaut retenu |
-|---|---|---|
-| **Q-06** | Classement en cas d'**ex aequo** : même rang (1, 2, 2, 4) ou (1, 2, 2, 3) ? Départage sur la moyenne exacte ou arrondie ? | `COMPETITION` (1, 2, 2, 4), moyenne exacte |
-| **Q-07** | Pourquoi **effectif 13 mais 12 classés** (et 18 / 17) ? Élève arrivé en cours d'année, sans notes, abandon ? Qui décide de ne pas classer ? | Non classé = pas de moyenne calculable ; compté dans l'effectif |
-| **Q-08** | « **N° ON ROLL** » : le numéro de l'élève dans la liste, ou l'effectif de la classe ? | Effectif de la classe ; `Enrollment.rollNumber` reste disponible |
-| **Q-09** | **Mention générale** (« TRAVAIL INSUFFISANT », « FAIR »...) : liste complète et seuils, en français et en anglais ? | Non renseignée (`overallMentionBands` vide) |
-| **Q-10** | **Appréciation par matière** : y a-t-il des lettres sous C (D, E) ? A à C suffisent-ils pour les notes très basses ? | A ≥ 16 ; B+ ≥ 14 ; B ≥ 12 ; C en dessous |
-| **Q-11** | **Tableau d'honneur, encouragements, félicitations, avertissements, blâmes** : seuils automatiques (moyenne, absences) ou décision du conseil ? | Décision saisie manuellement ; `distinctionRules` vide |
-| **Q-12** | **Note manquante** (élève entré en cours d'année, absent, séquence non faite) : on divise par les séquences notées ou on compte 0 ? Une matière sans aucune note est-elle exclue de la moyenne ? | `IGNORE` ; matière exclue |
-| **Q-13** | Élève **dispensé** (EPS...) : la matière sort-elle de la moyenne de cet élève ? | Oui, exclue pour lui |
-| **Q-15** | Les **couleurs des notes** (bleu, rouge, noir) ont-elles un sens (≥10, <10, séquence) ? | Sans sens fonctionnel |
-| **Q-18** | **Passage en classe supérieure** : règle (moyenne annuelle ≥ 10 ? conseil de classe souverain ?). Procès-verbal du conseil ? | `StudentPeriodReview.councilDecision` saisi à la main |
-| **Q-21** | **Absences et retards** : qui les saisit, en quelle unité (heures entières ou demi-heures), absences justifiées comment ? | Heures entières, saisies par l'administration |
-| **Q-22** | **Enseignant remplacé** en cours d'année : le bulletin annuel affiche-t-il le dernier enseignant ou les deux ? | Dernier enseignant (nom figé à la génération) |
-| **Q-23** | **Signature, cachet, copies** : le bulletin papier est-il signé et tamponné à la main après impression ? Signature numérique souhaitée ? | Zone de signature vide, nom du chef imprimé |
-
-## 3. Structure de l'école
-
-| N° | Question | Défaut retenu |
-|---|---|---|
-| **Q-04** | La **clôture d'une séquence** est-elle faite pour toute l'école ou classe par classe ? Qui clôture, qui peut rouvrir ? | Globale ; administration clôture ; directeur rouvre |
-| **Q-05** | **Matricule** : quelle règle (« 25 » = année puis numéro ?) ? Généré par l'école, par un organisme, ou par le logiciel ? Conservé d'une année à l'autre ? | Texte libre unique dans l'école ; génération à définir |
-| **Q-16** | **Maternelle et primaire** : notes chiffrées sur 20, lettres, compétences ? Bulletins par séquence, trimestre ? | Non modélisé : bulletin du secondaire seulement |
-| **Q-17** | **2nd cycle** : séries (A4, C, D, TI, Arts, Sciences...) avec coefficients différents par série ? | `SchoolClass.trackCode` + `ClassSubject` par classe, donc géré sans changement |
-| **Q-20** | **Parents** : comment doivent-ils consulter les notes (navigateur, téléphone, USSD, WhatsApp) ? Un numéro de téléphone par parent ? Consentement pour les données des enfants ? | Navigateur uniquement, plus tard |
-
-## 4. Décisions provisoires (résumé)
+## 3. Décisions provisoires (résumé)
 
 | Sujet | Décision |
 |---|---|
 | Séquences et trimestres | 6 séquences, 3 trimestres de 2 séquences |
-| Formule générale | Σ(moyenne matière × coefficient) ÷ Σ coefficients |
-| Moyenne annuelle | Σ totaux ÷ Σ coefficients, égale à la moyenne des 3 trimestres quand tout est noté |
-| Rang | Sur la moyenne exacte, parmi les élèves classés, ex aequo en compétition |
-| Seuils | Validation de matière : 10 ; « Moyenne ≥ » de la classe : 12 |
-| Enseignants | Entité unique `Staff` ; lien matière-classe-enseignant par `ClassSubject` |
-| Bulletin | Photographie figée, révisions successives, parent : annuel publié seulement |
-| Arrondi | `HALF_UP` ; `LEGACY_DOUBLE` disponible pour la comparaison avec l'ancien logiciel |
-| Marque | Aucun élément de marque d'un prestataire tiers dans les bulletins du nouveau système |
+| Note de séquence | Totalisation automatique de la fiche de notes (notes + bonus − malus, plafond 20) |
+| Note manquante | Ignorée ; zéro réel compté |
+| Moyenne d'une matière | Moyenne des moyennes de trimestre (arrondies à 2 décimales) |
+| Groupe | Σ totaux de lignes ÷ Σ coefficients |
+| Moyenne générale / annuelle | Σ totaux ÷ Σ coefficients |
+| Rang | Moyenne exacte, parmi les classés, ex aequo en compétition |
+| Seuils | Validation de matière 10 ; profil de classe 12 (annuel) / 10 (trimestre Form 1) ; tableau d'honneur 12 |
+| Arrondi | `HALF_UP`, écarts de centimes acceptés |
+| Effectif | Effectif de la classe |
+| Bilinguisme | Documents dans les 2 langues ; langue de la section prioritaire |
+| Parents | Navigateur ; tous leurs enfants, uniquement les leurs |
+| Une page A4 | Bulletin (portrait) et emploi du temps (paysage) |
+| Architecture | Monolithe modulaire, modules = futurs microservices |
+| Marque tierce | Aucun élément du prestataire précédent sur les documents |
 
-## 5. Documents complémentaires à demander à la collaboratrice
+## 4. Documents complémentaires à demander à la collaboratrice
 
-À ajouter à la liste du guide de collecte (priorité 1, avant la démo) :
+Priorité 1 (avant la démo) :
+1. **La fiche Excel de notes d'un enseignant pour une séquence**, avec bonus et malus (Q-25, Q-02).
+2. Un **bulletin de séquence** s'il existe ; les **bulletins de trimestre 2 et 3** et un bulletin de trimestre d'une classe francophone (Q-03, Q-26).
+3. Un bulletin d'une classe **bilingue** (Q-01).
+4. Le **règlement d'évaluation** et le **procès-verbal d'un conseil de classe** (Q-09, Q-11, Q-18, Q-29).
+5. Un bulletin de **Tle** ou **Form 5**, et de **maternelle / primaire** (Q-16).
 
-1. Un **bulletin de trimestre** et un **bulletin de séquence**, s'ils existent (Q-03).
-2. Un bulletin de **maternelle** et de **primaire**, en français et en anglais (Q-16).
-3. Un bulletin de **2nde, 1ère ou Tle** avec série ; un bulletin d'une classe **bilingue** (Q-17, Q-01).
-4. Un bulletin d'**élève redoublant** et d'**élève non classé** (Q-07).
-5. Le **fichier Excel de notes d'origine** d'une classe (Q-02, Q-12).
-6. Le **règlement d'évaluation** et le **procès-verbal de conseil de classe** (Q-09, Q-11, Q-18).
+Priorité 2 :
+6. Un bulletin d'**élève redoublant** et d'un élève **non classé** (Q-07).
 7. Le **document d'inscription** et une **carte d'élève** (modules suivants).
-8. À l'oral, avec la secrétaire : Q-05, Q-12, Q-13, Q-21.
+8. Les emplois du temps **par enseignant** s'ils existent, la **liste des salles**, les **heures hebdomadaires par matière** (Q-32).
+9. À l'oral avec la secrétaire : Q-05, Q-12, Q-13, Q-21, Q-22.

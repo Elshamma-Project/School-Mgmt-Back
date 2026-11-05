@@ -1,61 +1,68 @@
 # SMELS back-office : instructions pour les assistants IA
 
-> Ce fichier est lu par Cursor (`AGENTS.md`) et importé par Claude Code (`CLAUDE.md`).
-> Lis-le en entier avant toute tâche, puis lis les documents de `../../Docs/back-office/docs` cités plus bas.
+> Lu par Cursor (`AGENTS.md`) et importé par Claude Code (`CLAUDE.md`).
+> Lis-le en entier avant toute tâche, puis les documents de `../../Docs/back-office/docs` cités plus bas.
 
 ## Projet
-API REST d'un logiciel de gestion scolaire pour un établissement **bilingue (français / anglais)** du Cameroun :
-élèves, enseignants, matières, **notes**, génération automatique des **bulletins**, puis emplois du temps, cartes d'élèves et inscriptions.
-Les utilisateurs finaux ne sont pas techniques ; les données sont celles de **mineurs**.
+API REST d'un logiciel de gestion scolaire pour un établissement **bilingue (français / anglais)** du Cameroun : élèves, enseignants, matières, **fiches de notes**, génération des **bulletins**, **emploi du temps**, puis cartes d'élèves et inscriptions.
+Utilisateurs non techniques ; données de **mineurs**. **Tout doit être paramétrable depuis l'interface graphique, dans les deux langues.**
 
 ## Stack
-- Kotlin + Spring Boot (monolithe modulaire, **pas de microservices**), Java 21, Gradle Kotlin DSL
-- MongoDB (replica set, même à un nœud, pour les transactions) ; Spring Data MongoDB
-- Front séparé en Next.js (hors de ce dépôt)
-- Docker, Nginx, GitHub Actions ; déploiement sur VPS
-- Package racine : `com.kobe.smels` ; dossiers : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`
+- Kotlin + Spring Boot, Java 21, Gradle Kotlin DSL ; MongoDB (replica set, même à un nœud) ; Spring Data MongoDB
+- **Monolithe modulaire aujourd'hui, microservices demain** (voir `docs/08-architecture-modulaire.md`)
+- Front séparé en Next.js (hors dépôt) ; Docker, Nginx, GitHub Actions ; déploiement sur VPS
+- Package racine : `com.kobe.smels` ; couches : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`, `shared`
+
+## Modules (même sous-dossier dans chaque couche)
+`iam` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · (`shared` : noyau commun)
+Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `service/grading/api/` = interface publique), `controller/grading/`, `dto/grading/`.
 
 ## Où lire quoi
 | Besoin | Document |
 |---|---|
 | Comprendre les bulletins | `docs/01-analyse-bulletins.md` |
 | Règles métier (BR-xx), glossaire, parcours | `docs/02-domaine-metier.md` |
-| Collections, index, particularités Mongo/Kotlin, données de référence | `docs/03-modele-de-donnees.md` |
+| Collections, index, Mongo/Kotlin, données de référence | `docs/03-modele-de-donnees.md` |
 | Formules de calcul, arrondi, critères d'acceptation | `docs/04-regles-de-calcul.md` |
-| Rôles et matrice de permissions | `docs/05-roles-permissions.md` |
-| Plan de travail et prompts | `docs/06-feuille-de-route.md` |
-| Points non tranchés (Q-xx) | `docs/07-questions-ouvertes.md` |
+| Rôles et permissions | `docs/05-roles-permissions.md` |
+| Plan et prompts | `docs/06-feuille-de-route.md` |
+| Réponses reçues et questions ouvertes (Q-xx) | `docs/07-questions-ouvertes.md` |
+| Modules, frontières, événements | `docs/08-architecture-modulaire.md` |
+| Emploi du temps | `docs/09-emploi-du-temps.md` |
 | Jeux de test anonymisés | `docs/fixtures/*.json` |
 
 ## État
-Le package `model` est écrit (compilé contre des annotations simulées : à recompiler avec Gradle). Rien d'autre n'est implémenté : ni services, ni sécurité, ni configuration.
+Le package `model` (8 sous-packages, 106 classes) est écrit, compilé contre des annotations simulées : à recompiler avec Gradle. Les dossiers des autres couches existent par module mais sont vides. Rien d'autre n'est implémenté : ni services, ni sécurité, ni configuration.
 
 ## Règles impératives
-1. **Ne modifie pas le package `model` sans l'annoncer** et sans mettre à jour `docs/03-modele-de-donnees.md`. Si une règle ou un champ manque, propose-le plutôt que de contourner.
-2. **Jamais `copy()` sur un document persistant** (les champs hérités `version`, `createdAt`... ne sont pas recopiés). Modifier l'instance chargée puis `save()`.
-3. **Tout champ `BigDecimal` stocké** porte `@Field(targetType = FieldType.DECIMAL128)`. Comparer avec `compareTo`, jamais `equals`.
-4. **Toute requête filtre par `schoolId`** ; tout index composite commence par `schoolId`.
-5. **Les notes ne s'écrivent que par `GradeService`**, qui applique les règles BR-10 à BR-15 et écrit un `GradeAuditEntry` dans la même transaction.
-6. **Les calculs (moyennes, totaux, rangs, profil de classe) s'effectuent dans la couche `service`** (`GradeCalculationService`, appelé par `ReportCardService`). `docs/04-regles-de-calcul.md` est la spécification à implémenter : ne pas créer de « moteur » séparé. Tester avec `docs/fixtures/`. Aucune règle codée en dur qui existe dans `GradingScheme`.
-7. **Ne jamais exposer un document dans l'API** : DTO obligatoires ; jamais de `passwordHash` dans une réponse.
-8. **Aucune donnée réelle d'élève** dans le code, les tests, les logs, les fixtures ou Git. Pas d'identifiant d'élève dans les logs.
-9. **Ne pas inventer une règle ambiguë** : laisser un `TODO(Q-xx)` référencé dans `docs/07-questions-ouvertes.md` et le signaler.
-10. **Aucune marque ni service d'un prestataire tiers** dans les bulletins produits (pas de « Powered by », pas de code USSD tiers).
-11. Contrôles d'appartenance et de rôle dans la **couche service**, pas seulement dans les contrôleurs.
+1. **Frontières de modules** : un module ne lit et n'écrit que ses collections ; il n'importe jamais le `repository` ni le `model` d'un autre module ; il passe par `service/<autre>/api` et les `dto/<autre>`. Pas de jointure entre modules, pas de transaction entre modules, pas de dépendance cyclique (graphe dans `docs/08`). Un test ArchUnit le vérifie.
+2. **Références par identifiant** ; libellés copiés (figés) quand un module a besoin d'un nom d'un autre ; mises à jour par événements (`OutboxEvent`, catalogue dans `docs/08` § 4), traitement idempotent.
+3. **Ne modifie pas `model` sans l'annoncer** et sans mettre à jour `docs/03-modele-de-donnees.md`. Si un champ ou une règle manque, propose-le.
+4. **Jamais `copy()` sur un document persistant** ; modifier l'instance chargée puis `save()`.
+5. **Tout `BigDecimal` stocké** porte `@Field(targetType = FieldType.DECIMAL128)` ; comparer avec `compareTo`.
+6. **Toute requête filtre par `schoolId`** ; tout index composite commence par `schoolId`.
+7. **Les calculs s'effectuent dans la couche `service`** (`GradeCalculationService`, `SequenceMarkService`, `ReportCardService`). `docs/04-regles-de-calcul.md` est la spécification ; ne pas créer de « moteur » séparé. Garder l'arithmétique dans des méthodes privées/internal sans accès base, testables avec `../../Docs/back-office/docs/fixtures`. **Aucun seuil ni règle codés en dur** s'ils existent dans `GradingScheme` ou `ReportTemplate`.
+8. **Les notes ne s'écrivent que par `GradeService`**, qui applique BR-11 à BR-18, écrit un `GradeAuditEntry`, recalcule la `SequenceMark` et émet l'événement dans la même transaction. **Une note non saisie est `PENDING`, jamais 0.**
+9. **Une seule page A4** : bulletin (A4 portrait) et emploi du temps (A4 paysage). Ajuster police et hauteurs de ligne ; échouer avec un message clair plutôt que produire une 2e page ; test automatique « le PDF a 1 page ». Seules les fiches de notes personnelles d'un enseignant peuvent s'étendre sur plusieurs pages.
+10. **Bilingue** : tous les libellés (groupes, mentions, légendes, matières, messages) en FR et EN (`LocalizedText`) ; les documents se génèrent dans les deux langues, la langue de la section est prioritaire.
+11. **Pas de DTO = pas d'API** : ne jamais exposer un document ; jamais de `passwordHash`.
+12. **Aucune donnée réelle d'élève ou d'enseignant** dans le code, les tests, les logs, les fixtures ou Git ; pas d'identifiant d'élève dans les logs.
+13. **Ne pas inventer une règle ambiguë** : `TODO(Q-xx)` référencé dans `docs/07-questions-ouvertes.md`, et le signaler.
+14. **Aucune marque ni service d'un prestataire tiers** sur les documents (pas de « Powered by », pas de code USSD tiers).
+15. Contrôles de rôle et d'appartenance dans la **couche service** de chaque module.
 
 ## Conventions de code
-- Contrôleurs minces (validation, appel de service, mapping DTO) ; logique dans `service` ; accès données dans `repository`.
+- Contrôleurs minces (validation, appel de service, mapping DTO) ; logique dans `service` ; données dans `repository`.
 - Injection par constructeur ; `val` par défaut ; pas de `!!` ; exceptions métier dans `exception/` ; erreurs HTTP en `ProblemDetail`.
-- Identifiants en `String` ; dates : `Instant` (UTC) et `LocalDate` ; fuseau d'affichage `Africa/Douala`.
-- Messages et libellés exposés : bilingues FR / EN.
-- Tests : JUnit 5, Testcontainers (Mongo en replica set), un test par règle métier citée (BR-xx).
+- Identifiants `String` ; dates `Instant` (UTC), `LocalDate`, `LocalTime`, `DayOfWeek` ; affichage `Africa/Douala`.
+- Tests : JUnit 5, Testcontainers (Mongo replica set), un test par règle citée (BR-xx) ; données de `../../Docs/back-office/docs/fixtures`.
 
 ## Commandes
 ```
-./gradlew build          # compile et tests
+./gradlew build
 ./gradlew test
 ./gradlew bootRun
 ```
 
 ## À la fin de chaque tâche
-Compile, lance les tests, puis résume : ce qui a été fait, les règles appliquées (BR-xx), les décisions prises, les questions ouvertes ajoutées.
+Compile, lance les tests, puis résume : ce qui a été fait, règles appliquées (BR-xx), décisions prises, questions ouvertes ajoutées.

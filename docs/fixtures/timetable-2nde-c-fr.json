@@ -1,0 +1,227 @@
+{
+ "_comment": "Emploi du temps 2026-2027 de la classe 2NDE C (enseignants remplacés par des codes). Sert aux tests : 40 créneaux de cours + activités, conflits enseignant, heures hebdomadaires par matière (MATHS = 5, PHYSIQUE = 3, CHIMIE = 3...).",
+ "className": "2NDE C",
+ "language": "FR",
+ "page": "A4_LANDSCAPE",
+ "entries": [
+  {
+   "day": "MONDAY",
+   "startPeriod": 1,
+   "periodCount": 1,
+   "kind": "ACTIVITY",
+   "subject": "BIBLIOTHÈQUE",
+   "teacherCode": "TC-A",
+   "activityType": "LIBRARY"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 2,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "APT. DE VIE",
+   "teacherCode": "TC-B"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "FRANÇAIS",
+   "teacherCode": "TC-C"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 5,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "SVTEEHB",
+   "teacherCode": "TC-D"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "CHIMIE",
+   "teacherCode": "TC-E"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "ANGLAIS",
+   "teacherCode": "TC-F"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "HISTOIRE",
+   "teacherCode": "TC-G"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 5,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "CHINOIS",
+   "teacherCode": "TC-H"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 6,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "CHIMIE",
+   "teacherCode": "TC-E"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "ECM",
+   "teacherCode": "TC-I"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "ANGLAIS",
+   "teacherCode": "TC-F"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 3,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "TM",
+   "teacherCode": "TC-B"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 4,
+   "periodCount": 3,
+   "kind": "LESSON",
+   "subject": "MATHS",
+   "teacherCode": "TC-J"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 7,
+   "periodCount": 1,
+   "kind": "ACTIVITY",
+   "subject": "CLUB",
+   "teacherCode": null,
+   "activityType": "CLUB"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 8,
+   "periodCount": 1,
+   "kind": "ACTIVITY",
+   "subject": "MÉNAGE GÉNÉRAL",
+   "teacherCode": null,
+   "note": "Délégué",
+   "activityType": "GENERAL_CLEANING"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 1,
+   "periodCount": 1,
+   "kind": "ACTIVITY",
+   "subject": "MUSIQUE",
+   "teacherCode": "TC-K",
+   "activityType": "MUSIC"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 2,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "EDUC. ART",
+   "teacherCode": "TC-L"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "MATHS",
+   "teacherCode": "TC-J"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 5,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "INFORMATIQUE",
+   "teacherCode": "TC-M"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "EPS",
+   "teacherCode": "TC-N"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "PHYSIQUE",
+   "teacherCode": "TC-O"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "LITTÉRATURE",
+   "teacherCode": "TC-C"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 5,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "FRANÇAIS",
+   "teacherCode": "TC-C"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 6,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "PHYSIQUE",
+   "teacherCode": "TC-O"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "GÉOGRAPHIE",
+   "teacherCode": "TC-P"
+  }
+ ],
+ "weeklyPeriodsBySubject": {
+  "MATHS": 5,
+  "ANGLAIS": 4,
+  "CHIMIE": 3,
+  "PHYSIQUE": 3,
+  "FRANÇAIS": 5,
+  "INFORMATIQUE": 2,
+  "EPS": 2,
+  "HISTOIRE": 2,
+  "GÉOGRAPHIE": 2,
+  "ECM": 2,
+  "SVTEEHB": 2,
+  "LITTÉRATURE": 2
+ }
+}

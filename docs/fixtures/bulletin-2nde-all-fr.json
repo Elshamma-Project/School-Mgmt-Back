@@ -1,0 +1,428 @@
+{
+ "_comment": "Données anonymisées issues d'un bulletin réel (élève, enseignants, matricule remplacés). Valeurs 'printed' = imprimées par l'ancien logiciel. null = note absente (« - » sur le bulletin) ; 0.0 = zéro réel. Voir docs/04-regles-de-calcul.md § 2 à § 4.",
+ "fixture": "bulletin-2nde-all-fr",
+ "section": "FRANCOPHONE",
+ "reportLanguage": "FR",
+ "className": "2NDE ALL",
+ "levelCode": "2NDE",
+ "trackCode": "ALL",
+ "student": {
+  "code": "ELEVE-FR-02",
+  "repeater": false
+ },
+ "gradingSchemeObserved": {
+  "maxScore": 20,
+  "passMark": 10,
+  "decimals": 2,
+  "appreciationBands": [
+   {
+    "code": "A",
+    "minInclusive": 16
+   },
+   {
+    "code": "B+",
+    "minInclusive": 14
+   },
+   {
+    "code": "B",
+    "minInclusive": 12
+   },
+   {
+    "code": "C",
+    "minInclusive": 0
+   }
+  ],
+  "termMapping": {
+   "1": [
+    1,
+    2
+   ],
+   "2": [
+    3,
+    4
+   ],
+   "3": [
+    5,
+    6
+   ]
+  },
+  "classSuccessThreshold": 12
+ },
+ "printedResults": {
+  "annualAverage": 9.62,
+  "rank": 2,
+  "rankedCount": 2,
+  "effectif": 2,
+  "mention": "TRAVAIL MEDIOCRE",
+  "termRecaps": [
+   {
+    "termNumber": 1,
+    "rank": 2,
+    "average": 9.62
+   },
+   {
+    "termNumber": 2,
+    "rank": 2,
+    "average": 9.63
+   },
+   {
+    "termNumber": 3,
+    "rank": null,
+    "average": null
+   }
+  ],
+  "classProfile": {
+   "countAtOrAboveThreshold": 0,
+   "classAverage": 10.43,
+   "successRatePercent": 0.0,
+   "highestAverage": 11.24,
+   "lowestAverage": 9.62
+  },
+  "review": {
+   "absenceHoursTotal": 25,
+   "absenceHoursUnjustified": 25,
+   "lateCount": 0,
+   "honourRoll": false,
+   "conductBlame": true
+  }
+ },
+ "observations": [
+  "Matières manquantes (« - »): DEV6 de LANGUE FRANCAISE, DEV5 d'ANGLAIS, DEV5-6 d'APTITUDE DE VIE, DEV6 d'EDUCATION ARTISTIQUE et d'ECONOMIE SOCIALE ET FAMILIALE.",
+  "Moyenne annuelle imprimée 9.62 = moyenne des trimestres 1 et 2 imprimés (le trimestre 3 n'est pas imprimé) ; Σ totaux / Σ coefficients donnerait 10.20. Voir Q-24.",
+  "Le bloc « TOTAL ARTS AND NATIONAL CULTURE » est imprimé en anglais sur un bulletin français : les groupes doivent avoir un libellé dans les deux langues."
+ ],
+ "groups": [
+  {
+   "groupCode": "L",
+   "groupName": "LANGUES ET LITTERATURES",
+   "lines": [
+    {
+     "subjectCode": "LIT",
+     "subjectName": "LITTERATURE",
+     "teacherCode": "TT01",
+     "coefficient": 3,
+     "sequenceMarks": [
+      9.66,
+      7.75,
+      10.0,
+      10.0,
+      15.0,
+      13.0
+     ],
+     "printed": {
+      "average": 10.9,
+      "total": 32.71
+     }
+    },
+    {
+     "subjectCode": "LF",
+     "subjectName": "LANGUE FRANCAISE",
+     "teacherCode": "TT02",
+     "coefficient": 2,
+     "sequenceMarks": [
+      11.5,
+      12.5,
+      12.5,
+      12.0,
+      8.5,
+      null
+     ],
+     "printed": {
+      "average": 10.92,
+      "total": 21.83
+     }
+    },
+    {
+     "subjectCode": "ANG",
+     "subjectName": "ANGLAIS",
+     "teacherCode": "TT03",
+     "coefficient": 4,
+     "sequenceMarks": [
+      10.5,
+      8.0,
+      6.0,
+      7.0,
+      null,
+      12.0
+     ],
+     "printed": {
+      "average": 9.25,
+      "total": 37.0
+     }
+    },
+    {
+     "subjectCode": "ALL",
+     "subjectName": "ALLEMAND",
+     "teacherCode": "TT04",
+     "coefficient": 3,
+     "sequenceMarks": [
+      8.0,
+      12.0,
+      0.0,
+      5.5,
+      5.0,
+      7.5
+     ],
+     "printed": {
+      "average": 6.33,
+      "total": 19.0
+     }
+    },
+    {
+     "subjectCode": "PHILO",
+     "subjectName": "PHILOSOPHIE",
+     "teacherCode": "TT05",
+     "coefficient": 2,
+     "sequenceMarks": [
+      9.5,
+      14.66,
+      14.0,
+      17.33,
+      12.0,
+      11.0
+     ],
+     "printed": {
+      "average": 13.08,
+      "total": 26.16
+     }
+    },
+    {
+     "subjectCode": "ECM",
+     "subjectName": "EDUCATION A LA CITOYENNETE ET A LA MORALE",
+     "teacherCode": "TT06",
+     "coefficient": 2,
+     "sequenceMarks": [
+      12.0,
+      9.0,
+      12.0,
+      15.0,
+      14.5,
+      16.5
+     ],
+     "printed": {
+      "average": 13.17,
+      "total": 26.33
+     }
+    },
+    {
+     "subjectCode": "GEO",
+     "subjectName": "GEOGRAPHIE",
+     "teacherCode": "TT07",
+     "coefficient": 2,
+     "sequenceMarks": [
+      11.0,
+      9.33,
+      1.33,
+      14.16,
+      13.5,
+      9.5
+     ],
+     "printed": {
+      "average": 9.8,
+      "total": 19.61
+     }
+    },
+    {
+     "subjectCode": "HIST",
+     "subjectName": "HISTOIRE",
+     "teacherCode": "TT06",
+     "coefficient": 2,
+     "sequenceMarks": [
+      11.0,
+      0.0,
+      11.0,
+      8.5,
+      17.5,
+      11.0
+     ],
+     "printed": {
+      "average": 9.83,
+      "total": 19.67
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 20,
+    "totalPoints": 201.07,
+    "average": 10.05
+   }
+  },
+  {
+   "groupCode": "S",
+   "groupName": "SCIENCES ET TECHNOLOGIE",
+   "lines": [
+    {
+     "subjectCode": "INFO",
+     "subjectName": "INFORMATIQUE",
+     "teacherCode": "TT08",
+     "coefficient": 2,
+     "sequenceMarks": [
+      12.5,
+      9.0,
+      12.0,
+      15.0,
+      15.0,
+      15.0
+     ],
+     "printed": {
+      "average": 13.08,
+      "total": 26.17
+     }
+    },
+    {
+     "subjectCode": "MATH",
+     "subjectName": "MATHEMATIQUES",
+     "teacherCode": "TT09",
+     "coefficient": 2,
+     "sequenceMarks": [
+      7.92,
+      4.17,
+      7.0,
+      1.7,
+      3.0,
+      7.5
+     ],
+     "printed": {
+      "average": 5.21,
+      "total": 10.43
+     }
+    },
+    {
+     "subjectCode": "SCI",
+     "subjectName": "SCIENCES",
+     "teacherCode": "TT10",
+     "coefficient": 1,
+     "sequenceMarks": [
+      11.0,
+      0.0,
+      13.0,
+      11.0,
+      7.5,
+      7.0
+     ],
+     "printed": {
+      "average": 8.25,
+      "total": 8.25
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 5,
+    "totalPoints": 44.85,
+    "average": 8.97
+   }
+  },
+  {
+   "groupCode": "D",
+   "groupName": "DEVELOPPEMENT PERSONNEL",
+   "lines": [
+    {
+     "subjectCode": "AV",
+     "subjectName": "APTITUDE DE VIE",
+     "teacherCode": "TT07",
+     "coefficient": 1,
+     "sequenceMarks": [
+      12.0,
+      12.0,
+      16.5,
+      17.0,
+      null,
+      null
+     ],
+     "printed": {
+      "average": 14.38,
+      "total": 14.38
+     }
+    },
+    {
+     "subjectCode": "EPS",
+     "subjectName": "EDUCATION PHYSIQUE ET SPORTIVE",
+     "teacherCode": "TT11",
+     "coefficient": 2,
+     "sequenceMarks": [
+      13.66,
+      8.66,
+      10.0,
+      13.0,
+      15.0,
+      13.0
+     ],
+     "printed": {
+      "average": 12.22,
+      "total": 24.44
+     }
+    },
+    {
+     "subjectCode": "TM",
+     "subjectName": "TRAVAIL MANUEL",
+     "teacherCode": null,
+     "coefficient": 1,
+     "sequenceMarks": [
+      12.0,
+      12.0,
+      16.0,
+      17.0,
+      18.0,
+      18.0
+     ],
+     "printed": {
+      "average": 15.5,
+      "total": 15.5
+     }
+    },
+    {
+     "subjectCode": "EA",
+     "subjectName": "EDUCATION ARTISTIQUE",
+     "teacherCode": "TT12",
+     "coefficient": 1,
+     "sequenceMarks": [
+      8.6,
+      11.0,
+      4.0,
+      0.0,
+      4.0,
+      null
+     ],
+     "printed": {
+      "average": 5.27,
+      "total": 5.27
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 5,
+    "totalPoints": 59.84,
+    "average": 11.97
+   }
+  },
+  {
+   "groupCode": "A",
+   "groupName": "ARTS AND NATIONAL CULTURE",
+   "lines": [
+    {
+     "subjectCode": "ESF",
+     "subjectName": "ECONOMIE SOCIALE ET FAMILIALE",
+     "teacherCode": "TT13",
+     "coefficient": 1,
+     "sequenceMarks": [
+      8.0,
+      10.6,
+      10.0,
+      11.0,
+      12.0,
+      null
+     ],
+     "printed": {
+      "average": 10.6,
+      "total": 10.6
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 1,
+    "totalPoints": 10.32,
+    "average": 10.32
+   }
+  }
+ ]
+}

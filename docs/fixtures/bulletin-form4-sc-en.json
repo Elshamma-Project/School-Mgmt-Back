@@ -1,0 +1,392 @@
+{
+ "_comment": "Données anonymisées issues d'un bulletin réel (élève, enseignants, matricule remplacés). Valeurs 'printed' = imprimées par l'ancien logiciel. null = note absente (« - » sur le bulletin) ; 0.0 = zéro réel. Voir docs/04-regles-de-calcul.md § 2 à § 4.",
+ "fixture": "bulletin-form4-sc-en",
+ "section": "ANGLOPHONE",
+ "reportLanguage": "EN",
+ "className": "FORM 4 SC",
+ "levelCode": "FORM4",
+ "trackCode": "SC",
+ "student": {
+  "code": "ELEVE-EN-02",
+  "repeater": false
+ },
+ "gradingSchemeObserved": {
+  "maxScore": 20,
+  "passMark": 10,
+  "decimals": 2,
+  "appreciationBands": [
+   {
+    "code": "A",
+    "minInclusive": 16
+   },
+   {
+    "code": "B+",
+    "minInclusive": 14
+   },
+   {
+    "code": "B",
+    "minInclusive": 12
+   },
+   {
+    "code": "C",
+    "minInclusive": 0
+   }
+  ],
+  "termMapping": {
+   "1": [
+    1,
+    2
+   ],
+   "2": [
+    3,
+    4
+   ],
+   "3": [
+    5,
+    6
+   ]
+  },
+  "classSuccessThreshold": 12
+ },
+ "printedResults": {
+  "annualAverage": 11.67,
+  "rank": 1,
+  "rankedCount": 2,
+  "effectif": 2,
+  "mention": "FAIR",
+  "passedInSubjects": 12,
+  "termRecaps": [
+   {
+    "termNumber": 1,
+    "rank": 1,
+    "average": 11.55
+   },
+   {
+    "termNumber": 2,
+    "rank": 1,
+    "average": 12.11
+   },
+   {
+    "termNumber": 3,
+    "rank": 1,
+    "average": 11.35
+   }
+  ],
+  "classProfile": {
+   "countAtOrAboveThreshold": 0,
+   "classAverage": 10.5,
+   "successRatePercent": 0.0,
+   "highestAverage": 11.67,
+   "lowestAverage": 9.33
+  },
+  "review": {
+   "absenceHoursTotal": 0,
+   "absenceHoursUnjustified": 0,
+   "lateCount": 0,
+   "honourRoll": false
+  }
+ },
+ "observations": [
+  "Bulletin sans note manquante : toutes les règles concordent (Σ totaux / Σ coef = 11.67 = moyenne des 3 trimestres).",
+  "FRENCH : 71.47 imprimé, 71.46 avec HALF_UP sans arrondi de trimestre ; 71.47 avec arrondi de trimestre (12.375 -> 12.38).",
+  "PASSED IN 12 SUBJECTS : nombre de matières dont la moyenne est >= 10 (lignes à 10.00 comprises)."
+ ],
+ "groups": [
+  {
+   "groupCode": "L",
+   "groupName": "LANGUAGE AND LITERATURE",
+   "lines": [
+    {
+     "subjectCode": "ENG",
+     "subjectName": "ENGLISH LANGUAGE",
+     "teacherCode": "TT16",
+     "coefficient": 5,
+     "sequenceMarks": [
+      12.0,
+      11.0,
+      13.0,
+      13.0,
+      13.0,
+      13.0
+     ],
+     "printed": {
+      "average": 12.5,
+      "total": 62.5
+     }
+    },
+    {
+     "subjectCode": "FR",
+     "subjectName": "FRENCH",
+     "teacherCode": "TT17",
+     "coefficient": 5,
+     "sequenceMarks": [
+      15.0,
+      15.5,
+      15.5,
+      15.0,
+      12.75,
+      12.0
+     ],
+     "printed": {
+      "average": 14.29,
+      "total": 71.47
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 10,
+    "totalPoints": 133.96,
+    "average": 13.4
+   }
+  },
+  {
+   "groupCode": "H",
+   "groupName": "HUMAN AND SOCIAL SCIENCES",
+   "lines": [
+    {
+     "subjectCode": "ECO",
+     "subjectName": "ECONOMICS",
+     "teacherCode": "TT18",
+     "coefficient": 5,
+     "sequenceMarks": [
+      14.0,
+      15.5,
+      18.0,
+      17.5,
+      15.0,
+      18.0
+     ],
+     "printed": {
+      "average": 16.33,
+      "total": 81.67
+     }
+    },
+    {
+     "subjectCode": "GEO",
+     "subjectName": "GEOGRAPHIE",
+     "teacherCode": "TT19",
+     "coefficient": 5,
+     "sequenceMarks": [
+      16.0,
+      14.0,
+      13.0,
+      15.0,
+      7.0,
+      11.5
+     ],
+     "printed": {
+      "average": 12.75,
+      "total": 63.75
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 10,
+    "totalPoints": 145.42,
+    "average": 14.54
+   }
+  },
+  {
+   "groupCode": "S",
+   "groupName": "SCIENCE AND TECHNOLOGY",
+   "lines": [
+    {
+     "subjectCode": "AM",
+     "subjectName": "ADDITIONAL MATHS",
+     "teacherCode": "TT09",
+     "coefficient": 5,
+     "sequenceMarks": [
+      3.5,
+      5.0,
+      9.5,
+      6.0,
+      5.5,
+      9.5
+     ],
+     "printed": {
+      "average": 6.5,
+      "total": 32.5
+     }
+    },
+    {
+     "subjectCode": "BIO",
+     "subjectName": "BIOLOGY",
+     "teacherCode": "TT20",
+     "coefficient": 5,
+     "sequenceMarks": [
+      13.0,
+      11.0,
+      5.0,
+      10.0,
+      15.0,
+      16.0
+     ],
+     "printed": {
+      "average": 11.67,
+      "total": 58.33
+     }
+    },
+    {
+     "subjectCode": "CHE",
+     "subjectName": "CHEMISTRY",
+     "teacherCode": "TT21",
+     "coefficient": 5,
+     "sequenceMarks": [
+      6.0,
+      10.0,
+      12.0,
+      12.0,
+      12.0,
+      9.0
+     ],
+     "printed": {
+      "average": 10.17,
+      "total": 50.83
+     }
+    },
+    {
+     "subjectCode": "CS",
+     "subjectName": "COMPUTER SCIENCE",
+     "teacherCode": "TT22",
+     "coefficient": 5,
+     "sequenceMarks": [
+      11.5,
+      14.0,
+      14.0,
+      14.0,
+      14.5,
+      7.0
+     ],
+     "printed": {
+      "average": 12.5,
+      "total": 62.5
+     }
+    },
+    {
+     "subjectCode": "HB",
+     "subjectName": "HUMAN BIOLOGY",
+     "teacherCode": "TT20",
+     "coefficient": 5,
+     "sequenceMarks": [
+      13.0,
+      13.0,
+      9.0,
+      12.0,
+      10.0,
+      10.0
+     ],
+     "printed": {
+      "average": 11.17,
+      "total": 55.83
+     }
+    },
+    {
+     "subjectCode": "MATH",
+     "subjectName": "MATHEMATIQUES",
+     "teacherCode": "TT09",
+     "coefficient": 5,
+     "sequenceMarks": [
+      9.0,
+      14.0,
+      9.5,
+      12.0,
+      8.0,
+      7.5
+     ],
+     "printed": {
+      "average": 10.0,
+      "total": 50.0
+     }
+    },
+    {
+     "subjectCode": "PHY",
+     "subjectName": "PHYSIQUE",
+     "teacherCode": "TT23",
+     "coefficient": 5,
+     "sequenceMarks": [
+      9.0,
+      5.0,
+      4.0,
+      14.0,
+      10.0,
+      10.0
+     ],
+     "printed": {
+      "average": 8.67,
+      "total": 43.33
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 35,
+    "totalPoints": 353.33,
+    "average": 10.1
+   }
+  },
+  {
+   "groupCode": "V",
+   "groupName": "VOCATIONAL STUDIES",
+   "lines": [
+    {
+     "subjectCode": "ML",
+     "subjectName": "MANUAL LABOUR",
+     "teacherCode": "TT15",
+     "coefficient": 1,
+     "sequenceMarks": [
+      12.0,
+      16.0,
+      18.0,
+      18.0,
+      20.0,
+      20.0
+     ],
+     "printed": {
+      "average": 17.33,
+      "total": 17.33
+     }
+    },
+    {
+     "subjectCode": "EPS",
+     "subjectName": "EDUCATION PHYSIQUE ET SPORTIVE",
+     "teacherCode": "TT11",
+     "coefficient": 2,
+     "sequenceMarks": [
+      16.0,
+      12.33,
+      14.0,
+      14.0,
+      10.0,
+      14.0
+     ],
+     "printed": {
+      "average": 13.39,
+      "total": 26.77
+     }
+    },
+    {
+     "subjectCode": "LA",
+     "subjectName": "LIFE APTITUDE",
+     "teacherCode": "TT24",
+     "coefficient": 1,
+     "sequenceMarks": [
+      16.5,
+      12.0,
+      12.0,
+      10.0,
+      10.0,
+      10.0
+     ],
+     "printed": {
+      "average": 11.75,
+      "total": 11.75
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 4,
+    "totalPoints": 55.86,
+    "average": 13.96
+   }
+  }
+ ]
+}

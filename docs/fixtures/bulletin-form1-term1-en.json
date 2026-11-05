@@ -1,0 +1,445 @@
+{
+ "_comment": "Données anonymisées issues d'un bulletin de TRIMESTRE réel (1er trimestre, Form 1). Eval1/Eval2 = séquences 1 et 2.",
+ "fixture": "bulletin-form1-term1-en",
+ "section": "ANGLOPHONE",
+ "reportLanguage": "EN",
+ "className": "FORM 1",
+ "levelCode": "FORM1",
+ "period": {
+  "type": "TERM",
+  "number": 1
+ },
+ "student": {
+  "code": "ELEVE-EN-04",
+  "repeater": false
+ },
+ "gradingSchemeObserved": {
+  "maxScore": 20,
+  "passMark": 10,
+  "classSuccessThreshold": 10,
+  "decimals": 2,
+  "competencyBands": [
+   {
+    "code": "NA",
+    "label": "Non acquis",
+    "minInclusive": 0,
+    "maxExclusive": 10
+   },
+   {
+    "code": "ECA",
+    "label": "En cours d'acquisition",
+    "minInclusive": 10,
+    "maxExclusive": 14
+   },
+   {
+    "code": "A",
+    "label": "Acquis",
+    "minInclusive": 14,
+    "maxExclusive": null
+   },
+   {
+    "code": "A+",
+    "label": "Parfaitement acquis",
+    "note": "seuil non observé (Q-27)"
+   }
+  ]
+ },
+ "groups": [
+  {
+   "groupCode": "L",
+   "groupName": "LANGUAGE AND LITERATURE",
+   "lines": [
+    {
+     "subjectCode": "ENG",
+     "subjectName": "ENGLISH LANGUAGE",
+     "teacherCode": "TT28",
+     "competency": "Satisfy basic daily needs, family life and relationships.",
+     "coefficient": 4,
+     "sequenceMarks": [
+      18.0,
+      16.5
+     ],
+     "printed": {
+      "average": 17.25,
+      "total": 69.0,
+      "subjectRank": 6,
+      "classAverage": 15.38,
+      "passedCount": 13,
+      "appreciation": "A"
+     }
+    },
+    {
+     "subjectCode": "LIT",
+     "subjectName": "LITTERATURE",
+     "teacherCode": "TT28",
+     "competency": "Background of literature, fireside tales.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      10.0,
+      12.5
+     ],
+     "printed": {
+      "average": 11.25,
+      "total": 22.5,
+      "subjectRank": 9,
+      "classAverage": 12.32,
+      "passedCount": 11,
+      "appreciation": "E.C.A"
+     }
+    },
+    {
+     "subjectCode": "FR",
+     "subjectName": "FRENCH",
+     "teacherCode": "TT29",
+     "competency": "Utiliser les ressources acquises pour parler de l'environnement.",
+     "coefficient": 4,
+     "sequenceMarks": [
+      15.0,
+      13.0
+     ],
+     "printed": {
+      "average": 14.0,
+      "total": 56.0,
+      "subjectRank": 8,
+      "classAverage": 13.91,
+      "passedCount": 12,
+      "appreciation": "A"
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 10,
+    "totalPoints": 147.5,
+    "average": 14.75
+   }
+  },
+  {
+   "groupCode": "H",
+   "groupName": "HUMAN AND SOCIAL SCIENCES",
+   "lines": [
+    {
+     "subjectCode": "CIT",
+     "subjectName": "CITIZENSHIP EDUCATION",
+     "teacherCode": "TT30",
+     "competency": "Integrate into the family.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      16.0,
+      17.0
+     ],
+     "printed": {
+      "average": 16.5,
+      "total": 33.0,
+      "subjectRank": 3,
+      "classAverage": 14.77,
+      "passedCount": 13,
+      "appreciation": "A"
+     }
+    },
+    {
+     "subjectCode": "GEO",
+     "subjectName": "GEOGRAPHIE",
+     "teacherCode": "TT31",
+     "competency": "Environment and management of cosmic influences on the earth.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      10.0,
+      10.0
+     ],
+     "printed": {
+      "average": 10.0,
+      "total": 20.0,
+      "subjectRank": 14,
+      "classAverage": 13.04,
+      "passedCount": 14,
+      "appreciation": "E.C.A"
+     }
+    },
+    {
+     "subjectCode": "HIS",
+     "subjectName": "HISTORY",
+     "teacherCode": "TT30",
+     "competency": "Use historical knowledge to discover cultural traits.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      12.0,
+      13.5
+     ],
+     "printed": {
+      "average": 12.75,
+      "total": 25.5,
+      "subjectRank": 9,
+      "classAverage": 12.34,
+      "passedCount": 11,
+      "appreciation": "E.C.A"
+     }
+    },
+    {
+     "subjectCode": "HE",
+     "subjectName": "HOME ECONOMICS",
+     "teacherCode": "TT32",
+     "competency": "Promote healthy eating habits.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      10.5,
+      11.5
+     ],
+     "printed": {
+      "average": 11.0,
+      "total": 22.0,
+      "subjectRank": 11,
+      "classAverage": 12.91,
+      "passedCount": 13,
+      "appreciation": "E.C.A"
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 8,
+    "totalPoints": 100.5,
+    "average": 12.56
+   }
+  },
+  {
+   "groupCode": "S",
+   "groupName": "SCIENCE AND TECHNOLOGY",
+   "lines": [
+    {
+     "subjectCode": "CS",
+     "subjectName": "COMPUTER SCIENCE",
+     "teacherCode": "TT33",
+     "competency": "Discover the computing environment and its rules.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      7.0,
+      13.0
+     ],
+     "printed": {
+      "average": 10.0,
+      "total": 20.0,
+      "subjectRank": 11,
+      "classAverage": 11.71,
+      "passedCount": 11,
+      "appreciation": "E.C.A"
+     }
+    },
+    {
+     "subjectCode": "BIO",
+     "subjectName": "BIOLOGY",
+     "teacherCode": "TT33",
+     "competency": "Knowledge on life and ecology.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      10.0,
+      7.0
+     ],
+     "printed": {
+      "average": 8.5,
+      "total": 17.0,
+      "subjectRank": 11,
+      "classAverage": 10.07,
+      "passedCount": 8,
+      "appreciation": "N.A"
+     }
+    },
+    {
+     "subjectCode": "CHE",
+     "subjectName": "CHEMISTRY",
+     "teacherCode": "TT33",
+     "competency": "Understand the principles of chemistry and matter.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      8.0,
+      13.0
+     ],
+     "printed": {
+      "average": 10.5,
+      "total": 21.0,
+      "subjectRank": 11,
+      "classAverage": 12.64,
+      "passedCount": 11,
+      "appreciation": "E.C.A"
+     }
+    },
+    {
+     "subjectCode": "MATH",
+     "subjectName": "MATHEMATIQUES",
+     "teacherCode": "TT34",
+     "competency": "Calculate the perimeter and area of a circle, operate integers.",
+     "coefficient": 4,
+     "sequenceMarks": [
+      6.0,
+      6.0
+     ],
+     "printed": {
+      "average": 6.0,
+      "total": 24.0,
+      "subjectRank": 13,
+      "classAverage": 9.29,
+      "passedCount": 6,
+      "appreciation": "N.A"
+     }
+    },
+    {
+     "subjectCode": "PHY",
+     "subjectName": "PHYSIQUE",
+     "teacherCode": "TT35",
+     "competency": "Use knowledge and resources acquired in matter, mass, density.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      9.0,
+      15.0
+     ],
+     "printed": {
+      "average": 12.0,
+      "total": 24.0,
+      "subjectRank": 10,
+      "classAverage": 13.14,
+      "passedCount": 11,
+      "appreciation": "E.C.A"
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 12,
+    "totalPoints": 106.0,
+    "average": 8.83
+   }
+  },
+  {
+   "groupCode": "V",
+   "groupName": "VOCATIONAL STUDIES",
+   "lines": [
+    {
+     "subjectCode": "SP",
+     "subjectName": "SPORTS AND PHYSICAL",
+     "teacherCode": "TT36",
+     "competency": "Reconnaitre les types de courses et leurs differents departs.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      13.33,
+      11.33
+     ],
+     "printed": {
+      "average": 12.33,
+      "total": 24.66,
+      "subjectRank": 7,
+      "classAverage": 12.02,
+      "passedCount": 13,
+      "appreciation": "E.C.A"
+     }
+    },
+    {
+     "subjectCode": "LA",
+     "subjectName": "LIFE APTITUDE",
+     "teacherCode": "TT37",
+     "competency": "Use the fundamentals of christian life daily.",
+     "coefficient": 1,
+     "sequenceMarks": [
+      7.0,
+      8.0
+     ],
+     "printed": {
+      "average": 7.5,
+      "total": 7.5,
+      "subjectRank": 10,
+      "classAverage": 8.82,
+      "passedCount": 8,
+      "appreciation": "N.A"
+     }
+    },
+    {
+     "subjectCode": "ML",
+     "subjectName": "MANUAL LABOUR",
+     "teacherCode": "TT38",
+     "competency": "Execute manual work with precision and care.",
+     "coefficient": 1,
+     "sequenceMarks": [
+      18.0,
+      14.0
+     ],
+     "printed": {
+      "average": 16.0,
+      "total": 16.0,
+      "subjectRank": 5,
+      "classAverage": 15.05,
+      "passedCount": 14,
+      "appreciation": "A"
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 4,
+    "totalPoints": 48.16,
+    "average": 12.04
+   }
+  },
+  {
+   "groupCode": "A",
+   "groupName": "ARTS AND NATIONAL CULTURE",
+   "lines": [
+    {
+     "subjectCode": "NL",
+     "subjectName": "NATIONAL LANGUAGE",
+     "teacherCode": "TT39",
+     "competency": "Use culture and national language to better know oneself.",
+     "coefficient": 2,
+     "sequenceMarks": [
+      6.0,
+      12.0
+     ],
+     "printed": {
+      "average": 9.0,
+      "total": 18.0,
+      "subjectRank": 12,
+      "classAverage": 10.86,
+      "passedCount": 11,
+      "appreciation": "N.A"
+     }
+    }
+   ],
+   "printed": {
+    "totalCoefficient": 2,
+    "totalPoints": 18.0,
+    "average": 9.0
+   }
+  }
+ ],
+ "printedResults": {
+  "termAverage": 11.67,
+  "rank": 10,
+  "rankedCount": 14,
+  "effectif": 14,
+  "totalPoints": 420.16,
+  "maxPoints": 720.0,
+  "totalCoefficient": 36.0,
+  "mention": "TRAVAIL PASSABLE",
+  "passedInSubjects": 12,
+  "subjectsCounted": 16,
+  "effortSubjects": [
+   "LIFE APT.",
+   "MATHEMATICS"
+  ],
+  "classProfile": {
+   "threshold": 10,
+   "countAtOrAboveThreshold": 11,
+   "classAverage": 12.49,
+   "successRatePercent": 78.57,
+   "highestAverage": 17.11,
+   "lowestAverage": 7.57
+  },
+  "review": {
+   "absenceHoursTotal": 0,
+   "absenceHoursUnjustified": 0,
+   "absenceDays": 0,
+   "honourRoll": false,
+   "academicWarning": false
+  }
+ },
+ "observations": [
+  "Gabarit de trimestre différent de l'annuel : compétence sous chaque matière, rang / moyenne de classe / nombre >= 10 par matière, appréciation par compétences.",
+  "Le profil de classe utilise ici le seuil 10 (« Average >= 10 », 11/14 = 78.57 %), alors que les bulletins annuels utilisent 12.",
+  "« Mention » imprimée en français (TRAVAIL PASSABLE) sur un bulletin anglais : les libellés de mention doivent être bilingues.",
+  "MAKE EFFORT IN : LIFE APT. (7.5) et MATHEMATICS (6.0) listées ; BIOLOGY (8.5) et NATIONAL LANGUAGE (9.0) non listées : seuil apparent 8 (hypothèse, Q-28)."
+ ]
+}

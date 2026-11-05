@@ -1,0 +1,180 @@
+{
+ "_comment": "Emploi du temps 2026-2027 de FORM 4 ARTS (enseignants remplacés par des codes). Montre : même enseignant dans plusieurs matières (TA-A : ECONOMICS et COMMERCE ; TA-H : LITERATURE, ENGLISH.L, BIOLOGY), blocs de 3 périodes.",
+ "className": "FORM 4 ARTS",
+ "language": "EN",
+ "page": "A4_LANDSCAPE",
+ "entries": [
+  {
+   "day": "MONDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "ECONOMICS",
+   "teacherCode": "TA-A"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "FRENCH",
+   "teacherCode": "TA-B"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 5,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "ECONOMICS",
+   "teacherCode": "TA-A"
+  },
+  {
+   "day": "MONDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "HISTORY",
+   "teacherCode": "TA-C"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "CITIZENSHIP",
+   "teacherCode": "TA-D"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "F/N",
+   "teacherCode": "TA-E",
+   "note": "matière à clarifier (Q-30)"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 5,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "HISTORY",
+   "teacherCode": "TA-C"
+  },
+  {
+   "day": "TUESDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "COMPUTER SC.",
+   "teacherCode": "TA-F"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "MATHS",
+   "teacherCode": "TA-G"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 3,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "LITERATURE",
+   "teacherCode": "TA-H"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 5,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "ENGLISH.L",
+   "teacherCode": "TA-H"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 7,
+   "periodCount": 1,
+   "kind": "ACTIVITY",
+   "subject": "CLUB",
+   "teacherCode": null,
+   "activityType": "CLUB"
+  },
+  {
+   "day": "WEDNESDAY",
+   "startPeriod": 8,
+   "periodCount": 1,
+   "kind": "ACTIVITY",
+   "subject": "GENERAL CLEAN UP",
+   "teacherCode": null,
+   "note": "Delegate",
+   "activityType": "GENERAL_CLEANING"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "MATHS",
+   "teacherCode": "TA-G"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 3,
+   "periodCount": 3,
+   "kind": "LESSON",
+   "subject": "BIOLOGY",
+   "teacherCode": "TA-H"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 6,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "CITIZENSHIP",
+   "teacherCode": "TA-D"
+  },
+  {
+   "day": "THURSDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "COMMERCE",
+   "teacherCode": "TA-A"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 1,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "SPORTS",
+   "teacherCode": "TA-I"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 3,
+   "periodCount": 1,
+   "kind": "LESSON",
+   "subject": "COMMERCE",
+   "teacherCode": "TA-A"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 4,
+   "periodCount": 3,
+   "kind": "LESSON",
+   "subject": "GEOGRAPHY",
+   "teacherCode": "TA-J"
+  },
+  {
+   "day": "FRIDAY",
+   "startPeriod": 7,
+   "periodCount": 2,
+   "kind": "LESSON",
+   "subject": "FRENCH",
+   "teacherCode": "TA-B"
+  }
+ ]
+}

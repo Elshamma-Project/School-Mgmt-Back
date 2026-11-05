@@ -1,0 +1,96 @@
+{
+ "_comment": "Grille horaire observée sur les emplois du temps 2026-2027 (identique du lundi au vendredi pour toutes les classes).",
+ "days": [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY"
+ ],
+ "periods": [
+  {
+   "number": 1,
+   "kind": "LESSON",
+   "start": "07:35",
+   "end": "08:25"
+  },
+  {
+   "number": 2,
+   "kind": "LESSON",
+   "start": "08:25",
+   "end": "09:15"
+  },
+  {
+   "number": 3,
+   "kind": "LESSON",
+   "start": "09:15",
+   "end": "10:05"
+  },
+  {
+   "kind": "BREAK",
+   "start": "10:05",
+   "end": "10:20",
+   "label": {
+    "fr": "PREMIÈRE PAUSE",
+    "en": "FIRST BREAK"
+   }
+  },
+  {
+   "number": 4,
+   "kind": "LESSON",
+   "start": "10:20",
+   "end": "11:10"
+  },
+  {
+   "number": 5,
+   "kind": "LESSON",
+   "start": "11:10",
+   "end": "12:00"
+  },
+  {
+   "number": 6,
+   "kind": "LESSON",
+   "start": "12:00",
+   "end": "12:50"
+  },
+  {
+   "kind": "BREAK",
+   "start": "12:50",
+   "end": "13:20",
+   "label": {
+    "fr": "DEUXIÈME PAUSE",
+    "en": "SECOND BREAK"
+   }
+  },
+  {
+   "number": 7,
+   "kind": "LESSON",
+   "start": "13:20",
+   "end": "14:20"
+  },
+  {
+   "number": 8,
+   "kind": "LESSON",
+   "start": "14:20",
+   "end": "15:10"
+  },
+  {
+   "kind": "CLEANUP",
+   "start": "15:10",
+   "end": "15:30",
+   "label": {
+    "fr": "NETTOYAGE GÉNÉRAL",
+    "en": "GENERAL CLEAN UP"
+   }
+  },
+  {
+   "kind": "CLOSING",
+   "start": "15:30",
+   "end": "15:30",
+   "label": {
+    "fr": "RENTRÉE",
+    "en": "CLOSING"
+   }
+  }
+ ]
+}
