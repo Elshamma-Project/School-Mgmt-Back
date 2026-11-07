@@ -1,0 +1,65 @@
+# SMELS — environnement de production
+# Usage (depuis setup/) :
+#   docker compose -f compose.prod.yaml --env-file .env up -d --build
+# Prérequis : renseigner setup/.env (voir .env.example).
+
+name: smels-prod
+
+services:
+  smels-db:
+    image: mongo:7.0
+    container_name: smels-db
+    restart: unless-stopped
+    command: ["--replSet", "rs0", "--bind_ip_all"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-smels-db}
+    ports:
+      - "${MONGO_HOST_PORT:-27017}:27017"
+    volumes:
+      - smels-db-data:/data/db
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "mongosh --quiet -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"try { rs.status().ok } catch(e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'smels-db:27017'}]}).ok }\" | grep 1",
+        ]
+      interval: 5s
+      timeout: 15s
+      retries: 12
+      start_period: 20s
+    networks:
+      - smels-network
+
+  smels-api:
+    container_name: smels-api
+    build:
+      context: ..
+      dockerfile: setup/Dockerfile
+    image: smels-api:${APP_VERSION:-latest}
+    restart: unless-stopped
+    depends_on:
+      smels-db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: ${SERVER_PORT:-8090}
+      MONGODB_URI: ${MONGODB_URI}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_TOKEN_VALIDITY_MS: ${JWT_ACCESS_TOKEN_VALIDITY_MS:-900000}
+      JWT_REFRESH_TOKEN_VALIDITY_MS: ${JWT_REFRESH_TOKEN_VALIDITY_MS:-604800000}
+      TZ: Africa/Douala
+    ports:
+      - "${SERVER_HOST_PORT:-8090}:${SERVER_PORT:-8090}"
+    networks:
+      - smels-network
+
+networks:
+  smels-network:
+    name: smels-network
+    driver: bridge
+
+volumes:
+  smels-db-data:
+    name: smels-db-data

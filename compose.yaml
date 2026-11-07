@@ -1,0 +1,8 @@
+# SMELS — raccourci local depuis la racine du dépôt
+# Usage : docker compose up -d
+# Définition réelle : setup/compose.yaml (Mongo uniquement, pas d'image API).
+
+name: smels
+
+include:
+  - path: setup/compose.yaml
