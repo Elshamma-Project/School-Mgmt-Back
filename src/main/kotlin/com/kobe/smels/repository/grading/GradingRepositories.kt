@@ -136,6 +136,11 @@ interface SequenceMarkRepository : ReactiveMongoRepository<SequenceMark, String>
         academicYearId: String,
         sessionId: String
     ): Flux<SequenceMark>
+    fun findBySchoolIdAndStudentIdAndAcademicYearId(
+        schoolId: String,
+        studentId: String,
+        academicYearId: String
+    ): Flux<SequenceMark>
 }
 
 interface GradeAuditEntryRepository : ReactiveMongoRepository<GradeAuditEntry, String> {
@@ -144,6 +149,7 @@ interface GradeAuditEntryRepository : ReactiveMongoRepository<GradeAuditEntry, S
         sessionId: String,
         pageable: Pageable
     ): Flux<GradeAuditEntry>
+    fun findBySchoolId(schoolId: String, pageable: Pageable): Flux<GradeAuditEntry>
 }
 
 interface GradingSchemeRepository : ReactiveMongoRepository<GradingScheme, String> {

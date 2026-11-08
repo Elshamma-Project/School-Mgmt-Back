@@ -1,10 +1,15 @@
 package com.kobe.smels.service.student
 
+import com.kobe.smels.dto.academic.AcademicYearSummaryDto
+import com.kobe.smels.dto.academic.ClassSubjectSummaryDto
 import com.kobe.smels.dto.student.CreateStudentRequest
+import com.kobe.smels.dto.student.EnrollmentSummaryDto
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
+import com.kobe.smels.model.academic.AcademicYearStatus
 import com.kobe.smels.model.shared.OutboxEvent
 import com.kobe.smels.model.shared.Sex
+import com.kobe.smels.model.student.EnrollmentStatus
 import com.kobe.smels.model.student.GuardianLink
 import com.kobe.smels.model.student.GuardianRelationship
 import com.kobe.smels.model.student.Student
@@ -12,13 +17,18 @@ import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
+import com.kobe.smels.service.academic.api.ClassSubjectApi
+import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
+import java.math.BigDecimal
 import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -27,7 +37,17 @@ class StudentServiceTest {
     private val studentRepository: StudentRepository = mock()
     private val guardianRepository: GuardianRepository = mock()
     private val outboxWriter: OutboxWriter = mock()
-    private val service = StudentService(studentRepository, guardianRepository, outboxWriter)
+    private val classSubjectApi: ClassSubjectApi = mock()
+    private val enrollmentApi: EnrollmentApi = mock()
+    private val academicYearApi: AcademicYearApi = mock()
+    private val service = StudentService(
+        studentRepository,
+        guardianRepository,
+        outboxWriter,
+        classSubjectApi,
+        enrollmentApi,
+        academicYearApi
+    )
 
     @Test
     fun `BR-40 rejects duplicate matricule`() {
@@ -151,8 +171,63 @@ class StudentServiceTest {
     }
 
     @Test
-    fun `teacher cannot list students until academic module exists`() {
-        StepVerifier.create(Mono.defer { service.list(teacherUser(), 0, 20, null, null) })
+    fun `teacher cannot read student outside own ClassSubject`() {
+        val student = Student(
+            id = "stu-out",
+            schoolId = "school-1",
+            matricule = "TEST-OUT",
+            lastName = "OUTSIDE",
+            firstName = "Class",
+            sex = Sex.MALE
+        )
+        whenever(studentRepository.findByIdAndSchoolId("stu-out", "school-1")).thenReturn(Mono.just(student))
+        whenever(academicYearApi.findCurrent("school-1")).thenReturn(
+            Mono.just(
+                AcademicYearSummaryDto(
+                    id = "year-1",
+                    schoolId = "school-1",
+                    label = "2025-2026",
+                    current = true,
+                    status = AcademicYearStatus.ACTIVE
+                )
+            )
+        )
+        whenever(classSubjectApi.findByTeacher("school-1", "staff-t", "year-1"))
+            .thenReturn(
+                Flux.just(
+                    ClassSubjectSummaryDto(
+                        id = "cs-1",
+                        schoolId = "school-1",
+                        academicYearId = "year-1",
+                        classId = "class-A",
+                        subjectId = "subj-1",
+                        groupId = "grp-1",
+                        coefficient = BigDecimal("2"),
+                        teacherId = "staff-t",
+                        weeklyHours = 3,
+                        maxScore = BigDecimal("20"),
+                        countsInAverage = true,
+                        active = true
+                    )
+                )
+            )
+        whenever(enrollmentApi.findEnrolledByClass("school-1", "class-A"))
+            .thenReturn(
+                Flux.just(
+                    EnrollmentSummaryDto(
+                        id = "enr-1",
+                        schoolId = "school-1",
+                        studentId = "stu-other",
+                        academicYearId = "year-1",
+                        classId = "class-A",
+                        levelId = "lvl-1",
+                        status = EnrollmentStatus.ENROLLED,
+                        repeater = false
+                    )
+                )
+            )
+
+        StepVerifier.create(service.getById(teacherUser(), "stu-out"))
             .expectError(ForbiddenException::class.java)
             .verify()
     }

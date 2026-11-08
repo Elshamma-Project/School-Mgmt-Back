@@ -1,7 +1,10 @@
 package com.kobe.smels.dto.reporting
 
+import com.kobe.smels.model.grading.DistinctionLevel
+import com.kobe.smels.model.reporting.CouncilDecision
 import com.kobe.smels.model.reporting.ReportCardStatus
 import com.kobe.smels.model.reporting.ReportPeriodType
+import com.kobe.smels.model.reporting.SanctionLevel
 import com.kobe.smels.model.shared.Language
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -71,4 +74,43 @@ data class VerificationResponse(
     val className: String? = null,
     val academicYearLabel: String? = null,
     val issuedAt: Instant? = null
+)
+
+data class UpsertStudentPeriodReviewRequest(
+    @field:NotBlank val enrollmentId: String,
+    @field:NotBlank val studentId: String,
+    @field:NotBlank val classId: String,
+    @field:NotBlank val academicYearId: String,
+    @field:NotNull val periodType: ReportPeriodType,
+    val periodNumber: Int? = null,
+    val absenceHoursTotal: Int = 0,
+    val absenceHoursUnjustified: Int = 0,
+    val lateCount: Int = 0,
+    val absenceDays: Int? = null,
+    val distinction: DistinctionLevel = DistinctionLevel.NONE,
+    val workSanction: SanctionLevel = SanctionLevel.NONE,
+    val conductSanction: SanctionLevel = SanctionLevel.NONE,
+    val councilDecision: CouncilDecision? = null,
+    val councilComment: String? = null,
+    val schoolId: String? = null
+)
+
+data class StudentPeriodReviewResponse(
+    val id: String,
+    val schoolId: String,
+    val academicYearId: String,
+    val enrollmentId: String,
+    val studentId: String,
+    val classId: String,
+    val periodType: ReportPeriodType,
+    val periodNumber: Int?,
+    val absenceHoursTotal: Int,
+    val absenceHoursUnjustified: Int,
+    val lateCount: Int,
+    val absenceDays: Int?,
+    val distinction: DistinctionLevel,
+    val workSanction: SanctionLevel,
+    val conductSanction: SanctionLevel,
+    val councilDecision: CouncilDecision?,
+    val councilComment: String?
 )

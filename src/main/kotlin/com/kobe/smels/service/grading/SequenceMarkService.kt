@@ -1,6 +1,7 @@
 package com.kobe.smels.service.grading
 
 import com.kobe.smels.dto.grading.SequenceMarkSummaryDto
+import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.grading.AuditAction
 import com.kobe.smels.model.grading.AuditTarget
@@ -11,12 +12,16 @@ import com.kobe.smels.model.grading.GradeStatus
 import com.kobe.smels.model.grading.MarkSource
 import com.kobe.smels.model.grading.SequenceMark
 import com.kobe.smels.model.grading.SessionStatus
+import com.kobe.smels.model.user.ProfileType
+import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.grading.AssessmentRepository
 import com.kobe.smels.repository.grading.GradeAuditEntryRepository
 import com.kobe.smels.repository.grading.GradeRepository
 import com.kobe.smels.repository.grading.GradeSheetRepository
 import com.kobe.smels.repository.grading.SequenceMarkRepository
+import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.grading.api.SequenceMarkApi
+import com.kobe.smels.service.student.api.StudentApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -29,7 +34,9 @@ class SequenceMarkService(
     private val gradeRepository: GradeRepository,
     private val assessmentRepository: AssessmentRepository,
     private val gradeSheetRepository: GradeSheetRepository,
-    private val gradeAuditEntryRepository: GradeAuditEntryRepository
+    private val gradeAuditEntryRepository: GradeAuditEntryRepository,
+    private val studentApi: StudentApi,
+    private val classSubjectApi: ClassSubjectApi
 ) : SequenceMarkApi {
 
     /**
@@ -211,4 +218,81 @@ class SequenceMarkService(
         sequenceMarkRepository.findBySchoolIdAndSheetIdAndStudentId(schoolId, sheetId, studentId)
             .switchIfEmpty(Mono.error(NotFoundException("SEQUENCE_MARK_NOT_FOUND", "Sequence mark not found")))
             .map { GradingMapper.toSequenceMarkSummary(it) }
+
+    /** Consultation notes de séquence (docs/05 §2) — lecture seule. */
+    fun listForStudentYear(
+        currentUser: CurrentUser,
+        studentId: String,
+        academicYearId: String,
+        schoolIdOverride: String? = null
+    ): Flux<SequenceMarkSummaryDto> {
+        val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        return assertCanViewSequenceMarks(currentUser, schoolId, studentId)
+            .thenMany(
+                sequenceMarkRepository.findBySchoolIdAndStudentIdAndAcademicYearId(
+                    schoolId, studentId, academicYearId
+                )
+            )
+            .concatMap { mark -> filterMarkForTeacher(currentUser, schoolId, academicYearId, mark) }
+            .map { GradingMapper.toSequenceMarkSummary(it) }
+    }
+
+    private fun assertCanViewSequenceMarks(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String
+    ): Mono<Void> {
+        if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            return Mono.empty()
+        }
+        if (currentUser.hasRole(Role.STUDENT) &&
+            currentUser.profileType == ProfileType.STUDENT &&
+            currentUser.profileId == studentId
+        ) {
+            return Mono.empty()
+        }
+        if (currentUser.hasRole(Role.PARENT) &&
+            currentUser.profileType == ProfileType.GUARDIAN &&
+            currentUser.profileId != null
+        ) {
+            return studentApi.findGuardianLink(schoolId, studentId, currentUser.profileId!!)
+                .flatMap { link ->
+                    if (!link.canViewGrades) {
+                        Mono.error(ForbiddenException("FORBIDDEN", "Guardian cannot view grades for this student"))
+                    } else {
+                        Mono.empty()
+                    }
+                }
+                .onErrorMap(NotFoundException::class.java) {
+                    ForbiddenException("FORBIDDEN", "Guardian is not linked to this student")
+                }
+        }
+        if (currentUser.hasRole(Role.TEACHER) &&
+            currentUser.profileType == ProfileType.STAFF &&
+            currentUser.profileId != null
+        ) {
+            return Mono.empty() // filtrage par ClassSubject dans filterMarkForTeacher
+        }
+        return Mono.error(ForbiddenException("FORBIDDEN", "Cannot view sequence marks"))
+    }
+
+    private fun filterMarkForTeacher(
+        currentUser: CurrentUser,
+        schoolId: String,
+        academicYearId: String,
+        mark: SequenceMark
+    ): Mono<SequenceMark> {
+        if (!currentUser.hasRole(Role.TEACHER) ||
+            currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)
+        ) {
+            return Mono.just(mark)
+        }
+        val teacherId = currentUser.profileId ?: return Mono.empty()
+        return classSubjectApi.findByTeacher(schoolId, teacherId, academicYearId)
+            .map { it.id }
+            .collectList()
+            .flatMap { allowed ->
+                if (mark.classSubjectId in allowed) Mono.just(mark) else Mono.empty()
+            }
+    }
 }

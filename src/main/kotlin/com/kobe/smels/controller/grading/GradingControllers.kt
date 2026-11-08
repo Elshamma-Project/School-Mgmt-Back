@@ -16,9 +16,11 @@ import com.kobe.smels.service.grading.AssessmentService
 import com.kobe.smels.service.grading.EvaluationSessionService
 import com.kobe.smels.service.grading.GradeReportSheetPdfService
 import com.kobe.smels.service.grading.GradeReportSheetService
+import com.kobe.smels.service.grading.GradeAuditService
 import com.kobe.smels.service.grading.GradeService
 import com.kobe.smels.service.grading.GradeSheetService
 import com.kobe.smels.service.grading.GradingSchemeService
+import com.kobe.smels.service.grading.SequenceMarkService
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
 import org.springframework.http.HttpHeaders
@@ -160,6 +162,32 @@ class GradeController(private val gradeService: GradeService) {
         @RequestParam(required = false) schoolId: String?
     ) = SecuritySupport.currentUser().flatMap {
         gradeService.delete(it, assessmentId, studentId, reason, schoolId)
+    }
+}
+
+@RestController
+@RequestMapping("/api/v1/sequence-marks")
+class SequenceMarkController(private val sequenceMarkService: SequenceMarkService) {
+    @GetMapping
+    fun listForStudent(
+        @RequestParam studentId: String,
+        @RequestParam academicYearId: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMapMany {
+        sequenceMarkService.listForStudentYear(it, studentId, academicYearId, schoolId)
+    }
+}
+
+@RestController
+@RequestMapping("/api/v1/grade-audits")
+class GradeAuditController(private val gradeAuditService: GradeAuditService) {
+    @GetMapping
+    fun list(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "50") size: Int,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMapMany {
+        gradeAuditService.list(it, page, size, schoolId)
     }
 }
 

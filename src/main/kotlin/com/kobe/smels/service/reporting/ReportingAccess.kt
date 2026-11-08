@@ -11,6 +11,24 @@ internal object ReportingAccess {
         }
     }
 
+    fun assertDirector(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            throw ForbiddenException("FORBIDDEN", "Only DIRECTOR can modify report templates")
+        }
+    }
+
+    fun assertCanReadTemplates(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN,
+                Role.TEACHER
+            )
+        ) {
+            throw ForbiddenException("FORBIDDEN", "Insufficient role to read report templates")
+        }
+    }
+
     fun resolveSchoolId(currentUser: CurrentUser, override: String?): String =
         currentUser.requireSchoolId(override)
 }

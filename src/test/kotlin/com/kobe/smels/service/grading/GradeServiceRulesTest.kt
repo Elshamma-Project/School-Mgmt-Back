@@ -51,7 +51,9 @@ class GradeServiceRulesTest {
         gradeRepository,
         assessmentRepository,
         gradeSheetRepository,
-        gradeAuditEntryRepository
+        gradeAuditEntryRepository,
+        mock(),
+        mock()
     )
 
     private val gradeService = GradeService(

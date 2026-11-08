@@ -29,6 +29,10 @@ class StudentController(
     fun create(@Valid @RequestBody request: CreateStudentRequest): Mono<StudentResponse> =
         SecuritySupport.currentUser().flatMap { studentService.create(it, request) }
 
+    @GetMapping("/my-children")
+    fun myChildren(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { studentService.listMyChildren(it, schoolId) }
+
     @GetMapping("/{id}")
     fun get(
         @PathVariable id: String,

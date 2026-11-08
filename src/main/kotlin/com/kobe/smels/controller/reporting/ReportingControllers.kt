@@ -1,8 +1,10 @@
 package com.kobe.smels.controller.reporting
 
 import com.kobe.smels.dto.reporting.GenerateReportCardsRequest
+import com.kobe.smels.dto.reporting.UpsertStudentPeriodReviewRequest
 import com.kobe.smels.service.reporting.ReportCardService
 import com.kobe.smels.service.reporting.ReportTemplateService
+import com.kobe.smels.service.reporting.StudentPeriodReviewService
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
 import org.springframework.http.HttpHeaders
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -38,6 +41,10 @@ class ReportCardController(
     @ResponseStatus(HttpStatus.CREATED)
     fun generate(@Valid @RequestBody request: GenerateReportCardsRequest) =
         SecuritySupport.currentUser().flatMapMany { reportCardService.generate(it, request) }
+
+    @GetMapping("/mine")
+    fun listMine(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { reportCardService.listMine(it, schoolId) }
 
     @GetMapping("/{id}")
     fun get(@PathVariable id: String, @RequestParam(required = false) schoolId: String?) =
@@ -73,4 +80,18 @@ class ReportCardVerificationController(
 ) {
     @GetMapping("/verify/{code}")
     fun verify(@PathVariable code: String) = reportCardService.verify(code)
+}
+
+@RestController
+@RequestMapping("/api/v1/period-reviews")
+class StudentPeriodReviewController(
+    private val studentPeriodReviewService: StudentPeriodReviewService
+) {
+    @PutMapping
+    fun upsert(@Valid @RequestBody request: UpsertStudentPeriodReviewRequest) =
+        SecuritySupport.currentUser().flatMap { studentPeriodReviewService.upsert(it, request) }
+
+    @GetMapping("/{id}")
+    fun get(@PathVariable id: String, @RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMap { studentPeriodReviewService.getById(it, id, schoolId) }
 }

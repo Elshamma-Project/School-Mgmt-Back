@@ -78,11 +78,17 @@ class ReportTemplateService(
         ).then()
 
     fun list(currentUser: CurrentUser, schoolIdOverride: String? = null): Flux<ReportTemplateResponse> {
-        ReportingAccess.assertAdmin(currentUser)
+        ReportingAccess.assertCanReadTemplates(currentUser)
         val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
         return ensureDefaults(schoolId)
             .thenMany(reportTemplateRepository.findBySchoolId(schoolId))
             .map { toResponse(it) }
+    }
+
+    fun seedDefaults(currentUser: CurrentUser, schoolIdOverride: String? = null): Mono<Void> {
+        ReportingAccess.assertDirector(currentUser)
+        val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        return ensureDefaults(schoolId)
     }
 
     fun getByCode(schoolId: String, code: String): Mono<ReportTemplate> =

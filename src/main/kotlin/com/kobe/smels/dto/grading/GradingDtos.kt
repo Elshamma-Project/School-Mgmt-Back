@@ -1,11 +1,14 @@
 package com.kobe.smels.dto.grading
 
 import com.kobe.smels.model.grading.AssessmentType
+import com.kobe.smels.model.grading.AuditAction
+import com.kobe.smels.model.grading.AuditTarget
 import com.kobe.smels.model.grading.GradeStatus
 import com.kobe.smels.model.grading.MarkSource
 import com.kobe.smels.model.grading.SessionStatus
 import com.kobe.smels.model.grading.SheetStatus
 import com.kobe.smels.model.grading.TotalizationFormula
+import com.kobe.smels.model.user.Role
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Max
@@ -302,4 +305,21 @@ data class GradeReportSheetResponse(
     val visaSupervisor: ReportSheetVisaDto?,
     val visaPrincipal: ReportSheetVisaDto?,
     val rejectionReason: String?
+)
+
+data class GradeAuditEntryResponse(
+    val id: String,
+    val schoolId: String,
+    val target: AuditTarget,
+    val action: AuditAction,
+    val classSubjectId: String,
+    val sessionId: String?,
+    val studentId: String?,
+    val changedBy: String,
+    val changedByRole: Role?,
+    val changedAt: Instant,
+    val reason: String?,
+    val afterSessionClosed: Boolean,
+    val previousValue: BigDecimal?,
+    val newValue: BigDecimal?
 )

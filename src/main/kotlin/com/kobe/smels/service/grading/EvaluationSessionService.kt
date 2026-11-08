@@ -68,6 +68,7 @@ class EvaluationSessionService(
         academicYearId: String,
         schoolIdOverride: String? = null
     ): Flux<EvaluationSessionResponse> {
+        GradingAccess.assertStaffCanReadSessions(currentUser)
         val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
         return evaluationSessionRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
             .sort(compareBy { it.number })
@@ -75,6 +76,7 @@ class EvaluationSessionService(
     }
 
     fun getById(currentUser: CurrentUser, id: String, schoolIdOverride: String? = null): Mono<EvaluationSessionResponse> {
+        GradingAccess.assertStaffCanReadSessions(currentUser)
         val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
         return evaluationSessionRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Evaluation session not found")))

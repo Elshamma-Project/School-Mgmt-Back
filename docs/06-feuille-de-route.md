@@ -11,7 +11,7 @@
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | ✅ `GradeCalculationEngine` + `GradeCalculationService` + tests fixtures docs/04 §6 |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | ✅ templates seed, `ReportCardService`, PDF Z1–Z10 1 page FR/EN (annuel + TERM_COMPETENCY) |
 | 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | à faire |
-| 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | 🟡 bases auth/roles/sessions faites ; appartenance métier module par module |
+| 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | 🟡 partiel — auth/JWT/sessions/lockout OK ; appartenance ReportCard/Student/SequenceMark/barèmes/period-review/audit colmatée (docs/05) ; hors scope : timetable (étape 6), portail élève prod, rôle PRINCIPAL (Q-38) |
 | 8 | Modules suivants : cartes, inscriptions, notifications, fichiers, import des élèves | à faire |
 
 **Ordre conseillé** : 1 → 2 → 3 → 4 → 5 → 6 ; la sécurité (7) peut démarrer dès l'étape 2. Le calcul (4) tôt : il permet la démo de rejeu de décembre.

@@ -79,13 +79,32 @@ class AssessmentService(
                     .switchIfEmpty(Mono.error(NotFoundException("SHEET_NOT_FOUND", "Grade sheet not found")))
                     .flatMap { sheet ->
                         GradingAccess.assertCanManageSheet(currentUser, sheet.teacherId)
-                        assessment.title = request.title.trim()
-                        assessment.type = request.type
-                        assessment.maxScore = request.maxScore
-                        assessment.weight = request.weight
-                        assessment.date = request.date
-                        assessment.published = request.published
-                        assessmentRepository.save(assessment)
+                        evaluationSessionRepository.findByIdAndSchoolId(sheet.sessionId, schoolId)
+                            .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Session not found")))
+                            .flatMap { session ->
+                                if (session.status == SessionStatus.CLOSED &&
+                                    !currentUser.hasAnyRole(
+                                        com.kobe.smels.model.user.Role.ADMINISTRATION,
+                                        com.kobe.smels.model.user.Role.DIRECTOR,
+                                        com.kobe.smels.model.user.Role.SUPER_ADMIN
+                                    )
+                                ) {
+                                    Mono.error(
+                                        BusinessRuleException(
+                                            "SESSION_CLOSED",
+                                            "Cannot update columns when session is closed"
+                                        )
+                                    )
+                                } else {
+                                    assessment.title = request.title.trim()
+                                    assessment.type = request.type
+                                    assessment.maxScore = request.maxScore
+                                    assessment.weight = request.weight
+                                    assessment.date = request.date
+                                    assessment.published = request.published
+                                    assessmentRepository.save(assessment)
+                                }
+                            }
                     }
             }
             .map { GradingMapper.toAssessmentResponse(it) }

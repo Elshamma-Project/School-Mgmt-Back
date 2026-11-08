@@ -14,6 +14,9 @@ import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
+import com.kobe.smels.service.academic.api.ClassSubjectApi
+import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.service.student.api.StudentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
@@ -29,7 +32,10 @@ import kotlin.math.ceil
 class StudentService(
     private val studentRepository: StudentRepository,
     private val guardianRepository: GuardianRepository,
-    private val outboxWriter: OutboxWriter
+    private val outboxWriter: OutboxWriter,
+    private val classSubjectApi: ClassSubjectApi,
+    private val enrollmentApi: EnrollmentApi,
+    private val academicYearApi: AcademicYearApi
 ) : StudentApi {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -142,36 +148,60 @@ class StudentService(
         q: String?,
         schoolIdOverride: String? = null
     ): Mono<PageResponse<StudentResponse>> {
-        assertCanList(currentUser)
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
-        logSuperAdminTenantAction(currentUser, schoolId, "student.list")
-        log.info(
-            "student.list by={} schoolId={} page={} size={} active={} hasQuery={}",
-            currentUser.username,
-            schoolId,
-            page,
-            size,
-            active,
-            !q.isNullOrBlank()
-        )
+        if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            return listAll(currentUser, schoolId, page, size, active, q)
+        }
+        if (currentUser.hasRole(Role.TEACHER) &&
+            currentUser.profileType == ProfileType.STAFF &&
+            currentUser.profileId != null
+        ) {
+            return listForTeacher(currentUser, schoolId, currentUser.profileId!!, page, size, active, q)
+        }
+        throw ForbiddenException("FORBIDDEN", "Insufficient role to list students")
+    }
 
+    /** Enfants liés au parent connecté (docs/05 §3). */
+    fun listMyChildren(
+        currentUser: CurrentUser,
+        schoolIdOverride: String? = null
+    ): Flux<StudentResponse> {
+        if (!currentUser.hasRole(Role.PARENT) ||
+            currentUser.profileType != ProfileType.GUARDIAN ||
+            currentUser.profileId == null
+        ) {
+            return Flux.error(ForbiddenException("FORBIDDEN", "Only parents can list their children"))
+        }
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        return studentRepository.findBySchoolIdAndGuardiansGuardianId(schoolId, currentUser.profileId!!)
+            .map { StudentMapper.toStudentResponse(it) }
+    }
+
+    private fun listAll(
+        currentUser: CurrentUser,
+        schoolId: String,
+        page: Int,
+        size: Int,
+        active: Boolean?,
+        q: String?
+    ): Mono<PageResponse<StudentResponse>> {
+        logSuperAdminTenantAction(currentUser, schoolId, "student.list")
         val pageable = PageRequest.of(
             page.coerceAtLeast(0),
             size.coerceIn(1, 100),
             Sort.by("lastName").ascending().and(Sort.by("firstName").ascending())
         )
         val query = q?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
-
-        val source: Flux<Student>
-        val totalMono: Mono<Long>
-        if (active != null) {
-            source = studentRepository.findBySchoolIdAndActive(schoolId, active, pageable)
-            totalMono = studentRepository.countBySchoolIdAndActive(schoolId, active)
+        val source = if (active != null) {
+            studentRepository.findBySchoolIdAndActive(schoolId, active, pageable)
         } else {
-            source = studentRepository.findBySchoolId(schoolId, pageable)
-            totalMono = studentRepository.countBySchoolId(schoolId)
+            studentRepository.findBySchoolId(schoolId, pageable)
         }
-
+        val totalMono = if (active != null) {
+            studentRepository.countBySchoolIdAndActive(schoolId, active)
+        } else {
+            studentRepository.countBySchoolId(schoolId)
+        }
         return source
             .filter { student ->
                 query == null ||
@@ -192,13 +222,47 @@ class StudentService(
                     totalPages = if (total == 0L) 0 else ceil(total.toDouble() / pageable.pageSize).toInt()
                 )
             }
-            .doOnNext { result ->
-                log.info(
-                    "student.list ok by={} schoolId={} returned={} totalElements={}",
-                    currentUser.username,
-                    schoolId,
-                    result.content.size,
-                    result.totalElements
+    }
+
+    private fun listForTeacher(
+        currentUser: CurrentUser,
+        schoolId: String,
+        teacherId: String,
+        page: Int,
+        size: Int,
+        active: Boolean?,
+        q: String?
+    ): Mono<PageResponse<StudentResponse>> {
+        val query = q?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
+        val pageSize = size.coerceIn(1, 100)
+        val pageIndex = page.coerceAtLeast(0)
+        return teacherClassIds(schoolId, teacherId)
+            .flatMapMany { classIds ->
+                Flux.fromIterable(classIds).concatMap { classId ->
+                    enrollmentApi.findEnrolledByClass(schoolId, classId)
+                }
+            }
+            .map { it.studentId }
+            .distinct()
+            .concatMap { studentId -> studentRepository.findByIdAndSchoolId(studentId, schoolId) }
+            .filter { student ->
+                (active == null || student.active == active) &&
+                    (query == null ||
+                        student.fullName().lowercase().contains(query) ||
+                        student.matricule.lowercase().contains(query))
+            }
+            .collectList()
+            .map { all ->
+                val sorted = all.sortedWith(compareBy({ it.lastName }, { it.firstName }))
+                val from = (pageIndex * pageSize).coerceAtMost(sorted.size)
+                val to = (from + pageSize).coerceAtMost(sorted.size)
+                val slice = sorted.subList(from, to).map { StudentMapper.toStudentResponse(it) }
+                PageResponse(
+                    content = slice,
+                    page = pageIndex,
+                    size = pageSize,
+                    totalElements = sorted.size.toLong(),
+                    totalPages = if (sorted.isEmpty()) 0 else ceil(sorted.size.toDouble() / pageSize).toInt()
                 )
             }
     }
@@ -347,14 +411,6 @@ class StudentService(
         }
     }
 
-    private fun assertCanList(currentUser: CurrentUser) {
-        if (!currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
-            // TEACHER : élèves de ses classes — nécessite AcademicApi (module academic pas encore livré).
-            // PARENT / STUDENT : pas de liste globale.
-            throw ForbiddenException("FORBIDDEN", "Insufficient role to list students")
-        }
-    }
-
     private fun canRead(currentUser: CurrentUser, student: Student): Mono<Boolean> {
         if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
             return Mono.just(true)
@@ -369,14 +425,33 @@ class StudentService(
             currentUser.profileType == ProfileType.GUARDIAN &&
             currentUser.profileId != null
         ) {
-            return Mono.just(student.guardians.any { it.guardianId == currentUser.profileId })
+            val link = student.guardians.firstOrNull { it.guardianId == currentUser.profileId }
+            // Profil enfant visible si lié ; canViewGrades s'applique aux notes (docs/05).
+            return Mono.just(link != null)
         }
-        if (currentUser.hasRole(Role.TEACHER)) {
-            // TODO: filtrer via AcademicApi / ClassSubjectApi quand le module academic existera (docs/05).
-            return Mono.just(false)
+        if (currentUser.hasRole(Role.TEACHER) &&
+            currentUser.profileType == ProfileType.STAFF &&
+            currentUser.profileId != null
+        ) {
+            return teacherTeachesStudent(student.schoolId, currentUser.profileId!!, student.id)
         }
         return Mono.just(false)
     }
+
+    private fun teacherTeachesStudent(schoolId: String, teacherId: String, studentId: String): Mono<Boolean> =
+        teacherClassIds(schoolId, teacherId)
+            .flatMapMany { Flux.fromIterable(it) }
+            .concatMap { classId -> enrollmentApi.findEnrolledByClass(schoolId, classId) }
+            .any { it.studentId == studentId }
+            .defaultIfEmpty(false)
+
+    private fun teacherClassIds(schoolId: String, teacherId: String): Mono<Set<String>> =
+        academicYearApi.findCurrent(schoolId)
+            .flatMapMany { year -> classSubjectApi.findByTeacher(schoolId, teacherId, year.id) }
+            .map { it.classId }
+            .collectList()
+            .map { it.toSet() }
+            .onErrorReturn(emptySet())
 
     private fun logSuperAdminTenantAction(currentUser: CurrentUser, schoolId: String, action: String) {
         if (currentUser.isSuperAdmin()) {

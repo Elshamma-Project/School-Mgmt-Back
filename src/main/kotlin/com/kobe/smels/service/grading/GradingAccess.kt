@@ -17,7 +17,20 @@ internal object GradingAccess {
 
     fun assertDirector(currentUser: CurrentUser) {
         if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
-            throw ForbiddenException("FORBIDDEN", "Only DIRECTOR can reopen a closed session")
+            throw ForbiddenException("FORBIDDEN", "Only DIRECTOR or SUPER_ADMIN can perform this action")
+        }
+    }
+
+    fun assertStaffCanReadSessions(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(
+                Role.TEACHER,
+                Role.SURVEILLANT_GENERAL,
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN
+            )
+        ) {
+            throw ForbiddenException("FORBIDDEN", "Insufficient role to read evaluation sessions")
         }
     }
 
