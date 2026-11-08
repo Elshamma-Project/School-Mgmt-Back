@@ -178,11 +178,13 @@ class AuthService(
     }
 
     private fun findAccountForLogin(username: String, schoolId: String?): Mono<UserAccount> {
+        // Avec schoolId (portail établissement) : compte de l'école, sinon compte plateforme
+        // (SUPER_ADMIN) — le front n'a pas à demander à l'utilisateur de choisir.
         val lookup = if (schoolId.isNullOrBlank()) {
             userAccountRepository.findBySchoolIdIsNullAndUsername(username)
-                .switchIfEmpty(userAccountRepository.findByUsername(username))
         } else {
             userAccountRepository.findBySchoolIdAndUsername(schoolId, username)
+                .switchIfEmpty(userAccountRepository.findBySchoolIdIsNullAndUsername(username))
         }
         return lookup.switchIfEmpty(
             Mono.error(UnauthorizedException("BAD_CREDENTIALS", "Invalid username or password"))
