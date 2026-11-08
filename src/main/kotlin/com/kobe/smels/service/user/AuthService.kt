@@ -36,9 +36,9 @@ class AuthService(
         userAgent: String?,
         ipAddress: String?
     ): Mono<AuthTokensResponse> {
-        val username = request.username.trim()
-        log.info("auth.login start username={} schoolId={} ip={}", username, request.schoolId, ipAddress)
-        return findAccountForLogin(username, request.schoolId)
+        val email = request.email.trim().lowercase()
+        log.info("auth.login start email={} schoolId={} ip={}", email, request.schoolId, ipAddress)
+        return findAccountForLogin(email, request.schoolId)
             .flatMap { account -> authenticate(account, request.password) }
             .flatMap { account ->
                 userSessionService.openSession(
@@ -51,15 +51,15 @@ class AuthService(
             .map { (account, issued) -> toTokensResponse(account, issued) }
             .doOnNext { tokens ->
                 log.info(
-                    "auth.login ok username={} accountId={} sessionId={} mustChangePassword={}",
-                    username,
+                    "auth.login ok email={} accountId={} sessionId={} mustChangePassword={}",
+                    email,
                     tokens.user.id,
                     tokens.sessionId,
                     tokens.mustChangePassword
                 )
             }
             .doOnError { error ->
-                log.warn("auth.login failed username={} schoolId={} reason={}", username, request.schoolId, error.message)
+                log.warn("auth.login failed email={} schoolId={} reason={}", email, request.schoolId, error.message)
             }
     }
 
@@ -177,17 +177,16 @@ class AuthService(
             }
     }
 
-    private fun findAccountForLogin(username: String, schoolId: String?): Mono<UserAccount> {
-        // Avec schoolId (portail établissement) : compte de l'école, sinon compte plateforme
-        // (SUPER_ADMIN) — le front n'a pas à demander à l'utilisateur de choisir.
+    private fun findAccountForLogin(email: String, schoolId: String?): Mono<UserAccount> {
+        // username du compte = e-mail normalisé. Avec schoolId : compte école, sinon plateforme.
         val lookup = if (schoolId.isNullOrBlank()) {
-            userAccountRepository.findBySchoolIdIsNullAndUsername(username)
+            userAccountRepository.findBySchoolIdIsNullAndUsername(email)
         } else {
-            userAccountRepository.findBySchoolIdAndUsername(schoolId, username)
-                .switchIfEmpty(userAccountRepository.findBySchoolIdIsNullAndUsername(username))
+            userAccountRepository.findBySchoolIdAndUsername(schoolId, email)
+                .switchIfEmpty(userAccountRepository.findBySchoolIdIsNullAndUsername(email))
         }
         return lookup.switchIfEmpty(
-            Mono.error(UnauthorizedException("BAD_CREDENTIALS", "Invalid username or password"))
+            Mono.error(UnauthorizedException("BAD_CREDENTIALS", "Invalid email or password"))
         )
     }
 
@@ -261,7 +260,7 @@ class AuthService(
         return userAccountRepository.save(account)
             .then(
                 Mono.error(
-                    UnauthorizedException("BAD_CREDENTIALS", "Invalid username or password")
+                    UnauthorizedException("BAD_CREDENTIALS", "Invalid email or password")
                 )
             )
     }

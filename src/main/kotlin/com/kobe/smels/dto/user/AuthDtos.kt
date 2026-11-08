@@ -3,13 +3,16 @@ package com.kobe.smels.dto.user
 import com.kobe.smels.model.user.AccountStatus
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
+import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import java.time.Instant
 
 data class LoginRequest(
+    /** Identifiant de connexion = adresse e-mail (stockée dans UserAccount.username). */
     @field:NotBlank
-    val username: String,
+    @field:Email
+    val email: String,
     @field:NotBlank
     val password: String,
     /** Requis pour les comptes rattachés à un établissement ; omis pour SUPER_ADMIN. */

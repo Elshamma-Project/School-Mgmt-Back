@@ -14,7 +14,8 @@ import java.time.Instant
  * et un compte pointe vers sa fiche via [profileType] + [profileId].
  *
  * [schoolId] est null pour un SUPER_ADMIN (compte plateforme).
- * [username] : matricule pour un élève, identifiant choisi (téléphone, e-mail) pour les autres.
+ * [username] : **e-mail de connexion** (normalisé en minuscules). Exception éventuelle élève :
+ * matricule si le portail élève l'exige encore (docs/05) — préférer l'e-mail dès qu'il est disponible.
  *
  * Voir docs/05-roles-permissions.md.
  */

@@ -26,7 +26,7 @@
 | Module | Collection | Classe | Rôle |
 |---|---|---|---|
 | shared | `shared_outbox_events` | `OutboxEvent` | Événements à publier vers les autres modules |
-| user | `user_accounts` | `UserAccount` | Comptes de connexion (auth, rôles, verrouillage) |
+| user | `user_accounts` | `UserAccount` | Comptes de connexion (auth, rôles, verrouillage) ; `username` = **e-mail** de login |
 | user | `user_sessions` | `UserSession` | Sessions de connexion (max 2 actives / compte ; refresh hashé) |
 | academic | `academic_schools` | `School` | Établissement, en-têtes officiels par cycle, textes du bulletin |
 | academic | `academic_years` | `AcademicYear` (+ `Term`) | Années et trimestres |

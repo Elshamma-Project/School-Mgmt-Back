@@ -44,7 +44,7 @@ class AuthLockoutTest {
         val account = UserAccount(
             id = "acc-1",
             schoolId = "school-1",
-            username = "teacher",
+            username = "teacher@school.test",
             passwordHash = "hash",
             roles = setOf(Role.TEACHER),
             profileType = ProfileType.STAFF,
@@ -52,8 +52,10 @@ class AuthLockoutTest {
             status = AccountStatus.ACTIVE,
             failedLoginCount = 2
         )
-        whenever(userAccountRepository.findBySchoolIdAndUsername("school-1", "teacher"))
+        whenever(userAccountRepository.findBySchoolIdAndUsername("school-1", "teacher@school.test"))
             .thenReturn(Mono.just(account))
+        whenever(userAccountRepository.findBySchoolIdIsNullAndUsername("teacher@school.test"))
+            .thenReturn(Mono.empty())
         whenever(passwordEncoder.matches("wrong", "hash")).thenReturn(false)
         whenever(userAccountRepository.save(any())).thenAnswer { invocation ->
             Mono.just(invocation.getArgument(0))
@@ -61,7 +63,7 @@ class AuthLockoutTest {
 
         StepVerifier.create(
             service.login(
-                LoginRequest(username = "teacher", password = "wrong", schoolId = "school-1"),
+                LoginRequest(email = "teacher@school.test", password = "wrong", schoolId = "school-1"),
                 userAgent = null,
                 ipAddress = "127.0.0.1"
             )

@@ -25,6 +25,7 @@ import org.springframework.boot.ApplicationRunner
 import org.springframework.core.annotation.Order
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 /**
@@ -217,51 +218,59 @@ class MockUsersBootstrapRunner(
         passwordHash: String,
         superAdminUsername: String
     ): Mono<Void> {
+        val saEmail = superAdminUsername.trim().lowercase().ifBlank { EMAIL_SUPER_ADMIN }
         val specs = listOf(
             AccountSpec(
-                username = superAdminUsername.trim().ifBlank { "superadmin" },
+                email = saEmail,
+                legacyUsernames = listOf("superadmin", EMAIL_SUPER_ADMIN),
                 schoolId = null,
                 roles = setOf(Role.SUPER_ADMIN),
                 profileType = ProfileType.NONE,
                 profileId = null
             ),
             AccountSpec(
-                username = "directeur",
+                email = EMAIL_DIRECTOR,
+                legacyUsernames = listOf("directeur"),
                 schoolId = schoolId,
                 roles = setOf(Role.DIRECTOR),
                 profileType = ProfileType.STAFF,
                 profileId = STAFF_DIRECTOR
             ),
             AccountSpec(
-                username = "admin",
+                email = EMAIL_ADMIN,
+                legacyUsernames = listOf("admin"),
                 schoolId = schoolId,
                 roles = setOf(Role.ADMINISTRATION),
                 profileType = ProfileType.STAFF,
                 profileId = STAFF_ADMIN
             ),
             AccountSpec(
-                username = "surveillant",
+                email = EMAIL_SG,
+                legacyUsernames = listOf("surveillant"),
                 schoolId = schoolId,
                 roles = setOf(Role.SURVEILLANT_GENERAL),
                 profileType = ProfileType.STAFF,
                 profileId = STAFF_SG
             ),
             AccountSpec(
-                username = "enseignant",
+                email = EMAIL_TEACHER,
+                legacyUsernames = listOf("enseignant"),
                 schoolId = schoolId,
                 roles = setOf(Role.TEACHER),
                 profileType = ProfileType.STAFF,
                 profileId = STAFF_TEACHER
             ),
             AccountSpec(
-                username = "parent.demo",
+                email = EMAIL_PARENT,
+                legacyUsernames = listOf("parent.demo"),
                 schoolId = schoolId,
                 roles = setOf(Role.PARENT),
                 profileType = ProfileType.GUARDIAN,
                 profileId = GUARDIAN_PARENT
             ),
             AccountSpec(
-                username = STUDENT_MATRICULE,
+                email = EMAIL_STUDENT,
+                legacyUsernames = listOf(STUDENT_MATRICULE),
                 schoolId = schoolId,
                 roles = setOf(Role.STUDENT),
                 profileType = ProfileType.STUDENT,
@@ -272,15 +281,11 @@ class MockUsersBootstrapRunner(
     }
 
     private fun upsertAccount(spec: AccountSpec, passwordHash: String): Mono<UserAccount> {
-        val lookup = if (spec.schoolId == null) {
-            userAccountRepository.findBySchoolIdIsNullAndUsername(spec.username)
-                .switchIfEmpty(userAccountRepository.findByUsername(spec.username))
-        } else {
-            userAccountRepository.findBySchoolIdAndUsername(spec.schoolId, spec.username)
-        }
-        return lookup
+        val email = spec.email.lowercase()
+        return findExistingAccount(email, spec)
             .flatMap { existing ->
-                // DEV : aligne hash / statut / rôles pour que docs/mock-logins.md reste vrai
+                // DEV : aligne e-mail / hash / rôles (migration depuis anciens logins courts)
+                existing.username = email
                 existing.passwordHash = passwordHash
                 existing.status = AccountStatus.ACTIVE
                 existing.mustChangePassword = false
@@ -299,7 +304,7 @@ class MockUsersBootstrapRunner(
                     userAccountRepository.save(
                         UserAccount(
                             schoolId = spec.schoolId,
-                            username = spec.username,
+                            username = email,
                             passwordHash = passwordHash,
                             roles = spec.roles,
                             profileType = spec.profileType,
@@ -312,8 +317,32 @@ class MockUsersBootstrapRunner(
             )
     }
 
+    private fun findExistingAccount(email: String, spec: AccountSpec): Mono<UserAccount> {
+        val byEmail = if (spec.schoolId == null) {
+            userAccountRepository.findBySchoolIdIsNullAndUsername(email)
+                .switchIfEmpty(userAccountRepository.findByUsername(email))
+        } else {
+            userAccountRepository.findBySchoolIdAndUsername(spec.schoolId, email)
+        }
+        return byEmail.switchIfEmpty(
+            Mono.defer {
+                Flux.fromIterable(spec.legacyUsernames.distinct())
+                    .concatMap { legacy ->
+                        if (spec.schoolId == null) {
+                            userAccountRepository.findBySchoolIdIsNullAndUsername(legacy)
+                                .switchIfEmpty(userAccountRepository.findByUsername(legacy))
+                        } else {
+                            userAccountRepository.findBySchoolIdAndUsername(spec.schoolId, legacy)
+                        }
+                    }
+                    .next()
+            }
+        )
+    }
+
     private data class AccountSpec(
-        val username: String,
+        val email: String,
+        val legacyUsernames: List<String> = emptyList(),
         val schoolId: String?,
         val roles: Set<Role>,
         val profileType: ProfileType,
@@ -328,5 +357,13 @@ class MockUsersBootstrapRunner(
         const val GUARDIAN_PARENT = "guardian-demo-parent"
         const val STUDENT_DEMO = "student-demo-01"
         const val STUDENT_MATRICULE = "250000001"
+
+        const val EMAIL_SUPER_ADMIN = "superadmin@smels.local"
+        const val EMAIL_DIRECTOR = "directeur@elshammah.demo"
+        const val EMAIL_ADMIN = "admin@elshammah.demo"
+        const val EMAIL_SG = "surveillant@elshammah.demo"
+        const val EMAIL_TEACHER = "enseignant@elshammah.demo"
+        const val EMAIL_PARENT = "parent.demo@elshammah.demo"
+        const val EMAIL_STUDENT = "eleve.demo@elshammah.demo"
     }
 }

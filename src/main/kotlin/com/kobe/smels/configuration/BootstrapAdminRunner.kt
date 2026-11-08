@@ -46,7 +46,7 @@ class BootstrapAdminRunner(
                 } else {
                     val account = UserAccount(
                         schoolId = bootstrap.schoolId,
-                        username = bootstrap.username.trim(),
+                        username = bootstrap.username.trim().lowercase(),
                         passwordHash = passwordEncoder.encode(bootstrap.password),
                         roles = setOf(Role.SUPER_ADMIN),
                         profileType = ProfileType.NONE,

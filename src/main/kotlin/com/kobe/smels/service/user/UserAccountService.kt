@@ -28,7 +28,7 @@ class UserAccountService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun create(currentUser: CurrentUser, request: CreateUserAccountRequest): Mono<UserAccountResponse> {
-        val username = request.username.trim()
+        val username = request.username.trim().lowercase()
         log.info(
             "user.create start by={} targetUsername={} schoolId={} roles={} profileType={}",
             currentUser.username,
