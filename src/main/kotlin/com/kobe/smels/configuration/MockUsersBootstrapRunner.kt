@@ -1,8 +1,20 @@
 package com.kobe.smels.configuration
 
+import com.kobe.smels.model.academic.AcademicYear
+import com.kobe.smels.model.academic.AcademicYearStatus
+import com.kobe.smels.model.academic.ClassSubject
+import com.kobe.smels.model.academic.Level
 import com.kobe.smels.model.academic.School
+import com.kobe.smels.model.academic.SchoolClass
+import com.kobe.smels.model.academic.Subject
+import com.kobe.smels.model.academic.SubjectGroup
+import com.kobe.smels.model.academic.SubjectKind
+import com.kobe.smels.model.academic.Term
 import com.kobe.smels.model.shared.ContactInfo
+import com.kobe.smels.model.shared.Cycle
+import com.kobe.smels.model.shared.Language
 import com.kobe.smels.model.shared.LocalizedText
+import com.kobe.smels.model.shared.Section
 import com.kobe.smels.model.shared.Sex
 import com.kobe.smels.model.staff.Civility
 import com.kobe.smels.model.staff.Staff
@@ -15,7 +27,13 @@ import com.kobe.smels.model.user.AccountStatus
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.model.user.UserAccount
+import com.kobe.smels.repository.academic.AcademicYearRepository
+import com.kobe.smels.repository.academic.ClassSubjectRepository
+import com.kobe.smels.repository.academic.LevelRepository
+import com.kobe.smels.repository.academic.SchoolClassRepository
 import com.kobe.smels.repository.academic.SchoolRepository
+import com.kobe.smels.repository.academic.SubjectGroupRepository
+import com.kobe.smels.repository.academic.SubjectRepository
 import com.kobe.smels.repository.staff.StaffRepository
 import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
@@ -28,6 +46,8 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.math.BigDecimal
+import java.time.LocalDate
 
 /**
  * Seed DEV : école démo + fiches Staff/Guardian/Student + comptes pour chaque rôle connectable.
@@ -44,6 +64,12 @@ class MockUsersBootstrapRunner(
     private val guardianRepository: GuardianRepository,
     private val studentRepository: StudentRepository,
     private val userAccountRepository: UserAccountRepository,
+    private val academicYearRepository: AcademicYearRepository,
+    private val levelRepository: LevelRepository,
+    private val schoolClassRepository: SchoolClassRepository,
+    private val subjectRepository: SubjectRepository,
+    private val subjectGroupRepository: SubjectGroupRepository,
+    private val classSubjectRepository: ClassSubjectRepository,
     private val passwordEncoder: PasswordEncoder
 ) : ApplicationRunner {
 
@@ -68,6 +94,7 @@ class MockUsersBootstrapRunner(
 
         ensureSchool(schoolId, cfg.schoolCode)
             .then(ensureStaff(schoolId))
+            .then(ensureAcademicDemo(schoolId))
             .then(ensureGuardianAndStudent(schoolId))
             .then(ensureAccounts(schoolId, passwordHash, superAdminUsername))
             .doOnSuccess {
@@ -142,7 +169,8 @@ class MockUsersBootstrapRunner(
                 firstName = "Demo",
                 civility = Civility.MME,
                 functions = setOf(StaffFunction.TEACHER),
-                email = EMAIL_TEACHER
+                email = EMAIL_TEACHER,
+                teachableSubjectIds = setOf(SUBJECT_MATH, SUBJECT_PC)
             )
         )
 
@@ -153,7 +181,8 @@ class MockUsersBootstrapRunner(
         firstName: String,
         civility: Civility,
         functions: Set<StaffFunction>,
-        email: String
+        email: String,
+        teachableSubjectIds: Set<String> = emptySet()
     ): Mono<Staff> =
         staffRepository.findById(id)
             .flatMap { existing ->
@@ -168,6 +197,9 @@ class MockUsersBootstrapRunner(
                     address = existing.contact.address,
                     city = existing.contact.city
                 )
+                if (teachableSubjectIds.isNotEmpty()) {
+                    existing.teachableSubjectIds = teachableSubjectIds
+                }
                 existing.active = true
                 staffRepository.save(existing)
             }
@@ -184,6 +216,231 @@ class MockUsersBootstrapRunner(
                             sex = Sex.MALE,
                             contact = ContactInfo(email = email),
                             functions = functions,
+                            teachableSubjectIds = teachableSubjectIds,
+                            active = true
+                        )
+                    )
+                }
+            )
+
+    /** Année / niveau / classes / matières + ClassSubject pour l’enseignant démo. */
+    private fun ensureAcademicDemo(schoolId: String): Mono<Void> {
+        val yearStart = LocalDate.of(2025, 9, 1)
+        val yearEnd = LocalDate.of(2026, 6, 30)
+        return academicYearRepository.findById(YEAR_DEMO)
+            .switchIfEmpty(
+                Mono.defer {
+                    academicYearRepository.save(
+                        AcademicYear(
+                            id = YEAR_DEMO,
+                            schoolId = schoolId,
+                            label = "2025-2026",
+                            startDate = yearStart,
+                            endDate = yearEnd,
+                            current = true,
+                            status = AcademicYearStatus.ACTIVE,
+                            terms = listOf(
+                                Term(
+                                    number = 1,
+                                    name = LocalizedText(fr = "1er trimestre", en = "1st term"),
+                                    startDate = yearStart,
+                                    endDate = LocalDate.of(2025, 12, 15)
+                                ),
+                                Term(
+                                    number = 2,
+                                    name = LocalizedText(fr = "2e trimestre", en = "2nd term"),
+                                    startDate = LocalDate.of(2026, 1, 5),
+                                    endDate = LocalDate.of(2026, 3, 31)
+                                ),
+                                Term(
+                                    number = 3,
+                                    name = LocalizedText(fr = "3e trimestre", en = "3rd term"),
+                                    startDate = LocalDate.of(2026, 4, 1),
+                                    endDate = yearEnd
+                                )
+                            )
+                        )
+                    )
+                }
+            )
+            .flatMap {
+                levelRepository.findById(LEVEL_6EME).switchIfEmpty(
+                    Mono.defer {
+                        levelRepository.save(
+                            Level(
+                                id = LEVEL_6EME,
+                                schoolId = schoolId,
+                                code = "6EME",
+                                name = LocalizedText(fr = "6ème", en = "Form 1"),
+                                cycle = Cycle.SECONDAIRE_1ER_CYCLE,
+                                section = Section.FRANCOPHONE,
+                                order = 1,
+                                equivalenceIndex = 1,
+                                nextLevelCode = "5EME",
+                                active = true
+                            )
+                        )
+                    }
+                )
+            }
+            .flatMap {
+                subjectGroupRepository.findById(GROUP_SCI).switchIfEmpty(
+                    Mono.defer {
+                        subjectGroupRepository.save(
+                            SubjectGroup(
+                                id = GROUP_SCI,
+                                schoolId = schoolId,
+                                code = "SCI_TECH",
+                                name = LocalizedText(
+                                    fr = "Sciences et technologie",
+                                    en = "Science and technology"
+                                ),
+                                displayOrder = 1,
+                                active = true
+                            )
+                        )
+                    }
+                )
+            }
+            .flatMap {
+                Mono.`when`(
+                    subjectRepository.findById(SUBJECT_MATH).switchIfEmpty(
+                        Mono.defer {
+                            subjectRepository.save(
+                                Subject(
+                                    id = SUBJECT_MATH,
+                                    schoolId = schoolId,
+                                    code = "MATH",
+                                    name = LocalizedText(fr = "Mathématiques", en = "Mathematics"),
+                                    shortName = LocalizedText(fr = "Maths", en = "Maths"),
+                                    kind = SubjectKind.ACADEMIC,
+                                    active = true
+                                )
+                            )
+                        }
+                    ),
+                    subjectRepository.findById(SUBJECT_PC).switchIfEmpty(
+                        Mono.defer {
+                            subjectRepository.save(
+                                Subject(
+                                    id = SUBJECT_PC,
+                                    schoolId = schoolId,
+                                    code = "PC",
+                                    name = LocalizedText(
+                                        fr = "Physique-Chimie",
+                                        en = "Physics-Chemistry"
+                                    ),
+                                    shortName = LocalizedText(fr = "PC", en = "PC"),
+                                    kind = SubjectKind.ACADEMIC,
+                                    active = true
+                                )
+                            )
+                        }
+                    )
+                )
+            }
+            .then(
+                Mono.`when`(
+                    upsertDemoClass(schoolId, CLASS_6A, "6ème A"),
+                    upsertDemoClass(schoolId, CLASS_5A, "5ème A")
+                )
+            )
+            .then(
+                Mono.`when`(
+                    upsertClassSubject(
+                        id = CS_MATH_6A,
+                        schoolId = schoolId,
+                        classId = CLASS_6A,
+                        subjectId = SUBJECT_MATH,
+                        teacherId = STAFF_TEACHER,
+                        coefficient = BigDecimal("4"),
+                        weeklyHours = 5,
+                        displayOrder = 1
+                    ),
+                    upsertClassSubject(
+                        id = CS_PC_6A,
+                        schoolId = schoolId,
+                        classId = CLASS_6A,
+                        subjectId = SUBJECT_PC,
+                        teacherId = STAFF_TEACHER,
+                        coefficient = BigDecimal("3"),
+                        weeklyHours = 3,
+                        displayOrder = 2
+                    ),
+                    upsertClassSubject(
+                        id = CS_MATH_5A,
+                        schoolId = schoolId,
+                        classId = CLASS_5A,
+                        subjectId = SUBJECT_MATH,
+                        teacherId = STAFF_TEACHER,
+                        coefficient = BigDecimal("4"),
+                        weeklyHours = 5,
+                        displayOrder = 1
+                    )
+                )
+            )
+            .then()
+    }
+
+    private fun upsertDemoClass(schoolId: String, id: String, name: String): Mono<SchoolClass> =
+        schoolClassRepository.findById(id)
+            .switchIfEmpty(
+                Mono.defer {
+                    schoolClassRepository.save(
+                        SchoolClass(
+                            id = id,
+                            schoolId = schoolId,
+                            academicYearId = YEAR_DEMO,
+                            levelId = LEVEL_6EME,
+                            levelCode = "6EME",
+                            section = Section.FRANCOPHONE,
+                            cycle = Cycle.SECONDAIRE_1ER_CYCLE,
+                            name = name,
+                            defaultLanguage = Language.FR,
+                            availableLanguages = setOf(Language.FR, Language.EN),
+                            mainTeacherId = STAFF_TEACHER,
+                            active = true
+                        )
+                    )
+                }
+            )
+
+    private fun upsertClassSubject(
+        id: String,
+        schoolId: String,
+        classId: String,
+        subjectId: String,
+        teacherId: String,
+        coefficient: BigDecimal,
+        weeklyHours: Int,
+        displayOrder: Int
+    ): Mono<ClassSubject> =
+        classSubjectRepository.findById(id)
+            .flatMap { existing ->
+                existing.teacherId = teacherId
+                existing.coefficient = coefficient
+                existing.weeklyHours = weeklyHours
+                existing.displayOrder = displayOrder
+                existing.active = true
+                classSubjectRepository.save(existing)
+            }
+            .switchIfEmpty(
+                Mono.defer {
+                    classSubjectRepository.save(
+                        ClassSubject(
+                            id = id,
+                            schoolId = schoolId,
+                            academicYearId = YEAR_DEMO,
+                            classId = classId,
+                            subjectId = subjectId,
+                            groupId = GROUP_SCI,
+                            coefficient = coefficient,
+                            teacherId = teacherId,
+                            weeklyHours = weeklyHours,
+                            displayOrder = displayOrder,
+                            maxScore = BigDecimal("20"),
+                            countsInAverage = true,
+                            optional = false,
                             active = true
                         )
                     )
@@ -387,5 +644,16 @@ class MockUsersBootstrapRunner(
         const val EMAIL_TEACHER = "enseignant@elshammah.demo"
         const val EMAIL_PARENT = "parent.demo@elshammah.demo"
         const val EMAIL_STUDENT = "eleve.demo@elshammah.demo"
+
+        const val YEAR_DEMO = "year-demo-2025"
+        const val LEVEL_6EME = "level-demo-6eme"
+        const val CLASS_6A = "class-demo-6a"
+        const val CLASS_5A = "class-demo-5a"
+        const val GROUP_SCI = "group-demo-sci"
+        const val SUBJECT_MATH = "subject-demo-math"
+        const val SUBJECT_PC = "subject-demo-pc"
+        const val CS_MATH_6A = "cs-demo-math-6a"
+        const val CS_PC_6A = "cs-demo-pc-6a"
+        const val CS_MATH_5A = "cs-demo-math-5a"
     }
 }

@@ -8,6 +8,10 @@ import reactor.core.publisher.Mono
 interface ClassSubjectApi {
     fun getSummary(schoolId: String, classSubjectId: String): Mono<ClassSubjectSummaryDto>
     fun findByClass(schoolId: String, classId: String): Flux<ClassSubjectSummaryDto>
-    fun findByTeacher(schoolId: String, teacherId: String, academicYearId: String): Flux<ClassSubjectSummaryDto>
+    fun findByTeacher(
+        schoolId: String,
+        teacherId: String,
+        academicYearId: String? = null
+    ): Flux<ClassSubjectSummaryDto>
     fun findActiveByYear(schoolId: String, academicYearId: String): Flux<ClassSubjectSummaryDto>
 }

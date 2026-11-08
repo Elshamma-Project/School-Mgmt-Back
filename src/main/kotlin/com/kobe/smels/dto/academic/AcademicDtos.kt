@@ -449,6 +449,21 @@ data class ClassSubjectSummaryDto(
     val active: Boolean
 )
 
+/** Affectation enrichie pour la fiche personnel (classes + matières enseignées). */
+data class TeacherAssignmentResponse(
+    val classSubjectId: String,
+    val schoolId: String,
+    val academicYearId: String,
+    val classId: String,
+    val className: String,
+    val subjectId: String,
+    val subjectCode: String,
+    val subjectName: LocalizedTextDto,
+    val coefficient: BigDecimal,
+    val weeklyHours: Int?,
+    val active: Boolean
+)
+
 data class SubjectGroupSummaryDto(
     val id: String,
     val schoolId: String,

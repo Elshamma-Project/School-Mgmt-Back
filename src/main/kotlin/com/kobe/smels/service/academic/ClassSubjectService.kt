@@ -3,7 +3,9 @@ package com.kobe.smels.service.academic
 import com.kobe.smels.dto.academic.ClassSubjectResponse
 import com.kobe.smels.dto.academic.ClassSubjectSummaryDto
 import com.kobe.smels.dto.academic.CreateClassSubjectRequest
+import com.kobe.smels.dto.academic.LocalizedTextDto
 import com.kobe.smels.dto.academic.PageResponse
+import com.kobe.smels.dto.academic.TeacherAssignmentResponse
 import com.kobe.smels.dto.academic.UpdateClassSubjectRequest
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ConflictException
@@ -136,6 +138,43 @@ class ClassSubjectService(
             .map { AcademicMapper.toClassSubjectResponse(it) }
     }
 
+    /**
+     * Affectations d’un enseignant (ClassSubject.teacherId), avec libellés classe / matière.
+     * [academicYearId] optionnel : toutes les années si null.
+     */
+    fun listAssignmentsForTeacher(
+        currentUser: CurrentUser,
+        teacherId: String,
+        academicYearId: String? = null,
+        schoolIdOverride: String? = null
+    ): Mono<List<TeacherAssignmentResponse>> {
+        AcademicAccess.assertCanReadCatalog(currentUser)
+        val schoolId = AcademicAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        val tid = teacherId.trim()
+        if (tid.isEmpty()) {
+            return Mono.error(BusinessRuleException("TEACHER_ID_REQUIRED", "teacherId is required"))
+        }
+        AcademicAccess.logSuperAdmin(currentUser, schoolId, "classSubject.listByTeacher")
+
+        val source = if (academicYearId.isNullOrBlank()) {
+            classSubjectRepository.findBySchoolIdAndTeacherId(schoolId, tid)
+        } else {
+            classSubjectRepository.findBySchoolIdAndTeacherIdAndAcademicYearId(
+                schoolId, tid, academicYearId.trim()
+            )
+        }
+
+        return source
+            .filter { it.active }
+            .concatMap { cs -> toTeacherAssignment(cs) }
+            .collectList()
+            .map { list ->
+                list.sortedWith(
+                    compareBy({ it.className.lowercase() }, { it.subjectCode.lowercase() })
+                )
+            }
+    }
+
     fun listByClass(
         currentUser: CurrentUser,
         classId: String,
@@ -201,10 +240,50 @@ class ClassSubjectService(
     override fun findByTeacher(
         schoolId: String,
         teacherId: String,
-        academicYearId: String
-    ): Flux<ClassSubjectSummaryDto> =
-        classSubjectRepository.findBySchoolIdAndTeacherIdAndAcademicYearId(schoolId, teacherId, academicYearId)
-            .map { AcademicMapper.toClassSubjectSummary(it) }
+        academicYearId: String?
+    ): Flux<ClassSubjectSummaryDto> {
+        val source = if (academicYearId.isNullOrBlank()) {
+            classSubjectRepository.findBySchoolIdAndTeacherId(schoolId, teacherId)
+        } else {
+            classSubjectRepository.findBySchoolIdAndTeacherIdAndAcademicYearId(
+                schoolId, teacherId, academicYearId
+            )
+        }
+        return source.map { AcademicMapper.toClassSubjectSummary(it) }
+    }
+
+    private fun toTeacherAssignment(cs: ClassSubject): Mono<TeacherAssignmentResponse> {
+        val classMono = schoolClassRepository.findByIdAndSchoolId(cs.classId, cs.schoolId)
+            .map { it.name }
+            .defaultIfEmpty("—")
+        val subjectMono = subjectRepository.findByIdAndSchoolId(cs.subjectId, cs.schoolId)
+            .map { subject ->
+                Triple(
+                    subject.code,
+                    AcademicMapper.toLocalizedDto(subject.name) ?: LocalizedTextDto(),
+                    subject.id!!
+                )
+            }
+            .defaultIfEmpty(Triple("—", LocalizedTextDto(fr = "—", en = "—"), cs.subjectId))
+
+        return Mono.zip(classMono, subjectMono).map { tuple ->
+            val className = tuple.t1
+            val (code, name, subjectId) = tuple.t2
+            TeacherAssignmentResponse(
+                classSubjectId = cs.id!!,
+                schoolId = cs.schoolId,
+                academicYearId = cs.academicYearId,
+                classId = cs.classId,
+                className = className,
+                subjectId = subjectId,
+                subjectCode = code,
+                subjectName = name,
+                coefficient = cs.coefficient,
+                weeklyHours = cs.weeklyHours,
+                active = cs.active
+            )
+        }
+    }
 
     override fun findActiveByYear(schoolId: String, academicYearId: String): Flux<ClassSubjectSummaryDto> =
         classSubjectRepository.findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, academicYearId)

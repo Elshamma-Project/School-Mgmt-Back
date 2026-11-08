@@ -89,6 +89,7 @@ interface ClassSubjectRepository : ReactiveMongoRepository<ClassSubject, String>
     fun findByIdAndSchoolId(id: String, schoolId: String): Mono<ClassSubject>
     fun findBySchoolIdAndClassIdAndSubjectId(schoolId: String, classId: String, subjectId: String): Mono<ClassSubject>
     fun findBySchoolIdAndClassId(schoolId: String, classId: String): Flux<ClassSubject>
+    fun findBySchoolIdAndTeacherId(schoolId: String, teacherId: String): Flux<ClassSubject>
     fun findBySchoolIdAndTeacherIdAndAcademicYearId(
         schoolId: String,
         teacherId: String,

@@ -286,6 +286,16 @@ class ClassSubjectController(private val classSubjectService: ClassSubjectServic
     ) = SecuritySupport.currentUser()
         .flatMap { classSubjectService.listByClass(it, classId, page, size, active, schoolId) }
 
+    /** Affectations d’enseignement d’un membre du personnel (enseignant titulaire). */
+    @GetMapping("/by-teacher")
+    fun listByTeacher(
+        @RequestParam teacherId: String,
+        @RequestParam(required = false) academicYearId: String?,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap {
+        classSubjectService.listAssignmentsForTeacher(it, teacherId, academicYearId, schoolId)
+    }
+
     @GetMapping("/{id}")
     fun get(@PathVariable id: String, @RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMap { classSubjectService.getById(it, id, schoolId) }
