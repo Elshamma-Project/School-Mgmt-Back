@@ -7,7 +7,9 @@ data class SecurityProperties(
     val jwt: Jwt = Jwt(),
     val lockout: Lockout = Lockout(),
     val cors: Cors = Cors(),
-    val bootstrap: Bootstrap = Bootstrap()
+    val bootstrap: Bootstrap = Bootstrap(),
+    /** Comptes de démo (tous les rôles). DEV uniquement — voir docs/mock-logins.md. */
+    val mockUsers: MockUsers = MockUsers()
 ) {
     data class Jwt(
         val secret: String = "local-dev-only-change-me-not-for-production",
@@ -29,5 +31,13 @@ data class SecurityProperties(
         val username: String = "superadmin",
         val password: String = "",
         val schoolId: String? = null
+    )
+
+    data class MockUsers(
+        val enabled: Boolean = false,
+        /** Mot de passe commun des comptes mock (min. 8 caractères). */
+        val password: String = "DemoPass123!",
+        val schoolId: String = "school-demo-elshammah",
+        val schoolCode: String = "ELSHAMMAH-DEMO"
     )
 }

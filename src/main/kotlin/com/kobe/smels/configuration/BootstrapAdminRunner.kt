@@ -8,6 +8,7 @@ import com.kobe.smels.repository.user.UserAccountRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationArguments
 import org.springframework.boot.ApplicationRunner
+import org.springframework.core.annotation.Order
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
@@ -15,8 +16,10 @@ import reactor.core.publisher.Mono
 /**
  * Crée un SUPER_ADMIN initial si smels.security.bootstrap.enabled=true
  * et qu'aucun compte n'existe encore. Mot de passe uniquement via configuration / env.
+ * Les autres rôles de démo sont créés par [MockUsersBootstrapRunner] (docs/mock-logins.md).
  */
 @Component
+@Order(10)
 class BootstrapAdminRunner(
     private val securityProperties: SecurityProperties,
     private val userAccountRepository: UserAccountRepository,
@@ -48,7 +51,7 @@ class BootstrapAdminRunner(
                         roles = setOf(Role.SUPER_ADMIN),
                         profileType = ProfileType.NONE,
                         status = AccountStatus.ACTIVE,
-                        mustChangePassword = true
+                        mustChangePassword = false
                     )
                     userAccountRepository.save(account)
                         .doOnSuccess {
