@@ -1,5 +1,6 @@
 package com.kobe.smels.shared.security
 
+import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 
@@ -28,11 +29,12 @@ data class CurrentUser(
         if (isSuperAdmin()) {
             return overrideSchoolId
                 ?: schoolId
-                ?: throw IllegalStateException("SUPER_ADMIN must provide schoolId for tenant-scoped actions")
+                ?: throw ForbiddenException("FORBIDDEN", "SUPER_ADMIN must provide schoolId for tenant-scoped actions")
         }
-        val sid = schoolId ?: throw IllegalStateException("Authenticated user has no schoolId")
+        val sid = schoolId
+            ?: throw ForbiddenException("FORBIDDEN", "Authenticated user has no schoolId")
         if (overrideSchoolId != null && overrideSchoolId != sid) {
-            throw IllegalStateException("Cross-school access denied")
+            throw ForbiddenException("FORBIDDEN", "Cross-school access denied")
         }
         return sid
     }
