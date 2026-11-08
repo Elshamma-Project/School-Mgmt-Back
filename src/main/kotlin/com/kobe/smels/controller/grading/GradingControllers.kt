@@ -171,7 +171,7 @@ class SequenceMarkController(private val sequenceMarkService: SequenceMarkServic
     @GetMapping
     fun listForStudent(
         @RequestParam studentId: String,
-        @RequestParam academicYearId: String,
+        @RequestParam(required = false) academicYearId: String?,
         @RequestParam(required = false) schoolId: String?
     ) = SecuritySupport.currentUser().flatMapMany {
         sequenceMarkService.listForStudentYear(it, studentId, academicYearId, schoolId)

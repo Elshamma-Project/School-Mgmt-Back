@@ -141,6 +141,7 @@ interface SequenceMarkRepository : ReactiveMongoRepository<SequenceMark, String>
         studentId: String,
         academicYearId: String
     ): Flux<SequenceMark>
+    fun findBySchoolIdAndStudentId(schoolId: String, studentId: String): Flux<SequenceMark>
 }
 
 interface GradeAuditEntryRepository : ReactiveMongoRepository<GradeAuditEntry, String> {

@@ -33,6 +33,12 @@ class StudentController(
     fun myChildren(@RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMapMany { studentService.listMyChildren(it, schoolId) }
 
+    @GetMapping("/{id}/academic-record")
+    fun academicRecord(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { studentService.getAcademicRecord(it, id, schoolId) }
+
     @GetMapping("/{id}")
     fun get(
         @PathVariable id: String,

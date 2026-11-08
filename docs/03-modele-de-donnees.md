@@ -12,7 +12,7 @@
 | **Un module = ses collections** | Chaque collection est préfixée par son module (`academic_classes`, `grading_grades`...). Aucune jointure ni `$lookup` entre modules ; références par identifiant |
 | **Multi-établissement dès le début** | Tous les documents (sauf `academic_schools` et `user_accounts`) étendent `TenantDocument` et portent `schoolId`. Tout index composite commence par `schoolId` |
 | **Référencer, sauf pour les photographies** | Seul `ReportCard` embarque tout (photographie figée). `TimetableEntry` embarque des libellés d'impression |
-| **Données de l'année vs permanentes** | `Student`, `Staff`, `Subject` sont permanents ; classe, inscription, séquences, matières de classe, fiches, notes, bulletins, emplois du temps sont rattachés à une `academicYearId` |
+| **Données de l'année vs permanentes** | `Student`, `Staff`, `Subject` sont permanents ; classe, inscription, séquences, matières de classe, fiches, notes, bulletins, emplois du temps sont rattachés à une `academicYearId`. **Pas d'écrasement** : un élève de 6ème à seconde conserve une `Enrollment` + ses `Grade`/`SequenceMark`/`ReportCard` par année ; consultation via `GET /students/{id}/academic-record`, `GET /sequence-marks?studentId=`, `GET /report-cards?studentId=` |
 | **Dénormalisation maîtrisée** | `Grade` et `SequenceMark` recopient `classId`, `classSubjectId`, `sessionId`, `academicYearId`, `enrollmentId` (immuables) |
 | **Pas de suppression physique** | `active = false` ; une note ne se supprime que via `GradeAuditEntry` `DELETED` |
 | **Audit** | `createdAt/By`, `updatedAt/By`, `version` hérités de `AuditableDocument` ; journal métier des notes : `grading_audit_entries` (append-only) |

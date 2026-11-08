@@ -139,6 +139,8 @@ object StudentMapper {
             levelId = enrollment.levelId,
             rollNumber = enrollment.rollNumber,
             status = enrollment.status,
-            repeater = enrollment.repeater
+            repeater = enrollment.repeater,
+            enrolledOn = enrollment.enrolledOn,
+            leftOn = enrollment.leftOn
         )
 }

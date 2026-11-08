@@ -46,6 +46,15 @@ class ReportCardController(
     fun listMine(@RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMapMany { reportCardService.listMine(it, schoolId) }
 
+    @GetMapping
+    fun listForStudent(
+        @RequestParam studentId: String,
+        @RequestParam(required = false) academicYearId: String?,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMapMany {
+        reportCardService.listForStudent(it, studentId, academicYearId, schoolId)
+    }
+
     @GetMapping("/{id}")
     fun get(@PathVariable id: String, @RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMap { reportCardService.getById(it, id, schoolId) }

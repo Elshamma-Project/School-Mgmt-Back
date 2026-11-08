@@ -118,6 +118,8 @@ object GradingMapper {
         id = m.id!!,
         schoolId = m.schoolId,
         studentId = m.studentId,
+        academicYearId = m.academicYearId,
+        classId = m.classId,
         classSubjectId = m.classSubjectId,
         sessionId = m.sessionId,
         sessionNumber = m.sessionNumber,

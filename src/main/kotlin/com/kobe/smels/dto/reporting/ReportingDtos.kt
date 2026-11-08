@@ -26,6 +26,7 @@ data class ReportCardSummaryResponse(
     val id: String,
     val schoolId: String,
     val studentId: String,
+    val academicYearId: String,
     val classId: String,
     val periodType: ReportPeriodType,
     val periodNumber: Int?,

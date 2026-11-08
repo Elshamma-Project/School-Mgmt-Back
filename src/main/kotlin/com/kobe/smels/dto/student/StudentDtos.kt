@@ -200,6 +200,31 @@ data class EnrollmentResponse(
     val previousSchool: String?
 )
 
+/** Une année du parcours scolaire (libellés figés pour consultation historique). */
+data class StudentYearRecordResponse(
+    val enrollmentId: String,
+    val studentId: String,
+    val academicYearId: String,
+    val academicYearLabel: String?,
+    val academicYearStatus: String?,
+    val classId: String,
+    val className: String?,
+    val levelId: String,
+    val levelCode: String?,
+    val rollNumber: Int?,
+    val status: EnrollmentStatus,
+    val enrolledOn: LocalDate?,
+    val leftOn: LocalDate?,
+    val repeater: Boolean
+)
+
+/** Parcours multi-années d'un élève (6ème → … → sortie). */
+data class StudentAcademicRecordResponse(
+    val studentId: String,
+    val schoolId: String,
+    val years: List<StudentYearRecordResponse>
+)
+
 data class EnrollmentSummaryDto(
     val id: String,
     val schoolId: String,
@@ -209,7 +234,9 @@ data class EnrollmentSummaryDto(
     val levelId: String,
     val rollNumber: Int? = null,
     val status: EnrollmentStatus,
-    val repeater: Boolean
+    val repeater: Boolean,
+    val enrolledOn: LocalDate? = null,
+    val leftOn: LocalDate? = null
 )
 
 data class PageResponse<T>(

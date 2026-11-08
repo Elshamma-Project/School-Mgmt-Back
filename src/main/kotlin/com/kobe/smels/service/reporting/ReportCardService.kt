@@ -330,7 +330,7 @@ class ReportCardService(
             currentUser.profileId != null
         ) {
             return studentApi.findGuardianLink(card.schoolId, card.studentId, currentUser.profileId!!)
-                .flatMap { link ->
+                .flatMap<Void> { link ->
                     if (!link.canDownloadReportCards) {
                         Mono.error(
                             ForbiddenException("FORBIDDEN", "Guardian cannot download report cards for this student")
@@ -603,10 +603,77 @@ class ReportCardService(
         return sb.toString()
     }
 
+    /**
+     * Bulletins d'un élève sur une ou toutes les années.
+     * Élève/parent : seulement ANNUAL + PUBLISHED ; staff admin : tous statuts.
+     */
+    fun listForStudent(
+        currentUser: CurrentUser,
+        studentId: String,
+        academicYearId: String? = null,
+        schoolIdOverride: String? = null
+    ): Flux<ReportCardSummaryResponse> {
+        val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        return assertCanListStudentCards(currentUser, schoolId, studentId)
+            .thenMany(
+                if (academicYearId.isNullOrBlank()) {
+                    reportCardRepository.findBySchoolIdAndStudentId(schoolId, studentId)
+                } else {
+                    reportCardRepository.findBySchoolIdAndStudentIdAndAcademicYearId(
+                        schoolId, studentId, academicYearId
+                    )
+                }
+            )
+            .filter { card ->
+                currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN) ||
+                    isPublishedAnnual(card)
+            }
+            .map { toSummary(it) }
+    }
+
+    private fun assertCanListStudentCards(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String
+    ): Mono<Void> {
+        if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            return Mono.empty()
+        }
+        if (currentUser.hasAnyRole(Role.TEACHER)) {
+            return Mono.error(ForbiddenException("FORBIDDEN", "Teachers cannot access report cards"))
+        }
+        if (currentUser.hasAnyRole(Role.STUDENT) &&
+            currentUser.profileType == ProfileType.STUDENT &&
+            currentUser.profileId == studentId
+        ) {
+            return Mono.empty()
+        }
+        if (currentUser.hasAnyRole(Role.PARENT) &&
+            currentUser.profileType == ProfileType.GUARDIAN &&
+            currentUser.profileId != null
+        ) {
+            return studentApi.findGuardianLink(schoolId, studentId, currentUser.profileId!!)
+                .flatMap<Void> { link ->
+                    if (!link.canDownloadReportCards) {
+                        Mono.error(
+                            ForbiddenException("FORBIDDEN", "Guardian cannot download report cards for this student")
+                        )
+                    } else {
+                        Mono.empty()
+                    }
+                }
+                .onErrorMap(NotFoundException::class.java) {
+                    ForbiddenException("FORBIDDEN", "Guardian is not linked to this student")
+                }
+        }
+        return Mono.error(ForbiddenException("FORBIDDEN", "Cannot list report cards for this student"))
+    }
+
     private fun toSummary(card: ReportCard) = ReportCardSummaryResponse(
         id = card.id!!,
         schoolId = card.schoolId,
         studentId = card.studentId,
+        academicYearId = card.academicYearId,
         classId = card.classId,
         periodType = card.period.type,
         periodNumber = card.period.number,

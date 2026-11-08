@@ -174,6 +174,8 @@ data class SequenceMarkSummaryDto(
     val id: String,
     val schoolId: String,
     val studentId: String,
+    val academicYearId: String,
+    val classId: String,
     val classSubjectId: String,
     val sessionId: String,
     val sessionNumber: Int,

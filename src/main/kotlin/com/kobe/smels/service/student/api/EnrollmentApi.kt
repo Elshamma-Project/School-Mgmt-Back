@@ -16,6 +16,9 @@ interface EnrollmentApi {
         academicYearId: String
     ): Mono<EnrollmentSummaryDto>
 
+    /** Toutes les inscriptions d'un élève (parcours multi-années). */
+    fun findByStudent(schoolId: String, studentId: String): Flux<EnrollmentSummaryDto>
+
     fun findEnrolledByClass(schoolId: String, classId: String): Flux<EnrollmentSummaryDto>
     fun isEnrolled(
         schoolId: String,

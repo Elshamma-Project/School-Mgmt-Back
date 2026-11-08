@@ -11,6 +11,7 @@ import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.student.Enrollment
 import com.kobe.smels.model.student.EnrollmentStatus
+import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.student.EnrollmentRepository
 import com.kobe.smels.repository.student.StudentRepository
@@ -222,9 +223,9 @@ class EnrollmentService(
         studentId: String,
         schoolIdOverride: String? = null
     ): Mono<List<EnrollmentResponse>> {
-        assertCanManage(currentUser)
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
-        return enrollmentRepository.findBySchoolIdAndStudentId(schoolId, studentId)
+        return assertCanReadStudentEnrollments(currentUser, schoolId, studentId)
+            .thenMany(enrollmentRepository.findBySchoolIdAndStudentId(schoolId, studentId))
             .map { StudentMapper.toEnrollmentResponse(it) }
             .collectList()
     }
@@ -241,6 +242,10 @@ class EnrollmentService(
     ): Mono<EnrollmentSummaryDto> =
         enrollmentRepository.findBySchoolIdAndStudentIdAndAcademicYearId(schoolId, studentId, academicYearId)
             .switchIfEmpty(Mono.error(NotFoundException("ENROLLMENT_NOT_FOUND", "Enrollment not found")))
+            .map { StudentMapper.toEnrollmentSummary(it) }
+
+    override fun findByStudent(schoolId: String, studentId: String): Flux<EnrollmentSummaryDto> =
+        enrollmentRepository.findBySchoolIdAndStudentId(schoolId, studentId)
             .map { StudentMapper.toEnrollmentSummary(it) }
 
     override fun findEnrolledByClass(schoolId: String, classId: String): Flux<EnrollmentSummaryDto> =
@@ -300,6 +305,36 @@ class EnrollmentService(
         if (!currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
             throw ForbiddenException("FORBIDDEN", "Insufficient role to manage enrollments")
         }
+    }
+
+    /** Lecture du parcours (toutes les années) : admin/dir, l'élève, ou un parent lié. */
+    private fun assertCanReadStudentEnrollments(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String
+    ): Mono<Void> {
+        if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            return Mono.empty()
+        }
+        if (currentUser.hasRole(Role.STUDENT) &&
+            currentUser.profileType == ProfileType.STUDENT &&
+            currentUser.profileId == studentId
+        ) {
+            return Mono.empty()
+        }
+        if (currentUser.hasRole(Role.PARENT) &&
+            currentUser.profileType == ProfileType.GUARDIAN &&
+            currentUser.profileId != null
+        ) {
+            return studentRepository.findByIdAndSchoolId(studentId, schoolId)
+                .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+                .flatMap { student ->
+                    val linked = student.guardians.any { it.guardianId == currentUser.profileId }
+                    if (linked) Mono.empty()
+                    else Mono.error(ForbiddenException("FORBIDDEN", "Guardian is not linked to this student"))
+                }
+        }
+        return Mono.error(ForbiddenException("FORBIDDEN", "Cannot read enrollments for this student"))
     }
 
     private fun logSuperAdminTenantAction(currentUser: CurrentUser, schoolId: String, action: String) {

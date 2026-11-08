@@ -80,14 +80,40 @@ class SequenceMarkAccessTest {
         StepVerifier.create(
             service.listForStudentYear(teacherUser(), "stu-1", "year-1")
         )
-            .expectNextMatches { it.id == "m-own" }
+            .expectNextMatches { it.id == "m-own" && it.academicYearId == "year-1" }
             .verifyComplete()
     }
 
-    private fun mark(id: String, classSubjectId: String) = SequenceMark(
+    @Test
+    fun `list without academicYearId returns all years for student self`() {
+        val y1 = mark(id = "m-1", classSubjectId = "cs-1", yearId = "year-1")
+        val y2 = mark(id = "m-2", classSubjectId = "cs-2", yearId = "year-2")
+        whenever(sequenceMarkRepository.findBySchoolIdAndStudentId("school-1", "stu-1"))
+            .thenReturn(Flux.just(y1, y2))
+
+        StepVerifier.create(
+            service.listForStudentYear(studentUser(), "stu-1", academicYearId = null)
+        )
+            .expectNextMatches { it.id == "m-1" }
+            .expectNextMatches { it.id == "m-2" }
+            .verifyComplete()
+    }
+
+    private fun studentUser() = CurrentUser(
+        accountId = "acc-s",
+        sessionId = "s3",
+        username = "student",
+        schoolId = "school-1",
+        roles = setOf(Role.STUDENT),
+        profileType = ProfileType.STUDENT,
+        profileId = "stu-1",
+        mustChangePassword = false
+    )
+
+    private fun mark(id: String, classSubjectId: String, yearId: String = "year-1") = SequenceMark(
         id = id,
         schoolId = "school-1",
-        academicYearId = "year-1",
+        academicYearId = yearId,
         classId = "class-1",
         classSubjectId = classSubjectId,
         sessionId = "sess-1",

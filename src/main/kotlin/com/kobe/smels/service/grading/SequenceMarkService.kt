@@ -219,21 +219,29 @@ class SequenceMarkService(
             .switchIfEmpty(Mono.error(NotFoundException("SEQUENCE_MARK_NOT_FOUND", "Sequence mark not found")))
             .map { GradingMapper.toSequenceMarkSummary(it) }
 
-    /** Consultation notes de séquence (docs/05 §2) — lecture seule. */
+    /**
+     * Consultation notes de séquence (docs/05 §2) — lecture seule.
+     * Sans `academicYearId` : tout le parcours (toutes les années persistées).
+     */
     fun listForStudentYear(
         currentUser: CurrentUser,
         studentId: String,
-        academicYearId: String,
+        academicYearId: String? = null,
         schoolIdOverride: String? = null
     ): Flux<SequenceMarkSummaryDto> {
         val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
-        return assertCanViewSequenceMarks(currentUser, schoolId, studentId)
-            .thenMany(
-                sequenceMarkRepository.findBySchoolIdAndStudentIdAndAcademicYearId(
-                    schoolId, studentId, academicYearId
-                )
+        val source = if (academicYearId.isNullOrBlank()) {
+            sequenceMarkRepository.findBySchoolIdAndStudentId(schoolId, studentId)
+        } else {
+            sequenceMarkRepository.findBySchoolIdAndStudentIdAndAcademicYearId(
+                schoolId, studentId, academicYearId
             )
-            .concatMap { mark -> filterMarkForTeacher(currentUser, schoolId, academicYearId, mark) }
+        }
+        return assertCanViewSequenceMarks(currentUser, schoolId, studentId)
+            .thenMany(source)
+            .concatMap { mark ->
+                filterMarkForTeacher(currentUser, schoolId, mark.academicYearId, mark)
+            }
             .map { GradingMapper.toSequenceMarkSummary(it) }
     }
 
@@ -256,7 +264,7 @@ class SequenceMarkService(
             currentUser.profileId != null
         ) {
             return studentApi.findGuardianLink(schoolId, studentId, currentUser.profileId!!)
-                .flatMap { link ->
+                .flatMap<Void> { link ->
                     if (!link.canViewGrades) {
                         Mono.error(ForbiddenException("FORBIDDEN", "Guardian cannot view grades for this student"))
                     } else {

@@ -3,8 +3,10 @@ package com.kobe.smels.service.student
 import com.kobe.smels.dto.student.CreateStudentRequest
 import com.kobe.smels.dto.student.GuardianLinkDto
 import com.kobe.smels.dto.student.PageResponse
+import com.kobe.smels.dto.student.StudentAcademicRecordResponse
 import com.kobe.smels.dto.student.StudentResponse
 import com.kobe.smels.dto.student.StudentSummaryDto
+import com.kobe.smels.dto.student.StudentYearRecordResponse
 import com.kobe.smels.dto.student.UpdateStudentRequest
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
@@ -16,6 +18,7 @@ import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
 import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.ClassSubjectApi
+import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.service.student.api.StudentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
@@ -35,7 +38,8 @@ class StudentService(
     private val outboxWriter: OutboxWriter,
     private val classSubjectApi: ClassSubjectApi,
     private val enrollmentApi: EnrollmentApi,
-    private val academicYearApi: AcademicYearApi
+    private val academicYearApi: AcademicYearApi,
+    private val schoolClassApi: SchoolClassApi
 ) : StudentApi {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -176,6 +180,76 @@ class StudentService(
         return studentRepository.findBySchoolIdAndGuardiansGuardianId(schoolId, currentUser.profileId!!)
             .map { StudentMapper.toStudentResponse(it) }
     }
+
+    /**
+     * Parcours scolaire multi-années (ex. 6ème → seconde) : une entrée par inscription.
+     * Les notes et bulletins restent dans grading/reporting, filtrables par `academicYearId`.
+     */
+    fun getAcademicRecord(
+        currentUser: CurrentUser,
+        studentId: String,
+        schoolIdOverride: String? = null
+    ): Mono<StudentAcademicRecordResponse> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        return studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+            .flatMap { student ->
+                canRead(currentUser, student).flatMap { allowed ->
+                    if (!allowed) {
+                        Mono.error(ForbiddenException("FORBIDDEN", "Cannot read this student"))
+                    } else {
+                        enrollmentApi.findByStudent(schoolId, studentId)
+                            .concatMap { enrollment -> toYearRecord(schoolId, enrollment) }
+                            .collectList()
+                            .map { years ->
+                                StudentAcademicRecordResponse(
+                                    studentId = studentId,
+                                    schoolId = schoolId,
+                                    years = years.sortedWith(
+                                        compareByDescending<StudentYearRecordResponse> { it.academicYearLabel }
+                                            .thenByDescending { it.enrolledOn }
+                                    )
+                                )
+                            }
+                    }
+                }
+            }
+    }
+
+    private fun toYearRecord(
+        schoolId: String,
+        enrollment: com.kobe.smels.dto.student.EnrollmentSummaryDto
+    ): Mono<StudentYearRecordResponse> {
+        val yearMono = academicYearApi.getSummary(schoolId, enrollment.academicYearId)
+            .map { OptionalYear(it.label, it.status.name) }
+            .onErrorReturn(OptionalYear(null, null))
+        val classMono = schoolClassApi.getSummary(schoolId, enrollment.classId)
+            .map { OptionalClass(it.name, it.levelCode) }
+            .onErrorReturn(OptionalClass(null, null))
+        return Mono.zip(yearMono, classMono).map { tuple ->
+            val year = tuple.t1
+            val clazz = tuple.t2
+            StudentYearRecordResponse(
+                enrollmentId = enrollment.id,
+                studentId = enrollment.studentId,
+                academicYearId = enrollment.academicYearId,
+                academicYearLabel = year.label,
+                academicYearStatus = year.status,
+                classId = enrollment.classId,
+                className = clazz.name,
+                levelId = enrollment.levelId,
+                levelCode = clazz.levelCode,
+                rollNumber = enrollment.rollNumber,
+                status = enrollment.status,
+                enrolledOn = enrollment.enrolledOn,
+                leftOn = enrollment.leftOn,
+                repeater = enrollment.repeater
+            )
+        }
+    }
+
+    private data class OptionalYear(val label: String?, val status: String?)
+    private data class OptionalClass(val name: String?, val levelCode: String?)
 
     private fun listAll(
         currentUser: CurrentUser,
@@ -433,7 +507,8 @@ class StudentService(
             currentUser.profileType == ProfileType.STAFF &&
             currentUser.profileId != null
         ) {
-            return teacherTeachesStudent(student.schoolId, currentUser.profileId!!, student.id)
+            val studentId = student.id ?: return Mono.just(false)
+            return teacherTeachesStudent(student.schoolId, currentUser.profileId!!, studentId)
         }
         return Mono.just(false)
     }

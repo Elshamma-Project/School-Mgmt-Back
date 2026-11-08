@@ -19,6 +19,7 @@ import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
 import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.ClassSubjectApi
+import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
@@ -40,13 +41,15 @@ class StudentServiceTest {
     private val classSubjectApi: ClassSubjectApi = mock()
     private val enrollmentApi: EnrollmentApi = mock()
     private val academicYearApi: AcademicYearApi = mock()
+    private val schoolClassApi: SchoolClassApi = mock()
     private val service = StudentService(
         studentRepository,
         guardianRepository,
         outboxWriter,
         classSubjectApi,
         enrollmentApi,
-        academicYearApi
+        academicYearApi,
+        schoolClassApi
     )
 
     @Test

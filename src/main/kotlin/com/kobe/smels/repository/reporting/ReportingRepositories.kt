@@ -39,6 +39,12 @@ interface ReportCardRepository : ReactiveMongoRepository<ReportCard, String> {
         periodType: ReportPeriodType,
         status: ReportCardStatus
     ): Flux<ReportCard>
+    fun findBySchoolIdAndStudentId(schoolId: String, studentId: String): Flux<ReportCard>
+    fun findBySchoolIdAndStudentIdAndAcademicYearId(
+        schoolId: String,
+        studentId: String,
+        academicYearId: String
+    ): Flux<ReportCard>
 }
 
 interface StudentPeriodReviewRepository : ReactiveMongoRepository<StudentPeriodReview, String> {
