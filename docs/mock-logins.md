@@ -53,4 +53,5 @@ smels.security.bootstrap.username=superadmin@smels.local
 
 - Le seed est **idempotent** et migre les anciens usernames courts (`directeur`, …) vers l’e-mail.
 - Les fiches `Staff` démo reçoivent le **même e-mail** que le compte lié (`contact.email`), pour l’affichage RH.
+- Seed académique minimal : année `2025-2026`, matières Maths/PC, classes 6ème A / 5ème A, affectées à `enseignant@elshammah.demo`.
 - Ne jamais committer de vrais mots de passe ni de données nominatives réelles.
