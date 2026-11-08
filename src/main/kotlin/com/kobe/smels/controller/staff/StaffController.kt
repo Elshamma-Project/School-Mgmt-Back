@@ -3,6 +3,7 @@ package com.kobe.smels.controller.staff
 import com.kobe.smels.dto.staff.CreateStaffRequest
 import com.kobe.smels.dto.staff.PageResponse
 import com.kobe.smels.dto.staff.StaffResponse
+import com.kobe.smels.dto.staff.UpdateStaffIdentityRequest
 import com.kobe.smels.dto.staff.UpdateStaffRequest
 import com.kobe.smels.model.staff.StaffFunction
 import com.kobe.smels.service.staff.StaffService
@@ -56,6 +57,15 @@ class StaffController(
         @RequestParam(required = false) schoolId: String?
     ): Mono<StaffResponse> =
         SecuritySupport.currentUser().flatMap { staffService.update(it, id, request, schoolId) }
+
+    /** Identité limitée : soi-même (fiche liée) ou ADMINISTRATION / DIRECTOR / SUPER_ADMIN. */
+    @PutMapping("/{id}/identity")
+    fun updateIdentity(
+        @PathVariable id: String,
+        @Valid @RequestBody request: UpdateStaffIdentityRequest,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<StaffResponse> =
+        SecuritySupport.currentUser().flatMap { staffService.updateIdentity(it, id, request, schoolId) }
 
     @PostMapping("/{id}/deactivate")
     fun deactivate(

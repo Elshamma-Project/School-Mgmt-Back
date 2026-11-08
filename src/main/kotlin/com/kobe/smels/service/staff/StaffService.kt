@@ -4,6 +4,7 @@ import com.kobe.smels.dto.staff.CreateStaffRequest
 import com.kobe.smels.dto.staff.PageResponse
 import com.kobe.smels.dto.staff.StaffResponse
 import com.kobe.smels.dto.staff.StaffSummaryDto
+import com.kobe.smels.dto.staff.UpdateStaffIdentityRequest
 import com.kobe.smels.dto.staff.UpdateStaffRequest
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
@@ -122,6 +123,58 @@ class StaffService(
             .doOnError { error ->
                 log.warn(
                     "staff.update failed by={} schoolId={} staffId={} reason={}",
+                    currentUser.username,
+                    schoolId,
+                    id,
+                    error.message
+                )
+            }
+    }
+
+    /**
+     * Identité (nom, civilité, contact) : propriétaire de la fiche STAFF liée au compte,
+     * ou rôles de gestion (ADMINISTRATION / DIRECTOR / SUPER_ADMIN).
+     */
+    fun updateIdentity(
+        currentUser: CurrentUser,
+        id: String,
+        request: UpdateStaffIdentityRequest,
+        schoolIdOverride: String? = null
+    ): Mono<StaffResponse> {
+        val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.updateIdentity")
+        log.info("staff.updateIdentity start by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
+        return staffRepository.findByIdAndSchoolId(id, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STAFF_NOT_FOUND", "Staff member not found")))
+            .flatMap { staff ->
+                if (!canUpdateIdentity(currentUser, staff)) {
+                    log.warn(
+                        "staff.updateIdentity forbidden by={} schoolId={} staffId={}",
+                        currentUser.username,
+                        schoolId,
+                        id
+                    )
+                    Mono.error(ForbiddenException("FORBIDDEN", "Cannot update this staff identity"))
+                } else {
+                    staff.lastName = request.lastName.trim()
+                    staff.firstName = request.firstName.trim()
+                    staff.civility = request.civility
+                    staff.contact = StaffMapper.toContact(request.contact)
+                    staffRepository.save(staff)
+                }
+            }
+            .flatMap { saved -> emitChanged(saved).thenReturn(StaffMapper.toResponse(saved)) }
+            .doOnNext {
+                log.info(
+                    "staff.updateIdentity ok by={} schoolId={} staffId={}",
+                    currentUser.username,
+                    schoolId,
+                    id
+                )
+            }
+            .doOnError { error ->
+                log.warn(
+                    "staff.updateIdentity failed by={} schoolId={} staffId={} reason={}",
                     currentUser.username,
                     schoolId,
                     id,
@@ -351,15 +404,19 @@ class StaffService(
         if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
             return true
         }
-        // Enseignant : lecture de sa propre fiche (docs/05)
-        if (currentUser.hasRole(Role.TEACHER) &&
-            currentUser.profileType == ProfileType.STAFF &&
-            currentUser.profileId == staff.id
-        ) {
+        // Personnel : lecture de sa propre fiche (docs/05 enseignant ; étendu aux autres rôles STAFF)
+        return isOwnStaffProfile(currentUser, staff)
+    }
+
+    private fun canUpdateIdentity(currentUser: CurrentUser, staff: Staff): Boolean {
+        if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
             return true
         }
-        return false
+        return isOwnStaffProfile(currentUser, staff)
     }
+
+    private fun isOwnStaffProfile(currentUser: CurrentUser, staff: Staff): Boolean =
+        currentUser.profileType == ProfileType.STAFF && currentUser.profileId == staff.id
 
     private fun resolveSchoolId(currentUser: CurrentUser, overrideSchoolId: String?): String =
         currentUser.requireSchoolId(overrideSchoolId)

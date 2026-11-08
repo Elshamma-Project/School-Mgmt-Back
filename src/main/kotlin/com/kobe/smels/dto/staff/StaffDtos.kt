@@ -54,6 +54,21 @@ data class UpdateStaffRequest(
     val hireDate: LocalDate? = null
 )
 
+/**
+ * Mise à jour limitée de l’identité (self-service profil ou admin).
+ * Ne touche pas aux fonctions RH / matières enseignables.
+ */
+data class UpdateStaffIdentityRequest(
+    @field:NotBlank
+    @field:Size(max = 120)
+    val lastName: String,
+    @field:Size(max = 120)
+    val firstName: String = "",
+    val civility: Civility? = null,
+    @field:Valid
+    val contact: ContactInfoDto = ContactInfoDto()
+)
+
 data class StaffResponse(
     val id: String,
     val schoolId: String,
