@@ -115,15 +115,23 @@ class AuthService(
             }
     }
 
+    /**
+     * Révoque toutes les sessions ACTIVE **sauf** la session courante
+     * (« déconnecter les autres appareils »).
+     */
     fun logoutAll(currentUser: CurrentUser): Mono<Long> {
         log.info("auth.logoutAll start user={} accountId={}", currentUser.username, currentUser.accountId)
-        return userSessionService.revokeAllForAccount(currentUser.accountId, "LOGOUT_ALL")
+        return userSessionService.listActiveSessions(currentUser.accountId)
+            .filter { it.id != currentUser.sessionId }
+            .flatMap { userSessionService.revoke(it, "LOGOUT_ALL") }
+            .count()
             .doOnNext { count ->
                 log.info(
-                    "auth.logoutAll ok user={} accountId={} revoked={}",
+                    "auth.logoutAll ok user={} accountId={} revoked={} keptSession={}",
                     currentUser.username,
                     currentUser.accountId,
-                    count
+                    count,
+                    currentUser.sessionId
                 )
             }
     }
@@ -145,7 +153,9 @@ class AuthService(
                     createdAt = session.createdAtSession,
                     lastSeenAt = session.lastSeenAt,
                     expiresAt = session.expiresAt,
-                    current = session.id == currentUser.sessionId
+                    current = session.id == currentUser.sessionId,
+                    status = session.status.name,
+                    deviceKind = inferDeviceKind(session.userAgent),
                 )
             }
     }
@@ -393,5 +403,16 @@ class AuthService(
             mustChangePassword = account.mustChangePassword,
             user = UserAccountMapper.toResponse(account)
         )
+    }
+
+    /** Classification légère pour l’UI profil — pas persistée. */
+    private fun inferDeviceKind(userAgent: String?): String {
+        if (userAgent.isNullOrBlank()) return "UNKNOWN"
+        val ua = userAgent.lowercase()
+        return when {
+            listOf("ipad", "tablet", "kindle", "silk").any { it in ua } -> "TABLET"
+            listOf("mobi", "android", "iphone", "ipod", "windows phone").any { it in ua } -> "MOBILE"
+            else -> "DESKTOP"
+        }
     }
 }

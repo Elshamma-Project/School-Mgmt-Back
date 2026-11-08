@@ -73,6 +73,10 @@ data class UserAccountResponse(
     val lastLoginAt: Instant?
 )
 
+/**
+ * Session active exposée au front (jamais le hash refresh).
+ * [deviceKind] est dérivé du user-agent (pas stocké en base).
+ */
 data class SessionResponse(
     val id: String,
     val deviceLabel: String?,
@@ -81,5 +85,9 @@ data class SessionResponse(
     val createdAt: Instant,
     val lastSeenAt: Instant,
     val expiresAt: Instant,
-    val current: Boolean
+    val current: Boolean,
+    /** ACTIVE pour les listes courantes. */
+    val status: String = "ACTIVE",
+    /** MOBILE | TABLET | DESKTOP | UNKNOWN — calculé, pas persisté. */
+    val deviceKind: String = "UNKNOWN",
 )
