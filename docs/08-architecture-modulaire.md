@@ -8,7 +8,7 @@
 | Module | Propriétaire de | Collections (préfixe = module) | Dépend de (par identifiants et interfaces) |
 |---|---|---|---|
 | `shared` | noyau commun (pas un service) | `shared_outbox_events` | rien |
-| `iam` | comptes, rôles, (plus tard) authentification | `iam_user_accounts` | rien (référence `staff`, `student`, `guardian` par id) |
+| `user` | comptes, rôles, authentification, sessions | `user_accounts`, `user_sessions` | rien (référence `staff`, `student`, `guardian` par id) |
 | `academic` | établissement, années, niveaux, classes, salles, matières, groupes, matières de classe, compétences | `academic_schools`, `academic_years`, `academic_levels`, `academic_classes`, `academic_rooms`, `academic_subjects`, `academic_subject_groups`, `academic_class_subjects`, `academic_term_competencies` | `staff` (ids) |
 | `student` | élèves, tuteurs, inscriptions (CRUD sur leurs informations) | `student_students`, `student_guardians`, `student_enrollments` | `academic` (ids de classe, année) |
 | `staff` | enseignants et administration | `staff_members` | rien |
@@ -20,7 +20,7 @@ Futurs : `file-storage` (photos, logos, PDF), `notification` (SMS/WhatsApp/e-mai
 
 ```mermaid
 flowchart LR
-  iam --> staff & student
+  user --> staff & student
   student --> academic
   grading --> academic & student & staff
   reporting --> grading & academic & student & staff
@@ -38,7 +38,7 @@ com.kobe.smels
 ├── configuration/              socle technique (Mongo, Jackson, OpenAPI...) – commun
 ├── exception/                  exceptions et ProblemDetail – commun
 ├── shared/                     utilitaires communs (identité, tenant, événements) – commun
-├── model/<module>/             documents du module   (shared, iam, academic, student, staff, grading, reporting, timetable)
+├── model/<module>/             documents du module   (shared, user, academic, student, staff, grading, reporting, timetable)
 ├── repository/<module>/        accès Mongo du module : JAMAIS utilisé hors du module
 ├── service/<module>/           logique du module
 │   └── api/                    interfaces PUBLIQUES du module (ce que les autres modules ont le droit d'appeler)
@@ -71,9 +71,9 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `academic.class-subject.changed` | academic | grading, timetable, reporting | `classSubjectId`, `classId`, `subjectId`, `teacherId`, `coefficient`, `groupId`, `weeklyHours` |
 | `academic.class.changed` | academic | student, grading, reporting, timetable | `classId`, `name`, `levelCode`, `section`, `defaultLanguage` |
 | `academic.subject.renamed` | academic | timetable, reporting | `subjectId`, noms FR/EN |
-| `staff.member.changed` | staff | academic, timetable, reporting, iam | `staffId`, nom affiché, civilité, `active` |
+| `staff.member.changed` | staff | academic, timetable, reporting, user | `staffId`, nom affiché, civilité, `active` |
 | `student.enrolled` / `student.enrollment.changed` | student | grading, reporting | `enrollmentId`, `studentId`, `classId`, `academicYearId`, statut |
-| `student.guardian.linked` | student | iam | `guardianId`, `studentId`, droits de consultation |
+| `student.guardian.linked` | student | user | `guardianId`, `studentId`, droits de consultation |
 | `grading.session.opened` / `grading.session.closed` | grading | reporting, notification | `sessionId`, numéro, `termNumber` |
 | `grading.mark.changed` | grading | reporting (invalidation des brouillons) | `studentId`, `classSubjectId`, `sessionId` |
 | `reporting.report-card.published` | reporting | notification, student portal | `reportCardId`, `studentId`, période |
@@ -90,7 +90,7 @@ Versionner chaque charge utile (`schemaVersion`) ; n'y mettre que des identifian
 | Inscription d'un élève | `student` | `enrollmentId` et `classId` dans grading et reporting |
 | Notes et notes de séquence | `grading` | valeurs figées dans `ReportCard` |
 | Barème de notation | `grading` | identifiant et version dans `ReportCard` |
-| Compte et rôles | `iam` | rôles dans le jeton |
+| Compte et rôles | `user` | rôles dans le jeton |
 
 ## 6. Identité et multi-établissement
 
@@ -112,6 +112,6 @@ Le jeton d'accès (à implémenter à l'étape sécurité) porte : identifiant d
 3. `staff`.
 4. `grading` (forte charge en saisie).
 5. `reporting` (calculs et génération PDF, charge en pointe).
-6. `academic` et `iam` en dernier (tout le monde en dépend).
+6. `academic` et `user` en dernier (tout le monde en dépend).
 
 Chaque extraction : (a) vérifier le test d'architecture, (b) remplacer l'implémentation de l'interface `api` par un client, (c) déplacer les collections dans une base dédiée, (d) basculer le publieur d'événements sur le courtier.

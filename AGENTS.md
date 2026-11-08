@@ -14,7 +14,7 @@ Utilisateurs non techniques ; données de **mineurs**. **Tout doit être paramé
 - Package racine : `com.kobe.smels` ; couches : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`, `shared`
 
 ## Modules (même sous-dossier dans chaque couche)
-`iam` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · (`shared` : noyau commun)
+`user` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · (`shared` : noyau commun)
 Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `service/grading/api/` = interface publique), `controller/grading/`, `dto/grading/`.
 
 ## Où lire quoi

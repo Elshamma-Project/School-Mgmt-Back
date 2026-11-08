@@ -17,7 +17,7 @@ import java.time.LocalDate
  * Il n'y a donc PAS de collection `teachers` séparée : un enseignant est un Staff dont
  * `functions` contient TEACHER (l'API peut exposer /teachers et /staff comme deux vues filtrées).
  *
- * Fonction (poste RH) et rôle (droits d'accès, voir iam.Role) sont deux notions distinctes.
+ * Fonction (poste RH) et rôle (droits d'accès, voir user.Role) sont deux notions distinctes.
  */
 @Document(collection = "staff_members")
 @CompoundIndexes(

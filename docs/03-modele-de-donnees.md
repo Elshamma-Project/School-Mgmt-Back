@@ -10,7 +10,7 @@
 | Principe | Application |
 |---|---|
 | **Un module = ses collections** | Chaque collection est préfixée par son module (`academic_classes`, `grading_grades`...). Aucune jointure ni `$lookup` entre modules ; références par identifiant |
-| **Multi-établissement dès le début** | Tous les documents (sauf `academic_schools` et `iam_user_accounts`) étendent `TenantDocument` et portent `schoolId`. Tout index composite commence par `schoolId` |
+| **Multi-établissement dès le début** | Tous les documents (sauf `academic_schools` et `user_accounts`) étendent `TenantDocument` et portent `schoolId`. Tout index composite commence par `schoolId` |
 | **Référencer, sauf pour les photographies** | Seul `ReportCard` embarque tout (photographie figée). `TimetableEntry` embarque des libellés d'impression |
 | **Données de l'année vs permanentes** | `Student`, `Staff`, `Subject` sont permanents ; classe, inscription, séquences, matières de classe, fiches, notes, bulletins, emplois du temps sont rattachés à une `academicYearId` |
 | **Dénormalisation maîtrisée** | `Grade` et `SequenceMark` recopient `classId`, `classSubjectId`, `sessionId`, `academicYearId`, `enrollmentId` (immuables) |
@@ -26,7 +26,8 @@
 | Module | Collection | Classe | Rôle |
 |---|---|---|---|
 | shared | `shared_outbox_events` | `OutboxEvent` | Événements à publier vers les autres modules |
-| iam | `iam_user_accounts` | `UserAccount` | **Squelette** des comptes (non implémenté) |
+| user | `user_accounts` | `UserAccount` | Comptes de connexion (auth, rôles, verrouillage) |
+| user | `user_sessions` | `UserSession` | Sessions de connexion (max 2 actives / compte ; refresh hashé) |
 | academic | `academic_schools` | `School` | Établissement, en-têtes officiels par cycle, textes du bulletin |
 | academic | `academic_years` | `AcademicYear` (+ `Term`) | Années et trimestres |
 | academic | `academic_levels` | `Level` | 6ème, Form 3, Tle... |
@@ -164,5 +165,5 @@ Voir `fixtures/timetable-grid.json` : 8 périodes (7:35 → 15:10), 2 pauses, ne
 | Disponibilités des enseignants, contraintes de génération automatique de l'emploi du temps | module `timetable`, évolution (Q-32) |
 | Cartes d'élèves, frais, notifications, stockage de fichiers | modules futurs ; le modèle ne contient que des références (`photoFileId`, `logoFileId`, `pdfFileId`) |
 | Détail de chaque absence | compteurs seulement (`StudentPeriodReview`) |
-| Authentification et autorisations | `UserAccount` squelette ; voir `05-roles-permissions.md` |
+| Authentification et autorisations | `UserAccount` + `UserSession` (max 2 sessions) ; voir `05-roles-permissions.md` |
 | Import des élèves | plus tard ; création un par un en attendant |

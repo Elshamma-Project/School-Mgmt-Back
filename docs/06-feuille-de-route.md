@@ -11,7 +11,7 @@
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | à faire |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | à faire |
 | 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | à faire |
-| 7 | Sécurité (`iam`) : authentification, rôles, appartenance | à faire |
+| 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | 🟡 bases auth/roles/sessions faites ; appartenance métier module par module |
 | 8 | Modules suivants : cartes, inscriptions, notifications, fichiers, import des élèves | à faire |
 
 **Ordre conseillé** : 1 → 2 → 3 → 4 → 5 → 6 ; la sécurité (7) peut démarrer dès l'étape 2. Le calcul (4) tôt : il permet la démo de rejeu de décembre.
@@ -114,7 +114,7 @@ Tests avec fixtures/timetable-*.json (conflits, double période, activité, case
 N'accède jamais aux repositories d'academic ou staff : passe par leurs API.
 ```
 
-### Étape 7 — Sécurité (iam)
+### Étape 7 — Sécurité (user)
 ```
 Lis docs/05-roles-permissions.md en entier. Implémente l'authentification (jeton d'accès + renouvellement), UserAccount,
 Spring Security avec refus par défaut, les rôles, et les contrôles d'appartenance du § 3 dans la couche service de chaque

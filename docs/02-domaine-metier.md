@@ -41,7 +41,7 @@ Le logiciel permet de **tout configurer depuis l'interface graphique, dans les d
 | Avertissement / Blâme | Warning / Blame | reporting | `SanctionLevel` |
 | Emploi du temps | Timetable | timetable | `Timetable` + `TimetableEntry` |
 | Grille horaire | Time slot grid | timetable | `TimeSlotGrid` |
-| Compte de connexion | User account | iam | `UserAccount` |
+| Compte de connexion | User account | user | `UserAccount` |
 
 ## 3. Acteurs
 
@@ -176,4 +176,4 @@ stateDiagram-v2
 
 ## 7. Modules (futurs microservices)
 
-Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `iam`, `academic`, `student`, `staff`, `grading`, `reporting`, `timetable` (+ `shared`). Modules suivants : cartes d'élèves, inscriptions/matricule, frais de scolarité, notifications, stockage de fichiers, import des élèves.
+Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `user`, `academic`, `student`, `staff`, `grading`, `reporting`, `timetable` (+ `shared`). Modules suivants : cartes d'élèves, inscriptions/matricule, frais de scolarité, notifications, stockage de fichiers, import des élèves.

@@ -1,7 +1,8 @@
 # 05 — Rôles et permissions
 
-> **Conception uniquement.** L'authentification et les autorisations ne sont pas implémentées (étape « Sécurité » de la feuille de route). Le modèle contient seulement l'énumération `Role` et le squelette `UserAccount` (module `iam`).
+> Auth / sessions / rôles : module `user` (JWT + refresh, max 2 sessions actives).
 > Chaque module contrôle les droits sur **ses** ressources à partir du jeton (voir `08-architecture-modulaire.md` § 6).
+> Les contrôles d'appartenance fins (enseignant ↔ ClassSubject, parent ↔ enfants) se branchent dans les services métier au fur et à mesure.
 
 ## 1. Rôles
 
@@ -31,7 +32,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Affecter un enseignant à une matière de classe | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Barèmes de notation, gabarits de bulletin (grading, reporting) | ✖ | ✖ | ✖ | lecture | ✔ | ✔ | un changement modifie les calculs |
 | Enseignants : CRUD (staff) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : sa fiche en lecture |
-| **Comptes d'administration** : CRUD (iam) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | |
+| **Comptes d'administration** : CRUD (user) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | |
 | Élèves, tuteurs : CRUD (student) | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | lecture de ses propres données ; enseignant : élèves de ses classes |
 | Inscriptions : CRUD (student) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Fiche de notes** : notes, bonus, malus (grading) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : `ClassSubject.teacherId` = lui **et** séquence `OPEN` |
@@ -44,7 +45,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Journal d'audit des notes | ✖ | ✖ | ✖ | ✔ | ✔ | ◐ | |
 | **Emploi du temps** : créer, modifier, publier (timetable) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Emploi du temps : consulter | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | élève : sa classe ; parent : classes de ses enfants ; enseignant : ses cours |
-| Comptes élèves et parents : créer, réinitialiser (iam) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
+| Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Plusieurs établissements, support | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | accès journalisé |
 
 ## 3. Règles d'appartenance (côté serveur, jamais seulement dans l'interface)

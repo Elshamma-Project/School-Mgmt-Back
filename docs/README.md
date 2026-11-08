@@ -28,7 +28,7 @@ back-office/
     ├── controller/<module>/        (vide)
     ├── dto/<module>/               (vide)
     ├── configuration/ exception/ shared/   (vides)
-    └── modules : shared, iam, academic, student, staff, grading, reporting, timetable
+    └── modules : shared, user, academic, student, staff, grading, reporting, timetable
 ```
 
 ## Intégration dans votre projet
