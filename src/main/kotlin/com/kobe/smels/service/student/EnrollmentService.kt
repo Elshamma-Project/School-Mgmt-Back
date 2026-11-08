@@ -5,6 +5,7 @@ import com.kobe.smels.dto.student.EnrollmentResponse
 import com.kobe.smels.dto.student.EnrollmentSummaryDto
 import com.kobe.smels.dto.student.PageResponse
 import com.kobe.smels.dto.student.UpdateEnrollmentRequest
+import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
@@ -13,6 +14,8 @@ import com.kobe.smels.model.student.EnrollmentStatus
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.student.EnrollmentRepository
 import com.kobe.smels.repository.student.StudentRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
+import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
@@ -28,6 +31,8 @@ import kotlin.math.ceil
 class EnrollmentService(
     private val enrollmentRepository: EnrollmentRepository,
     private val studentRepository: StudentRepository,
+    private val academicYearApi: AcademicYearApi,
+    private val schoolClassApi: SchoolClassApi,
     private val outboxWriter: OutboxWriter
 ) : EnrollmentApi {
 
@@ -45,31 +50,50 @@ class EnrollmentService(
             request.classId
         )
 
-        // TODO: valider classId / academicYearId / levelId via AcademicApi quand le module academic existera.
         return studentRepository.findByIdAndSchoolId(request.studentId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .flatMap { student ->
                 if (!student.active) {
                     Mono.error(ConflictException("STUDENT_INACTIVE", "Cannot enroll an inactive student"))
                 } else {
-                    ensureNoEnrollmentForYear(schoolId, request.studentId, request.academicYearId)
-                        .then(
-                            Mono.fromCallable {
-                                Enrollment(
-                                    schoolId = schoolId,
-                                    studentId = request.studentId,
-                                    academicYearId = request.academicYearId.trim(),
-                                    classId = request.classId.trim(),
-                                    levelId = request.levelId.trim(),
-                                    rollNumber = request.rollNumber,
-                                    repeater = request.repeater,
-                                    newStudent = request.newStudent,
-                                    status = EnrollmentStatus.ENROLLED,
-                                    enrolledOn = request.enrolledOn,
-                                    previousSchool = request.previousSchool?.trim()?.ifBlank { null }
+                    academicYearApi.getSummary(schoolId, request.academicYearId)
+                        .then(schoolClassApi.getSummary(schoolId, request.classId))
+                        .flatMap { schoolClass ->
+                            if (schoolClass.academicYearId != request.academicYearId) {
+                                Mono.error(
+                                    BusinessRuleException(
+                                        "CLASS_YEAR_MISMATCH",
+                                        "Class does not belong to the given academic year"
+                                    )
                                 )
+                            } else if (schoolClass.levelId != request.levelId) {
+                                Mono.error(
+                                    BusinessRuleException(
+                                        "CLASS_LEVEL_MISMATCH",
+                                        "levelId does not match the class level"
+                                    )
+                                )
+                            } else {
+                                ensureNoEnrollmentForYear(schoolId, request.studentId, request.academicYearId)
+                                    .then(
+                                        Mono.fromCallable {
+                                            Enrollment(
+                                                schoolId = schoolId,
+                                                studentId = request.studentId,
+                                                academicYearId = request.academicYearId.trim(),
+                                                classId = request.classId.trim(),
+                                                levelId = request.levelId.trim(),
+                                                rollNumber = request.rollNumber,
+                                                repeater = request.repeater,
+                                                newStudent = request.newStudent,
+                                                status = EnrollmentStatus.ENROLLED,
+                                                enrolledOn = request.enrolledOn,
+                                                previousSchool = request.previousSchool?.trim()?.ifBlank { null }
+                                            )
+                                        }
+                                    )
                             }
-                        )
+                        }
                 }
             }
             .flatMap { enrollmentRepository.save(it) }

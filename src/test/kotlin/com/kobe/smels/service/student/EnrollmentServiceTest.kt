@@ -10,8 +10,15 @@ import com.kobe.smels.model.student.EnrollmentStatus
 import com.kobe.smels.model.student.Student
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
+import com.kobe.smels.dto.academic.AcademicYearSummaryDto
+import com.kobe.smels.dto.academic.SchoolClassSummaryDto
+import com.kobe.smels.model.academic.AcademicYearStatus
+import com.kobe.smels.model.shared.Language
+import com.kobe.smels.model.shared.Section
 import com.kobe.smels.repository.student.EnrollmentRepository
 import com.kobe.smels.repository.student.StudentRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
+import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
 import org.mockito.kotlin.any
@@ -27,25 +34,21 @@ import kotlin.test.assertEquals
 class EnrollmentServiceTest {
     private val enrollmentRepository: EnrollmentRepository = mock()
     private val studentRepository: StudentRepository = mock()
+    private val academicYearApi: AcademicYearApi = mock()
+    private val schoolClassApi: SchoolClassApi = mock()
     private val outboxWriter: OutboxWriter = mock()
-    private val service = EnrollmentService(enrollmentRepository, studentRepository, outboxWriter)
+    private val service = EnrollmentService(
+        enrollmentRepository,
+        studentRepository,
+        academicYearApi,
+        schoolClassApi,
+        outboxWriter
+    )
 
     @Test
     fun `BR-41 rejects second enrollment for same academic year`() {
-        whenever(studentRepository.findByIdAndSchoolId("stu-1", "school-1"))
-            .thenReturn(
-                Mono.just(
-                    Student(
-                        id = "stu-1",
-                        schoolId = "school-1",
-                        matricule = "TEST-0001",
-                        lastName = "ALPHA",
-                        firstName = "Sample",
-                        sex = Sex.FEMALE,
-                        active = true
-                    )
-                )
-            )
+        stubActiveStudent()
+        stubAcademicRefs()
         whenever(
             enrollmentRepository.findBySchoolIdAndStudentIdAndAcademicYearId("school-1", "stu-1", "year-1")
         ).thenReturn(
@@ -75,20 +78,8 @@ class EnrollmentServiceTest {
 
     @Test
     fun `admin can create enrollment and emits student enrolled event`() {
-        whenever(studentRepository.findByIdAndSchoolId("stu-1", "school-1"))
-            .thenReturn(
-                Mono.just(
-                    Student(
-                        id = "stu-1",
-                        schoolId = "school-1",
-                        matricule = "TEST-0001",
-                        lastName = "ALPHA",
-                        firstName = "Sample",
-                        sex = Sex.FEMALE,
-                        active = true
-                    )
-                )
-            )
+        stubActiveStudent()
+        stubAcademicRefs()
         whenever(
             enrollmentRepository.findBySchoolIdAndStudentIdAndAcademicYearId("school-1", "stu-1", "year-1")
         ).thenReturn(Mono.empty())
@@ -176,6 +167,70 @@ class EnrollmentServiceTest {
         StepVerifier.create(service.isEnrolled("school-1", "stu-1", "class-other", "year-1"))
             .assertNext { kotlin.test.assertFalse(it) }
             .verifyComplete()
+    }
+
+    private fun stubActiveStudent() {
+        whenever(studentRepository.findByIdAndSchoolId("stu-1", "school-1"))
+            .thenReturn(
+                Mono.just(
+                    Student(
+                        id = "stu-1",
+                        schoolId = "school-1",
+                        matricule = "TEST-0001",
+                        lastName = "ALPHA",
+                        firstName = "Sample",
+                        sex = Sex.FEMALE,
+                        active = true
+                    )
+                )
+            )
+    }
+
+    private fun stubAcademicRefs() {
+        whenever(academicYearApi.getSummary("school-1", "year-1"))
+            .thenReturn(
+                Mono.just(
+                    AcademicYearSummaryDto(
+                        id = "year-1",
+                        schoolId = "school-1",
+                        label = "2025-2026",
+                        current = true,
+                        status = AcademicYearStatus.ACTIVE
+                    )
+                )
+            )
+        whenever(schoolClassApi.getSummary("school-1", "class-1"))
+            .thenReturn(
+                Mono.just(
+                    SchoolClassSummaryDto(
+                        id = "class-1",
+                        schoolId = "school-1",
+                        academicYearId = "year-1",
+                        levelId = "level-1",
+                        levelCode = "6EME",
+                        name = "6eme A",
+                        section = Section.FRANCOPHONE,
+                        defaultLanguage = Language.FR,
+                        active = true
+                    )
+                )
+            )
+        whenever(schoolClassApi.getSummary("school-1", "class-b"))
+            .thenReturn(
+                Mono.just(
+                    SchoolClassSummaryDto(
+                        id = "class-b",
+                        schoolId = "school-1",
+                        academicYearId = "year-1",
+                        levelId = "level-1",
+                        levelCode = "6EME",
+                        name = "6eme B",
+                        section = Section.FRANCOPHONE,
+                        defaultLanguage = Language.FR,
+                        active = true
+                    )
+                )
+            )
     }
 
     private fun adminUser() = CurrentUser(
