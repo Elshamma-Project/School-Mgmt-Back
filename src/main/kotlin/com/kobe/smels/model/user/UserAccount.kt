@@ -35,6 +35,11 @@ data class UserAccount(
     var roles: Set<Role> = emptySet(),
     var profileType: ProfileType = ProfileType.NONE,
     var profileId: String? = null,
+    /**
+     * Photo de profil UI (`user_avatars`) — **jamais** utilisée sur les bulletins
+     * (la photo élève bulletin reste `Student.photoFileId`).
+     */
+    var avatarFileId: String? = null,
     var status: AccountStatus = AccountStatus.PENDING,
     var mustChangePassword: Boolean = true,
     var failedLoginCount: Int = 0,

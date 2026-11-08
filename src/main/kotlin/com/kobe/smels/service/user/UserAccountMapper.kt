@@ -12,6 +12,7 @@ object UserAccountMapper {
             roles = account.roles,
             profileType = account.profileType,
             profileId = account.profileId,
+            hasAvatar = !account.avatarFileId.isNullOrBlank(),
             status = account.status,
             mustChangePassword = account.mustChangePassword,
             lastLoginAt = account.lastLoginAt

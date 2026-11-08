@@ -66,6 +66,8 @@ data class UserAccountResponse(
     val roles: Set<Role>,
     val profileType: ProfileType,
     val profileId: String?,
+    /** true si une photo de profil UI est définie (hors bulletin). */
+    val hasAvatar: Boolean = false,
     val status: AccountStatus,
     val mustChangePassword: Boolean,
     val lastLoginAt: Instant?

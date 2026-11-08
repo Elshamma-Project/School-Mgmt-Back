@@ -32,6 +32,7 @@ class JwtAuthenticationFilter(
         "/api/v1/auth/logout",
         "/api/v1/auth/logout-all",
         "/api/v1/auth/me",
+        "/api/v1/auth/me/avatar",
         "/api/v1/auth/sessions"
     )
 

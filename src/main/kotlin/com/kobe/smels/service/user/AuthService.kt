@@ -9,11 +9,18 @@ import com.kobe.smels.dto.user.UserAccountResponse
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.UnauthorizedException
+import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.user.AccountStatus
 import com.kobe.smels.model.user.UserAccount
+import com.kobe.smels.model.user.UserAvatar
 import com.kobe.smels.repository.user.UserAccountRepository
+import com.kobe.smels.repository.user.UserAvatarRepository
 import com.kobe.smels.shared.security.CurrentUser
+import org.bson.types.Binary
 import org.slf4j.LoggerFactory
+import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.http.MediaType
+import org.springframework.http.codec.multipart.FilePart
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -24,12 +31,22 @@ import java.time.temporal.ChronoUnit
 @Service
 class AuthService(
     private val userAccountRepository: UserAccountRepository,
+    private val userAvatarRepository: UserAvatarRepository,
     private val userSessionService: UserSessionService,
     private val jwtService: JwtService,
     private val passwordEncoder: PasswordEncoder,
     private val securityProperties: SecurityProperties
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    companion object {
+        private const val AVATAR_MAX_BYTES = 512 * 1024
+        private val AVATAR_CONTENT_TYPES = setOf(
+            MediaType.IMAGE_JPEG_VALUE,
+            MediaType.IMAGE_PNG_VALUE,
+            "image/webp"
+        )
+    }
 
     fun login(
         request: LoginRequest,
@@ -135,6 +152,96 @@ class AuthService(
 
     fun revokeSession(currentUser: CurrentUser, sessionId: String): Mono<Void> {
         return userSessionService.revokeByIdForAccount(sessionId, currentUser.accountId).then()
+    }
+
+    /**
+     * Upload avatar UI (hors bulletin). Remplace l’éventuel précédent.
+     */
+    fun uploadAvatar(currentUser: CurrentUser, file: FilePart): Mono<UserAccountResponse> {
+        val contentType = file.headers().contentType?.toString()?.substringBefore(";")?.trim()?.lowercase()
+            ?: ""
+        if (contentType !in AVATAR_CONTENT_TYPES) {
+            return Mono.error(
+                BusinessRuleException("AVATAR_TYPE", "Avatar must be JPEG, PNG or WebP")
+            )
+        }
+        log.info("auth.uploadAvatar start accountId={}", currentUser.accountId)
+        return DataBufferUtils.join(file.content())
+            .flatMap { buffer ->
+                val size = buffer.readableByteCount()
+                if (size <= 0) {
+                    DataBufferUtils.release(buffer)
+                    return@flatMap Mono.error(BusinessRuleException("AVATAR_EMPTY", "Avatar file is empty"))
+                }
+                if (size > AVATAR_MAX_BYTES) {
+                    DataBufferUtils.release(buffer)
+                    return@flatMap Mono.error(
+                        BusinessRuleException("AVATAR_TOO_LARGE", "Avatar must be at most 512 KB")
+                    )
+                }
+                val bytes = ByteArray(size)
+                buffer.read(bytes)
+                DataBufferUtils.release(buffer)
+                Mono.just(bytes to contentType)
+            }
+            .flatMap { (bytes, type) ->
+                userAccountRepository.findById(currentUser.accountId)
+                    .switchIfEmpty(Mono.error(UnauthorizedException("ACCOUNT_NOT_FOUND", "Account not found")))
+                    .flatMap { account ->
+                        val previousId = account.avatarFileId
+                        val avatar = UserAvatar(
+                            id = previousId,
+                            accountId = account.id!!,
+                            contentType = type,
+                            sizeBytes = bytes.size.toLong(),
+                            data = Binary(bytes)
+                        )
+                        userAvatarRepository.save(avatar)
+                            .flatMap { saved ->
+                                account.avatarFileId = saved.id
+                                userAccountRepository.save(account)
+                            }
+                    }
+            }
+            .map { UserAccountMapper.toResponse(it) }
+            .doOnNext {
+                log.info("auth.uploadAvatar ok accountId={}", currentUser.accountId)
+            }
+    }
+
+    fun getAvatar(currentUser: CurrentUser): Mono<UserAvatar> {
+        return userAccountRepository.findById(currentUser.accountId)
+            .switchIfEmpty(Mono.error(UnauthorizedException("ACCOUNT_NOT_FOUND", "Account not found")))
+            .flatMap { account ->
+                val avatarId = account.avatarFileId
+                    ?: return@flatMap Mono.error(NotFoundException("AVATAR_NOT_FOUND", "No avatar"))
+                userAvatarRepository.findById(avatarId)
+                    .switchIfEmpty(
+                        userAvatarRepository.findByAccountId(account.id!!)
+                            .switchIfEmpty(Mono.error(NotFoundException("AVATAR_NOT_FOUND", "No avatar")))
+                    )
+            }
+    }
+
+    fun deleteAvatar(currentUser: CurrentUser): Mono<UserAccountResponse> {
+        log.info("auth.deleteAvatar start accountId={}", currentUser.accountId)
+        return userAccountRepository.findById(currentUser.accountId)
+            .switchIfEmpty(Mono.error(UnauthorizedException("ACCOUNT_NOT_FOUND", "Account not found")))
+            .flatMap { account ->
+                val avatarId = account.avatarFileId
+                account.avatarFileId = null
+                userAccountRepository.save(account)
+                    .flatMap { saved ->
+                        val cleanup = when {
+                            !avatarId.isNullOrBlank() -> userAvatarRepository.deleteById(avatarId)
+                            else -> userAvatarRepository.deleteByAccountId(saved.id!!)
+                        }
+                        cleanup.thenReturn(UserAccountMapper.toResponse(saved))
+                    }
+            }
+            .doOnNext {
+                log.info("auth.deleteAvatar ok accountId={}", currentUser.accountId)
+            }
     }
 
     fun changePassword(currentUser: CurrentUser, request: ChangePasswordRequest): Mono<UserAccountResponse> {
