@@ -244,7 +244,11 @@ class AuthService(
             }
     }
 
-    fun changePassword(currentUser: CurrentUser, request: ChangePasswordRequest): Mono<UserAccountResponse> {
+    /**
+     * Change le mot de passe, révoque les autres sessions, **rotate** le refresh de la session
+     * courante et renvoie de nouveaux jetons (claim `mcp` à jour).
+     */
+    fun changePassword(currentUser: CurrentUser, request: ChangePasswordRequest): Mono<AuthTokensResponse> {
         log.info("auth.changePassword start user={} accountId={}", currentUser.username, currentUser.accountId)
         if (request.newPassword != request.confirmPassword) {
             return Mono.error(BusinessRuleException("PASSWORD_MISMATCH", "New password confirmation does not match"))
@@ -265,11 +269,14 @@ class AuthService(
                 userAccountRepository.save(account)
             }
             .flatMap { saved ->
-                // Invalide les autres sessions après changement de mot de passe.
                 userSessionService.listActiveSessions(saved.id!!)
                     .filter { it.id != currentUser.sessionId }
                     .flatMap { userSessionService.revoke(it, "PASSWORD_CHANGED") }
-                    .then(Mono.just(UserAccountMapper.toResponse(saved)))
+                    .then(
+                        userSessionService.requireActiveSession(currentUser.sessionId, saved.id!!)
+                            .flatMap { userSessionService.rotateRefreshToken(it) }
+                            .map { issued -> toTokensResponse(saved, issued) }
+                    )
             }
             .doOnNext {
                 log.info("auth.changePassword ok user={} accountId={}", currentUser.username, currentUser.accountId)

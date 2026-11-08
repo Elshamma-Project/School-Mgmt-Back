@@ -8,7 +8,7 @@
 
 | `Role` | Qui | Portée |
 |---|---|---|
-| `STUDENT` | Élève (connexion par matricule, activée plus tard) | Ses propres données |
+| `STUDENT` | Élève (connexion par **e-mail** ; compte créé par l’admin — futur envoi MDP par e-mail) | Ses propres données |
 | `PARENT` | Parent / tuteur | **Tous ses enfants, et uniquement eux** (réponse Q-20), via `Student.guardians` |
 | `TEACHER` | Enseignant | Ses `ClassSubject` : ses fiches de notes, ses fiches de report, son emploi du temps |
 | `SURVEILLANT_GENERAL` | Surveillant Général | Lecture + visa SG des fiches de report (Q-38 : périmètre exact à confirmer) |
@@ -71,8 +71,8 @@ Contrôler **dans la couche service** de chaque module. Entre modules, le module
 1. **Refus par défaut** : toute route sans règle explicite est refusée.
 2. **Les identifiants viennent du jeton**, jamais du corps de la requête.
 3. **Authentification** : jeton d'accès court + jeton de renouvellement ; mots de passe bcrypt ou argon2 ; verrouillage après échecs répétés ; limitation de débit.
-4. **Élèves** : identifiant = matricule ; mot de passe temporaire à changer (`mustChangePassword`) ; pas la date de naissance comme secret.
-5. **Parents** : compte créé par l'administration à partir du téléphone ou de l'e-mail ; **un compte voit plusieurs enfants**.
+4. **Élèves** : identifiant de connexion = **e-mail** (unicité `(schoolId, username)` minuscules) ; le matricule reste l’identité métier, pas le login. Compte créé par l’admin qui renseigne l’e-mail ; MDP temporaire + `mustChangePassword` (envoi automatique par e-mail = feature future). Pas la date de naissance comme secret.
+5. **Parents** : compte créé par l'administration à partir de l'e-mail (téléphone = contact) ; **un compte voit plusieurs enfants**. Unicité e-mail par établissement : un e-mail = un compte (cumul de rôles si besoin, pas deux comptes même e-mail).
 6. **Journaliser** : connexions, échecs, consultations de bulletins, corrections après clôture, accès `SUPER_ADMIN`.
 7. **Données de mineurs** : minimiser les réponses, aucun identifiant d'élève dans les logs.
 8. **DTO obligatoires** : jamais de `passwordHash`.

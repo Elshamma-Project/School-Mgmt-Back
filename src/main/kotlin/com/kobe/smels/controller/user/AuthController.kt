@@ -72,7 +72,7 @@ class AuthController(
         SecuritySupport.currentUser().flatMap { authService.revokeSession(it, sessionId) }
 
     @PostMapping("/change-password")
-    fun changePassword(@Valid @RequestBody request: ChangePasswordRequest): Mono<UserAccountResponse> =
+    fun changePassword(@Valid @RequestBody request: ChangePasswordRequest): Mono<AuthTokensResponse> =
         SecuritySupport.currentUser().flatMap { authService.changePassword(it, request) }
 
     /** Photo de profil UI — jamais embarquée dans un bulletin. */
