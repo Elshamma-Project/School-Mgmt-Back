@@ -30,10 +30,12 @@ Le logiciel permet de **tout configurer depuis l'interface graphique, dans les d
 | Inscription | Enrollment | student | `Enrollment` |
 | Effectif (N° ON ROLL) | Class size / roll | student → reporting | nombre d'inscrits (`ClassSnapshot.effectif`) |
 | Fiche de notes (d'un enseignant) | Grade sheet | grading | `GradeSheet` |
+| Fiche de report de notes | Grade report sheet | grading | `GradeReportSheet` |
 | Colonne de la fiche : note, bonus, malus | Assessment column | grading | `Assessment` |
 | Note brute | Grade / mark | grading | `Grade` |
 | Note de séquence (DEVn) | Sequence mark | grading | `SequenceMark` |
 | Barème | Grading scheme | grading | `GradingScheme` |
+| Surveillant Général | Senior supervisor | user | `Role.SURVEILLANT_GENERAL` |
 | Gabarit de bulletin | Report card template | reporting | `ReportTemplate` |
 | Bulletin | Report card | reporting | `ReportCard` |
 | Conseil de classe | Class council | reporting | `StudentPeriodReview.councilDecision` |
@@ -49,9 +51,10 @@ Le logiciel permet de **tout configurer depuis l'interface graphique, dans les d
 |---|---|---|
 | Élève | `STUDENT` | Plus tard : se connecte avec son matricule, suit ses notes en temps réel |
 | Parent / tuteur | `PARENT` | **Navigateur uniquement** (réponse Q-20) : se connecte à son compte et voit automatiquement les notes et les bulletins de **tous ses enfants, et uniquement les siens** ; télécharge le bulletin annuel publié |
-| Enseignant | `TEACHER` | Remplit les **fiches de notes** de ses matières et classes tant que la séquence est ouverte ; consulte son emploi du temps |
-| Administration | `ADMINISTRATION` | Tout ce que fait l'enseignant ; corrige après clôture ; gère matières, coefficients, enseignants, élèves, inscriptions, emplois du temps ; génère et imprime les bulletins |
-| Directeur | `DIRECTOR` | Accès complet ; gère les comptes d'administration |
+| Enseignant | `TEACHER` | Remplit les **fiches de notes** de ses matières et classes tant que la séquence est ouverte ; génère / soumet sa **fiche de report** ; consulte son emploi du temps |
+| Surveillant Général | `SURVEILLANT_GENERAL` | Lit et **vise** les fiches de report (visa SG) ; Q-38 ouverte sur le périmètre exact |
+| Administration | `ADMINISTRATION` | Tout ce que fait l'enseignant ; corrige après clôture ; régénère / corrige les fiches de report avec motif ; gère matières, coefficients, enseignants, élèves, inscriptions, emplois du temps ; génère et imprime les bulletins |
+| Directeur / Principal | `DIRECTOR` | Accès complet ; visa final Principal des fiches de report (Q-38 : rôle PRINCIPAL distinct ?) ; gère les comptes d'administration |
 | Développeur | `SUPER_ADMIN` | Accès plateforme et support |
 
 Détail : `05-roles-permissions.md`.
@@ -76,6 +79,8 @@ erDiagram
   GRADE_SHEET ||--o{ ASSESSMENT : "colonnes (notes, bonus, malus)"
   ASSESSMENT ||--o{ GRADE : "une note par élève"
   GRADE_SHEET ||--o{ SEQUENCE_MARK : "note de séquence totalisée"
+  CLASS_SUBJECT ||--o{ GRADE_REPORT_SHEET : "une fiche de report par trimestre"
+  SEQUENCE_MARK ||--o{ GRADE_REPORT_SHEET : "alimente Comp/20"
   ENROLLMENT ||--o{ SEQUENCE_MARK : ""
   GRADE ||--o{ GRADE_AUDIT_ENTRY : "journal"
   ENROLLMENT ||--o{ STUDENT_PERIOD_REVIEW : "absences, sanctions"
@@ -116,6 +121,17 @@ Lecture clé : **`ClassSubject` est le pivot** (qui enseigne quoi, à quelle cla
 - **BR-17** Les notes de séquence publiées sont visibles en temps réel par l'élève et ses parents.
 - **BR-18** Toute création, modification, suppression de note, de bonus, de malus ou de note de séquence écrit une ligne dans `GradeAuditEntry` (qui, quand, avant, après, rôle, motif, après clôture ?).
 - **BR-19** La fiche peut être exportée sur **plusieurs pages** (document personnel de l'enseignant) ; ce n'est pas un bulletin.
+
+### 5.2 bis Fiche de report de notes (design papier trimestriel)
+- **BR-70** Une **fiche de report** (`GradeReportSheet`) existe par `ClassSubject` et par trimestre (2 séquences côte à côte). Elle est un **instantané** des `SequenceMark` ; elle ne remplace pas la `GradeSheet` (bonus/malus restent dans le fichier de travail).
+- **BR-71** Colonnes par séquence : Comp/20, Coef, Note×Coef, Rang (dans la matière), App. Lignes : N° (`Enrollment.rollNumber`), noms figés, sexe. En-tête : classe, enseignant, matière, coefficient, **N° = numéro du trimestre** (Q-35), effectif, garçons, filles, dates de composition (`EvaluationSession.examDate`).
+- **BR-72** Rang : moyenne exacte, ex aequo en compétition (1, 2, 2, 4), parmi les élèves SCORED ; PENDING → pas de rang.
+- **BR-73** `weightedMark = mark × coefficient` ; PENDING → cellules numériques vides, jamais 0.
+- **BR-74** App calculée automatiquement via l'échelle du barème (LETTER / COMPETENCY, Q-10 / Q-36) ; version **vierge** imprimable (noms seuls) pour saisie manuscrite.
+- **BR-75** PDF A4 paysage ; jusqu'à `reportSheetMaxRowsPerPage` (45) lignes / page, puis pages suivantes avec en-tête répété (Q-35). Pied : visas Enseignant, Surveillant Général, Principal ; mention ratures + délai 72 h.
+- **BR-76** Cycle : DRAFT → SUBMITTED (enseignant) → VISA_SG → VISA_PRINCIPAL ; REJECTED avec motif → retour possible en régénération DRAFT.
+- **BR-77** Délai `reportSheetDeadlineHours` (72) après `examDate` : **avertissement** seulement tant que `reportSheetDeadlineBlocking = false` (Q-37).
+- **BR-78** Élève et parent : **aucun accès** à la fiche de report. Correction sur fiche déjà soumise/visée : motif + approbation Principal (`GradeAuditEntry.approvedBy`).
 
 ### 5.3 Séquences et clôture
 - **BR-20** Une année compte 6 séquences ; 1-2, 3-4, 5-6 forment les trimestres 1, 2, 3.
@@ -168,6 +184,7 @@ stateDiagram-v2
 1. **Préparation (administration)** : année, classes, matières de classe (coefficient, groupe, enseignant, heures), inscription des élèves, grille horaire et emploi du temps.
 2. **Ouverture** de la séquence n ; création automatique des fiches de notes.
 3. **Saisie (enseignants)** : chaque enseignant remplit sa fiche ; le logiciel totalise la note de séquence ; les notes sont visibles en temps réel pour l'élève et ses parents.
+3 bis. **Fiche de report** (par trimestre) : génération depuis les `SequenceMark`, soumission, visas SG puis Principal (ou impression vierge pour workflow manuscrit).
 4. **Clôture** de la séquence (administration) ; corrections ensuite avec motif et trace.
 5. **Éléments hors notes** : absences, retards, sanctions, distinctions, compétences du trimestre.
 6. **Génération** des bulletins : calcul (`04-regles-de-calcul.md`), `ReportCard` en `DRAFT`, PDF une page.

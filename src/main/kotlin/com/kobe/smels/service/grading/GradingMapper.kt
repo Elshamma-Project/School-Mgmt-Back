@@ -2,18 +2,25 @@ package com.kobe.smels.service.grading
 
 import com.kobe.smels.dto.grading.AssessmentResponse
 import com.kobe.smels.dto.grading.EvaluationSessionResponse
+import com.kobe.smels.dto.grading.GradeReportSheetLineDto
+import com.kobe.smels.dto.grading.GradeReportSheetResponse
 import com.kobe.smels.dto.grading.GradeResponse
 import com.kobe.smels.dto.grading.GradeSheetResponse
 import com.kobe.smels.dto.grading.GradingSchemeResponse
 import com.kobe.smels.dto.grading.LocalizedTextDto
+import com.kobe.smels.dto.grading.ReportSheetSequenceCellDto
+import com.kobe.smels.dto.grading.ReportSheetVisaDto
 import com.kobe.smels.dto.grading.SequenceMarkResponse
 import com.kobe.smels.dto.grading.SequenceMarkSummaryDto
 import com.kobe.smels.dto.grading.TotalizationRuleDto
 import com.kobe.smels.model.grading.Assessment
 import com.kobe.smels.model.grading.EvaluationSession
 import com.kobe.smels.model.grading.Grade
+import com.kobe.smels.model.grading.GradeReportSheet
 import com.kobe.smels.model.grading.GradeSheet
 import com.kobe.smels.model.grading.GradingScheme
+import com.kobe.smels.model.grading.ReportSheetSequenceCell
+import com.kobe.smels.model.grading.ReportSheetVisa
 import com.kobe.smels.model.grading.SequenceMark
 import com.kobe.smels.model.grading.TotalizationRule
 import com.kobe.smels.model.shared.LocalizedText
@@ -32,6 +39,7 @@ object GradingMapper {
         name = toLocalizedDto(session.name),
         startDate = session.startDate,
         endDate = session.endDate,
+        examDate = session.examDate,
         entryDeadline = session.entryDeadline,
         status = session.status,
         openedAt = session.openedAt,
@@ -122,7 +130,65 @@ object GradingMapper {
         maxScore = s.maxScore,
         passMark = s.passMark,
         decimals = s.decimals,
+        reportSheetDeadlineHours = s.reportSheetDeadlineHours,
+        reportSheetDeadlineBlocking = s.reportSheetDeadlineBlocking,
+        reportSheetMaxRowsPerPage = s.reportSheetMaxRowsPerPage,
+        reportSheetAppreciationScaleCode = s.reportSheetAppreciationScaleCode,
         active = s.active
+    )
+
+    fun toReportSheetResponse(sheet: GradeReportSheet, deadlineWarning: Boolean = false) =
+        GradeReportSheetResponse(
+            id = sheet.id!!,
+            schoolId = sheet.schoolId,
+            academicYearId = sheet.academicYearId,
+            classId = sheet.classId,
+            classSubjectId = sheet.classSubjectId,
+            termNumber = sheet.termNumber,
+            teacherId = sheet.teacherId,
+            status = sheet.status,
+            teacherLabel = sheet.teacherLabel,
+            subjectLabel = toLocalizedDto(sheet.subjectLabel),
+            classLabel = sheet.classLabel,
+            coefficient = sheet.coefficient,
+            headcount = sheet.headcount,
+            boysCount = sheet.boysCount,
+            girlsCount = sheet.girlsCount,
+            sexCountWarning = sheet.sexCountWarning,
+            sequence1ExamDate = sheet.sequence1ExamDate,
+            sequence2ExamDate = sheet.sequence2ExamDate,
+            sequence1Number = sheet.sequence1Number,
+            sequence2Number = sheet.sequence2Number,
+            appreciationScaleCode = sheet.appreciationScaleCode,
+            deadlineWarning = deadlineWarning,
+            lines = sheet.lines.map { toReportLineDto(it) },
+            submittedAt = sheet.submittedAt,
+            visaSupervisor = sheet.visaSupervisor?.let { toVisaDto(it) },
+            visaPrincipal = sheet.visaPrincipal?.let { toVisaDto(it) },
+            rejectionReason = sheet.rejectionReason
+        )
+
+    private fun toVisaDto(v: ReportSheetVisa) = ReportSheetVisaDto(v.userId, v.at)
+
+    private fun toReportLineDto(line: com.kobe.smels.model.grading.GradeReportSheetLine) =
+        GradeReportSheetLineDto(
+            rollNumber = line.rollNumber,
+            studentId = line.studentId,
+            studentLabel = line.studentLabel,
+            sex = line.sex,
+            sequence1 = toCellDto(line.sequence1),
+            sequence2 = toCellDto(line.sequence2)
+        )
+
+    private fun toCellDto(cell: ReportSheetSequenceCell) = ReportSheetSequenceCellDto(
+        mark = cell.mark,
+        markStatus = cell.markStatus,
+        coefficient = cell.coefficient,
+        weightedMark = cell.weightedMark,
+        rank = cell.rank,
+        appreciation = cell.appreciation,
+        appreciationOverride = cell.appreciationOverride,
+        displayedAppreciation = cell.displayedAppreciation()
     )
 
     fun defaultTotalization(): TotalizationRule = TotalizationRule()

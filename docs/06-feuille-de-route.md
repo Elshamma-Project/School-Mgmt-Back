@@ -7,7 +7,7 @@
 | 0 | Analyse (7 bulletins + emploi du temps), domaine, **modèle par modules**, règles de calcul, rôles, architecture modulaire | ✅ fait (`docs/` + package `model`) |
 | 1 | Projet : dépendances, configuration, Mongo, Docker, CI, **test d'architecture des modules** | à faire |
 | 2 | Référentiels (module `academic`, `staff`, `student`) | à faire |
-| 3 | Fiches de notes, notes de séquence, clôture, audit (`grading`) | à faire |
+| 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | 🟡 services grading + report sheet faits ; export PDF GradeSheet multi-pages encore à peaufiner |
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | à faire |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | à faire |
 | 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | à faire |
@@ -74,6 +74,11 @@ SequenceMark de l'élève selon TotalizationRule (formule par défaut de docs/04
 grading.mark.changed, le tout dans la même transaction (collections de grading seulement).
 Une note non saisie est PENDING, jamais 0. Export de la fiche en PDF/Excel sur plusieurs pages (autorisé pour ce document).
 Tests : concurrence @Version, séquence close, note hors bornes, doublon, bonus/malus, plafond à 20, correction après clôture.
+
+Ajout fiche de report (design papier) : GradeReportSheet (ClassSubject × trimestre), génération depuis SequenceMark,
+soumission enseignant, visa SURVEILLANT_GENERAL puis DIRECTOR (Principal, Q-38), rejet, régénération, PDF A4 paysage
+(maxRowsPerPage paramétrable, 2e page OK), version vierge imprimable (Q-35..Q-37). BR-70..BR-78. Fixture
+docs/fixtures/report-sheet-6eme-t1.json.
 ```
 
 ### Étape 4 — Calculs dans les services (reporting)

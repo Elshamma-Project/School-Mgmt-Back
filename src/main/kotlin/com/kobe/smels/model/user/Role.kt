@@ -14,10 +14,19 @@ enum class Role {
     /** Enseignant : CRUD des notes de ses matières/classes tant que la séquence est ouverte. */
     TEACHER,
 
+    /**
+     * Surveillant Général : vise les fiches de report de notes (lecture + visa SG).
+     * TODO(Q-38) : confirmer le périmètre exact avec l'école (création du rôle validée côté modèle).
+     */
+    SURVEILLANT_GENERAL,
+
     /** Administration : tout ce que fait l'enseignant + correction après clôture, bulletins, CRUD scolarité. */
     ADMINISTRATION,
 
-    /** Directeur / chef d'établissement : accès complet, gère aussi les comptes d'administration. */
+    /**
+     * Directeur / chef d'établissement : accès complet, gère aussi les comptes d'administration.
+     * Visa final Principal des fiches de report = ce rôle tant que Q-38 n'introduit pas un rôle PRINCIPAL distinct.
+     */
     DIRECTOR,
 
     /** Développeur / support : accès plateforme, au-delà d'un établissement. */

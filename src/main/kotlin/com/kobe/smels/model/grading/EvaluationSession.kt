@@ -43,6 +43,12 @@ data class EvaluationSession(
     var startDate: LocalDate? = null,
     var endDate: LocalDate? = null,
 
+    /**
+     * Date de composition de la séquence (« Date des séquences » sur la fiche de report).
+     * TODO(Q-04) : surcharge éventuelle par classe (aujourd'hui globale à la séquence).
+     */
+    var examDate: LocalDate? = null,
+
     /** Date limite de saisie des notes par les enseignants. */
     var entryDeadline: LocalDate? = null,
     var status: SessionStatus = SessionStatus.PLANNED,

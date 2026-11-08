@@ -10,9 +10,10 @@
 |---|---|---|
 | `STUDENT` | Élève (connexion par matricule, activée plus tard) | Ses propres données |
 | `PARENT` | Parent / tuteur | **Tous ses enfants, et uniquement eux** (réponse Q-20), via `Student.guardians` |
-| `TEACHER` | Enseignant | Ses `ClassSubject` : ses fiches de notes, son emploi du temps |
-| `ADMINISTRATION` | Secrétariat, censeur, surveillants | Tout l'établissement, sauf comptes d'administration et réouverture |
-| `DIRECTOR` | Directeur / chef d'établissement | Tout l'établissement |
+| `TEACHER` | Enseignant | Ses `ClassSubject` : ses fiches de notes, ses fiches de report, son emploi du temps |
+| `SURVEILLANT_GENERAL` | Surveillant Général | Lecture + visa SG des fiches de report (Q-38 : périmètre exact à confirmer) |
+| `ADMINISTRATION` | Secrétariat, censeur | Tout l'établissement, sauf comptes d'administration et réouverture ; régénération / correction fiche de report avec motif |
+| `DIRECTOR` | Directeur / chef d'établissement (= Principal provisoirement, Q-38) | Tout l'établissement ; visa final des fiches de report ; approbation des corrections post-dépôt |
 | `SUPER_ADMIN` | Développeur | Plateforme, tous établissements |
 
 Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit effectif est l'union. **Fonction ≠ rôle** : `Staff.functions` décrit le poste ; `UserAccount.roles` décrit les droits.
@@ -39,6 +40,11 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Corriger après clôture** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | motif obligatoire, trace `afterSessionClosed` |
 | Consulter les notes de séquence | ◐ | ◐ | ◐ | ✔ | ✔ | ◐ | élève : les siennes ; parent : ses enfants (`canViewGrades`) ; enseignant : ses matières |
 | Exporter sa fiche de notes (plusieurs pages) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses fiches |
+| **Fiche de report** : générer / soumettre (grading) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses ClassSubject |
+| Fiche de report : visa Surveillant Général | ✖ | ✖ | ✖ | ◐ | ✔ | ✔ | rôle `SURVEILLANT_GENERAL` (ou admin/dir.) |
+| Fiche de report : visa Principal | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | `DIRECTOR` (= Principal, Q-38) |
+| Fiche de report : rejeter / régénérer / corriger | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | motif ; correction post-dépôt : approbation Principal |
+| Fiche de report : lire / PDF | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : les siennes ; SG/admin/dir. : toutes ; **élève/parent : ✖** |
 | Saisir absences, retards, sanctions, décisions (reporting) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Générer, valider, publier, imprimer des bulletins | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Télécharger le bulletin annuel** | ◐ | ◐ | ✖ | ✔ | ✔ | ◐ | `PUBLISHED`, période `ANNUAL`, élève concerné (parent : tous ses enfants) |
@@ -83,3 +89,5 @@ Contrôler **dans la couche service** de chaque module. Entre modules, le module
 | Saisie des absences et sanctions | Administration seulement |
 | Parents et bulletins | Seul le bulletin annuel est téléchargeable ; les notes sont visibles en temps réel |
 | Élève qui se connecte | Plus tard |
+| Principal vs Directeur (Q-38) | Visa Principal = `DIRECTOR` jusqu'à confirmation d'un rôle `PRINCIPAL` distinct |
+| Surveillant Général (Q-38) | Rôle `SURVEILLANT_GENERAL` créé côté modèle ; périmètre RH à confirmer |

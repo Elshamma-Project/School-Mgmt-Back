@@ -282,6 +282,7 @@ data class SchoolClassSummaryDto(
     val name: String,
     val section: Section,
     val defaultLanguage: Language,
+    val gradingSchemeId: String? = null,
     val active: Boolean
 )
 

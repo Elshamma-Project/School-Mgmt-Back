@@ -30,14 +30,17 @@ data class GradeAuditEntry(
     @Id
     var id: String? = null,
     override var schoolId: String,
-    /** Ce qui a changé : une note brute, une note de séquence totalisée, ou la fiche elle-même. */
+    /** Ce qui a changé : note brute, note de séquence, fiche de travail, ou fiche de report. */
     var target: AuditTarget = AuditTarget.GRADE,
     var gradeId: String? = null,
     var sequenceMarkId: String? = null,
     var assessmentId: String? = null,
+    var reportSheetId: String? = null,
     var classSubjectId: String,
-    var sessionId: String,
-    var studentId: String,
+    /** Null pour les transitions de fiche de report (niveau trimestre). */
+    var sessionId: String? = null,
+    /** Null pour les transitions de statut de fiche de report (pas une ligne élève). */
+    var studentId: String? = null,
     var action: AuditAction,
 
     @Field(targetType = FieldType.DECIMAL128)
@@ -46,20 +49,29 @@ data class GradeAuditEntry(
     var newValue: BigDecimal? = null,
     var previousStatus: GradeStatus? = null,
     var newStatus: GradeStatus? = null,
+    var previousReportStatus: ReportSheetStatus? = null,
+    var newReportStatus: ReportSheetStatus? = null,
 
     /** UserAccount.id de l'auteur. */
     var changedBy: String,
     var changedByRole: Role? = null,
     var changedAt: Instant,
 
-    /** Motif : obligatoire quand `afterSessionClosed` est vrai (règle du service). */
+    /** Motif : obligatoire quand `afterSessionClosed` est vrai, ou correction sur fiche déjà soumise/visée. */
     var reason: String? = null,
 
     /** La séquence était-elle CLOSED au moment du changement ? */
-    var afterSessionClosed: Boolean = false
+    var afterSessionClosed: Boolean = false,
+
+    /**
+     * Approbation du Principal (directeur, Q-38) pour une correction sur une fiche de report
+     * déjà SUBMITTED / visée.
+     */
+    var approvedBy: String? = null,
+    var approvedAt: Instant? = null
 ) : TenantDocument()
 
-enum class AuditAction { CREATED, UPDATED, DELETED }
+enum class AuditAction { CREATED, UPDATED, DELETED, SUBMITTED, VISAED, REJECTED, REGENERATED }
 
 /** Objet modifié. */
-enum class AuditTarget { GRADE, SEQUENCE_MARK, SHEET }
+enum class AuditTarget { GRADE, SEQUENCE_MARK, SHEET, REPORT_SHEET }

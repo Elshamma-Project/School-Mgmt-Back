@@ -9,7 +9,7 @@
 | N° | Sujet | Statut | Décision / défaut retenu en attendant |
 |---|---|---|---|
 | Q-01 | « Bilingue » | 🟡 | Réponse : certaines matières entièrement dans une langue, d'autres dans l'autre ; documents dans les 2 langues, langue de la section prioritaire. **Reste** : un bulletin de classe bilingue affiche-t-il les matières des deux langues ensemble ? un élève peut-il choisir sa langue de bulletin ? |
-| Q-02 | Note de séquence | 🟡 | Réponse : une fiche par séquence ; notes, bonus, malus ; totalisation automatique. **Reste** : formule exacte → Q-25 |
+| Q-02 | Note de séquence | 🟡 | Réponse : une fiche de travail par séquence ; notes, bonus, malus ; totalisation automatique. **Confirmé (fiche de report)** : c'est bien la **note finale de séquence** (`SequenceMark`) qui est reportée (Comp/20), pas les bonus/malus. **Reste** : formule exacte de totalisation → Q-25 |
 | Q-03 | Bulletin de trimestre / séquence | 🟡 | Réponse : le bulletin de trimestre existe (Form 1, T1). **Reste** : bulletin de séquence ? T2 et T3 identiques à T1 ? gabarit pour les autres classes → Q-26 |
 | Q-04 | Clôture d'une séquence : globale ou par classe ? qui clôture, qui rouvre ? | ❓ | Globale ; administration clôture ; directeur rouvre |
 | Q-05 | Matricule : règle, génération, conservation entre années | ❓ | Texte libre unique dans l'école. Observé : « 250369841 » (numérique) et « 25F4A327 » (« 25 » + code de classe + numéro ?) |
@@ -47,6 +47,10 @@
 | Q-32 | **Génération de l'emploi du temps** : saisie manuelle avec contrôle de conflits, ou génération automatique ? Contraintes (disponibilités, salles, maximum d'heures par jour) ? Qui le fait aujourd'hui, avec quel outil ? | ❓ | Saisie manuelle guidée + duplication d'une année sur l'autre | Périmètre du module timetable |
 | Q-33 | **Samedi et remplacements** : le cours du samedi (1ère C/D) est-il régulier ? Un remplacement ponctuel d'enseignant modifie-t-il l'emploi du temps annuel ? | ❓ | Cours hors grille régulier ; pas de remplacement ponctuel | `customStart` / `customEnd` |
 | Q-34 | **Reprise des données** (élèves, historique de notes) : format fourni par l'ancien prestataire ? Import des élèves plus tard ou création un par un ? | ❓ | Création un par un au début | Hors périmètre actuel |
+| Q-35 | **Fiche de report** : sens du « N° » d'en-tête ; une fiche > 45 élèves peut-elle tenir sur 2 pages ? | ✅ | **N° = numéro du trimestre**. Oui, 2 pages OK (en-tête de tableau répété) ; `reportSheetMaxRowsPerPage = 45` | Design papier remis |
+| Q-36 | Qui remplit la colonne « App » ? Logiciel ou enseignant ? Impression vierge ? | ✅ | **Logiciel** (échelle du barème, Q-10). Garder une **version vierge** (noms seuls) pour saisie manuscrite — le logiciel ne remplace pas le workflow papier | Réponse école |
+| Q-37 | Le délai de 72 h est-il bloquant ? | ✅ | **Non** (indicatif) : `reportSheetDeadlineBlocking = false` ; avertissement seulement | Réponse école |
+| Q-38 | Rôle Surveillant Général / rôle Principal ? | ❓ | `SURVEILLANT_GENERAL` ajouté au modèle ; Principal = `DIRECTOR` en attendant confirmation d'un rôle `PRINCIPAL` distinct | Pas encore de réponse RH |
 
 ## 3. Décisions provisoires (résumé)
 
@@ -64,14 +68,16 @@
 | Effectif | Effectif de la classe |
 | Bilinguisme | Documents dans les 2 langues ; langue de la section prioritaire |
 | Parents | Navigateur ; tous leurs enfants, uniquement les leurs |
-| Une page A4 | Bulletin (portrait) et emploi du temps (paysage) |
+| Une page A4 | Bulletin (portrait) et emploi du temps (paysage) ; fiche de report paysage multi-pages si > 45 lignes |
+| Fiche de report | Instantané trimestriel des SequenceMark ; App auto ; délai 72 h non bloquant ; SG + Principal |
 | Architecture | Monolithe modulaire, modules = futurs microservices |
 | Marque tierce | Aucun élément du prestataire précédent sur les documents |
 
 ## 4. Documents complémentaires à demander à la collaboratrice
 
 Priorité 1 (avant la démo) :
-1. **La fiche Excel de notes d'un enseignant pour une séquence**, avec bonus et malus (Q-25, Q-02).
+1. **La fiche Excel de notes d'un enseignant pour une séquence**, avec bonus et malus (Q-25 ; Q-02 partiellement confirmée via la fiche de report).
+1 bis. Confirmation RH : périmètre du Surveillant Général et distinction Principal / Directeur (Q-38).
 2. Un **bulletin de séquence** s'il existe ; les **bulletins de trimestre 2 et 3** et un bulletin de trimestre d'une classe francophone (Q-03, Q-26).
 3. Un bulletin d'une classe **bilingue** (Q-01).
 4. Le **règlement d'évaluation** et le **procès-verbal d'un conseil de classe** (Q-09, Q-11, Q-18, Q-29).

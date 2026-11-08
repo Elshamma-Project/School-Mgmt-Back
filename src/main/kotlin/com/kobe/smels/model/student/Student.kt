@@ -33,7 +33,12 @@ data class Student(
     /** Nom de famille (le bulletin imprime « NOM PRÉNOMS » dans une seule cellule). */
     var lastName: String,
     var firstName: String,
-    var sex: Sex,
+    /**
+     * Nullable : un élève peut être créé sans sexe renseigné.
+     * Sur la fiche de report, la cellule reste vide et les compteurs (garçons/filles)
+     * émettent un avertissement si boys + girls ≠ effectif.
+     */
+    var sex: Sex? = null,
     var dateOfBirth: LocalDate? = null,
     var placeOfBirth: String? = null,
     var nationality: String? = null,

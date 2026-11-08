@@ -35,8 +35,7 @@ data class CreateStudentRequest(
     @field:NotBlank
     @field:Size(max = 120)
     val firstName: String,
-    @field:NotNull
-    val sex: Sex,
+    val sex: Sex? = null,
     val dateOfBirth: LocalDate? = null,
     val placeOfBirth: String? = null,
     val nationality: String? = null,
@@ -59,8 +58,7 @@ data class UpdateStudentRequest(
     @field:NotBlank
     @field:Size(max = 120)
     val firstName: String,
-    @field:NotNull
-    val sex: Sex,
+    val sex: Sex? = null,
     val dateOfBirth: LocalDate? = null,
     val placeOfBirth: String? = null,
     val nationality: String? = null,
@@ -78,7 +76,7 @@ data class StudentResponse(
     val lastName: String,
     val firstName: String,
     val fullName: String,
-    val sex: Sex,
+    val sex: Sex?,
     val dateOfBirth: LocalDate?,
     val placeOfBirth: String?,
     val nationality: String?,
@@ -94,7 +92,7 @@ data class StudentSummaryDto(
     val schoolId: String,
     val matricule: String,
     val displayName: String,
-    val sex: Sex,
+    val sex: Sex?,
     val active: Boolean
 )
 
@@ -196,6 +194,7 @@ data class EnrollmentSummaryDto(
     val academicYearId: String,
     val classId: String,
     val levelId: String,
+    val rollNumber: Int? = null,
     val status: EnrollmentStatus,
     val repeater: Boolean
 )

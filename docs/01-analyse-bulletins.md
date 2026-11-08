@@ -201,6 +201,18 @@ Exemples : 2NDE ALL, Education artistique : notes 8,6 · 11 · 4 · 0 · 4 · «
 - Date et heure d'édition imprimées en bas : propres à chaque impression.
 - Le bulletin de trimestre contient « Dorénavant, consultez... *141*05# » : texte du prestataire, à ne pas reprendre.
 
+## 8 bis. Fiche de report de notes (document papier enseignant)
+
+Design remis par l'école : **FICHE DE REPORT DE NOTES**, **par trimestre** (pas par séquence). Une fiche = une classe + une matière + un trimestre, avec **deux blocs** (séquence 1 | séquence 2).
+
+| Zone | Contenu |
+|---|---|
+| En-tête | Classe, enseignant, matière, coefficient, **N° = trimestre** (Q-35), effectif, garçons, filles, date de chaque séquence |
+| Tableau | N° (rollNumber), noms et prénoms, sexe ; par séquence : Comp/20, Coef, Note×Coef, Rang, App |
+| Pied | Visas Enseignant / Surveillant Général / Principal ; « toute rature doit être visée par le Principal » ; dépôt ≤ 72 h après composition (indicatif, Q-37) |
+
+Ce document **ne montre pas** les bonus/malus (ceux-ci restent dans la fiche de travail `GradeSheet`). La colonne Comp/20 = note finale de séquence (`SequenceMark`, Q-02 confirmé sur ce point). App = automatique (échelle du barème) ; version vierge (noms seuls) pour workflow manuscrit (Q-36). PDF A4 paysage, multi-pages si > 45 élèves (Q-35). Modèle : `GradeReportSheet` ; règles : `02` BR-70..78, `04` § 10.
+
 ## 9. Emploi du temps (résumé ; détail dans `09-emploi-du-temps.md`)
 
 12 pages A4 paysage (7 classes francophones : 6ème, 5ème, 4ème, 3ème, 2nde C, 1ère A, 1ère C/D ; 5 anglophones : Form 1, 2, 3, 4 Arts, 4 Science). Lundi-vendredi, 8 périodes de 50 min (la 7ᵉ dure 60 min), 2 pauses, nettoyage général puis « rentrée » ; chaque case = matière + enseignant ; cases particulières : CLUB, BIBLIOTHÈQUE, MUSIQUE, MÉNAGE GÉNÉRAL (« Délégué »), « CLUB / MATHS / SVT », « TD CHIMIE », et un cours le samedi 8h-10h en 1ère C/D. Il est **généré une seule fois par an**.

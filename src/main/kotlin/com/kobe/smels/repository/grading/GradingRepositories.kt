@@ -4,6 +4,7 @@ import com.kobe.smels.model.grading.Assessment
 import com.kobe.smels.model.grading.EvaluationSession
 import com.kobe.smels.model.grading.Grade
 import com.kobe.smels.model.grading.GradeAuditEntry
+import com.kobe.smels.model.grading.GradeReportSheet
 import com.kobe.smels.model.grading.GradeSheet
 import com.kobe.smels.model.grading.GradingScheme
 import com.kobe.smels.model.grading.SequenceMark
@@ -21,11 +22,40 @@ interface EvaluationSessionRepository : ReactiveMongoRepository<EvaluationSessio
         number: Int
     ): Mono<EvaluationSession>
     fun findBySchoolIdAndAcademicYearId(schoolId: String, academicYearId: String): Flux<EvaluationSession>
+    fun findBySchoolIdAndAcademicYearIdAndTermNumber(
+        schoolId: String,
+        academicYearId: String,
+        termNumber: Int
+    ): Flux<EvaluationSession>
     fun findBySchoolIdAndAcademicYearIdAndStatus(
         schoolId: String,
         academicYearId: String,
         status: SessionStatus
     ): Flux<EvaluationSession>
+}
+
+interface GradeReportSheetRepository : ReactiveMongoRepository<GradeReportSheet, String> {
+    fun findByIdAndSchoolId(id: String, schoolId: String): Mono<GradeReportSheet>
+    fun findBySchoolIdAndClassSubjectIdAndTermNumber(
+        schoolId: String,
+        classSubjectId: String,
+        termNumber: Int
+    ): Mono<GradeReportSheet>
+    fun findBySchoolIdAndTeacherIdAndTermNumber(
+        schoolId: String,
+        teacherId: String,
+        termNumber: Int
+    ): Flux<GradeReportSheet>
+    fun findBySchoolIdAndClassIdAndTermNumber(
+        schoolId: String,
+        classId: String,
+        termNumber: Int
+    ): Flux<GradeReportSheet>
+    fun findBySchoolIdAndAcademicYearIdAndTermNumber(
+        schoolId: String,
+        academicYearId: String,
+        termNumber: Int
+    ): Flux<GradeReportSheet>
 }
 
 interface GradeSheetRepository : ReactiveMongoRepository<GradeSheet, String> {

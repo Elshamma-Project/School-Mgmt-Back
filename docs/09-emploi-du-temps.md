@@ -1,7 +1,7 @@
 # 09 — Emploi du temps (module `timetable`)
 
 > Source : « EMPLOIS DU TEMPS ANNÉE SCOLAIRE 2026/2027 », 12 pages A4 paysage (une par classe).
-> Réponse de Ben : il se génère **une seule fois par an**. Exigence : **une seule page A4** par document imprimé.
+> Réponse de Ben : il se génère **une seule fois par an**. Exigence : **une seule page A4** par document imprimé (emploi du temps). Exception documentée ailleurs : fiche de report de notes (`GradeReportSheet`) peut dépasser une page (AGENTS.md règle 9, Q-35).
 > Modèle : `model/timetable/` (`TimeSlotGrid`, `Timetable`, `TimetableEntry`). Données de test anonymisées : `fixtures/timetable-*.json`.
 
 ## 1. Ce que montre le document

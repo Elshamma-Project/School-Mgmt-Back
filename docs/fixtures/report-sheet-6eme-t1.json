@@ -1,0 +1,42 @@
+{
+  "description": "Fiche de report anonymisée — 6ème A, Mathématiques, trimestre 1 (DEV1/DEV2). Jamais de vrais noms.",
+  "schoolId": "school-fixture",
+  "academicYearId": "year-2025-2026",
+  "classLabel": "6ème A",
+  "subjectLabel": { "fr": "Mathématiques", "en": "Mathematics" },
+  "teacherLabel": "Enseignant Fixture",
+  "termNumber": 1,
+  "coefficient": 2,
+  "sequence1Number": 1,
+  "sequence2Number": 2,
+  "sequence1ExamDate": "2025-10-15",
+  "sequence2ExamDate": "2025-11-20",
+  "appreciationScaleCode": "LETTER",
+  "reportSheetMaxRowsPerPage": 45,
+  "exampleRanks": {
+    "comment": "Notes exactes → rangs compétition 1, 2, 2, 4 ; Élève 05 PENDING → pas de rang ni App",
+    "sequence1": [
+      { "studentLabel": "Élève 01", "mark": "15.00", "weightedMark": "30.00", "rank": 1, "appreciation": "B+" },
+      { "studentLabel": "Élève 02", "mark": "14.00", "weightedMark": "28.00", "rank": 2, "appreciation": "B+" },
+      { "studentLabel": "Élève 03", "mark": "14.00", "weightedMark": "28.00", "rank": 2, "appreciation": "B+" },
+      { "studentLabel": "Élève 04", "mark": "10.00", "weightedMark": "20.00", "rank": 4, "appreciation": "C" },
+      { "studentLabel": "Élève 05", "mark": null, "status": "PENDING", "rank": null, "appreciation": null },
+      { "studentLabel": "Élève 06", "mark": "12.00", "weightedMark": "24.00", "rank": 5, "appreciation": "B" }
+    ]
+  },
+  "headcount": {
+    "effectif": 6,
+    "boysCount": 3,
+    "girlsCount": 2,
+    "sexCountWarning": true,
+    "comment": "Élève 05 sans sexe → garçons+filles (5) ≠ effectif (6)"
+  },
+  "lines": [
+    { "rollNumber": 1, "studentId": "stu-fixture-01", "studentLabel": "Élève 01", "sex": "MALE" },
+    { "rollNumber": 2, "studentId": "stu-fixture-02", "studentLabel": "Élève 02", "sex": "FEMALE" },
+    { "rollNumber": 3, "studentId": "stu-fixture-03", "studentLabel": "Élève 03", "sex": "MALE" },
+    { "rollNumber": 4, "studentId": "stu-fixture-04", "studentLabel": "Élève 04", "sex": "FEMALE" },
+    { "rollNumber": 5, "studentId": "stu-fixture-05", "studentLabel": "Élève 05", "sex": null },
+    { "rollNumber": 6, "studentId": "stu-fixture-06", "studentLabel": "Élève 06", "sex": "MALE" }
+  ]
+}

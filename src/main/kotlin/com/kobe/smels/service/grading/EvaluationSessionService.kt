@@ -79,6 +79,24 @@ class EvaluationSessionService(
             .map { GradingMapper.toSessionResponse(it) }
     }
 
+    fun updateExamDate(
+        currentUser: CurrentUser,
+        id: String,
+        examDate: java.time.LocalDate,
+        schoolIdOverride: String? = null
+    ): Mono<EvaluationSessionResponse> {
+        GradingAccess.assertAdmin(currentUser)
+        val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        return evaluationSessionRepository.findByIdAndSchoolId(id, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Evaluation session not found")))
+            .flatMap { session ->
+                // TODO(Q-04) : surcharge examDate par classe
+                session.examDate = examDate
+                evaluationSessionRepository.save(session)
+            }
+            .map { GradingMapper.toSessionResponse(it) }
+    }
+
     /** BR-21 : ouvre la séquence et crée une GradeSheet par ClassSubject actif (BR-11). */
     fun open(currentUser: CurrentUser, id: String, schoolIdOverride: String? = null): Mono<EvaluationSessionResponse> {
         GradingAccess.assertAdmin(currentUser)

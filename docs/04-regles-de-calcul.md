@@ -140,3 +140,32 @@ Les calculs s'exécutent dans les services du module concerné (le calcul des bu
 | `service/reporting/ReportCardService` | appelle le calcul, construit et enregistre les `ReportCard` figés, révisions, publication, PDF |
 
 Recommandation de structure : l'arithmétique (moyennes, arrondis, rang, profil) reste dans des méthodes privées ou `internal` du service qui n'accèdent pas à la base, afin de les tester par des tests unitaires avec `../../../Docs/back-office/docs/fixtures` sans lancer Mongo. Cela ne change pas l'endroit où le calcul s'exécute : c'est le service.
+
+## 10. Fiche de report de notes (GradeReportSheet)
+
+Document **officiel trimestriel** distinct de la `GradeSheet` (fichier de travail avec bonus/malus). Une fiche = `ClassSubject` × trimestre ; deux blocs (séquence 1 et 2). Calculs dans `ReportSheetCalculator` / `GradeReportSheetService` (sans accès base pour l'arithmétique).
+
+| Calcul | Règle |
+|---|---|
+| `mark` | `SequenceMark.value` de la séquence (jamais les bonus/malus bruts) ; `PENDING` → cellule vide, **jamais 0** |
+| `weightedMark` | `mark × coefficient` (coefficient de `ClassSubject`), 2 décimales HALF_UP |
+| `rank` | Parmi les élèves **SCORED** de la matière pour cette séquence ; moyenne **exacte** ; `RankingPolicy.COMPETITION` → 1, 2, 2, 4 |
+| `appreciation` (App) | Échelle du barème (`GradingScheme.reportSheetAppreciationScaleCode`, défaut `LETTER`, Q-10 / Q-36) ; `PENDING` → vide ; override manuel possible (`appreciationOverride`) |
+| Compteurs | `headcount` = inscrits `ENROLLED` ; `boysCount` / `girlsCount` selon `Student.sex` ; si `boys + girls ≠ headcount` → `sexCountWarning` |
+| Délai | Alerte si dépôt > `reportSheetDeadlineHours` (72) après `examDate` ; bloquant seulement si `reportSheetDeadlineBlocking` (Q-37 : **non**) |
+| Pages PDF | `reportSheetMaxRowsPerPage` (45) ; au-delà 2e page OK (Q-35) |
+
+### Exemple chiffré anonymisé (fixture `report-sheet-6eme-t1.json`)
+
+Coefficient 2, échelle LETTER. Séquence 1 :
+
+| Élève | Comp/20 | N×Coef | Rang | App |
+|---|---|---|---|---|
+| Élève 01 | 15,00 | 30,00 | 1 | B+ |
+| Élève 02 | 14,00 | 28,00 | 2 | B+ |
+| Élève 03 | 14,00 | 28,00 | 2 | B+ |
+| Élève 04 | 10,00 | 20,00 | 4 | C |
+| Élève 05 | — (PENDING) | — | — | — |
+| Élève 06 | 12,00 | 24,00 | 5 | B |
+
+Élève 05 sans sexe → effectif 6, G 3 + F 2, avertissement « sexe manquant ». Version **vierge** (`blank=true`) : mêmes noms / N° / sexe, cellules Comp/N×Coef/Rang/App vides pour saisie manuscrite (Q-36).

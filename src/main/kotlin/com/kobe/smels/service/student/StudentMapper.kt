@@ -123,6 +123,7 @@ object StudentMapper {
             academicYearId = enrollment.academicYearId,
             classId = enrollment.classId,
             levelId = enrollment.levelId,
+            rollNumber = enrollment.rollNumber,
             status = enrollment.status,
             repeater = enrollment.repeater
         )

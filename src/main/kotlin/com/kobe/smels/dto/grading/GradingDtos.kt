@@ -44,10 +44,16 @@ data class EvaluationSessionResponse(
     val name: LocalizedTextDto,
     val startDate: LocalDate?,
     val endDate: LocalDate?,
+    val examDate: LocalDate?,
     val entryDeadline: LocalDate?,
     val status: SessionStatus,
     val openedAt: Instant?,
     val closedAt: Instant?
+)
+
+data class UpdateSessionExamDateRequest(
+    @field:NotNull val examDate: LocalDate,
+    val schoolId: String? = null
 )
 
 data class TotalizationRuleDto(
@@ -187,5 +193,77 @@ data class GradingSchemeResponse(
     val maxScore: BigDecimal,
     val passMark: BigDecimal,
     val decimals: Int,
+    val reportSheetDeadlineHours: Int,
+    val reportSheetDeadlineBlocking: Boolean,
+    val reportSheetMaxRowsPerPage: Int,
+    val reportSheetAppreciationScaleCode: String,
     val active: Boolean
+)
+
+data class GenerateReportSheetRequest(
+    @field:NotBlank val classSubjectId: String,
+    @field:Min(1) @field:Max(3) val termNumber: Int,
+    /** Si true : noms seuls, cellules de notes vides (saisie manuscrite, Q-36). */
+    val blank: Boolean = false,
+    val schoolId: String? = null
+)
+
+data class RejectReportSheetRequest(
+    @field:NotBlank val reason: String,
+    val schoolId: String? = null
+)
+
+data class ReportSheetVisaDto(
+    val userId: String,
+    val at: Instant
+)
+
+data class ReportSheetSequenceCellDto(
+    val mark: BigDecimal?,
+    val markStatus: GradeStatus,
+    val coefficient: BigDecimal?,
+    val weightedMark: BigDecimal?,
+    val rank: Int?,
+    val appreciation: String?,
+    val appreciationOverride: String?,
+    val displayedAppreciation: String?
+)
+
+data class GradeReportSheetLineDto(
+    val rollNumber: Int?,
+    val studentId: String,
+    val studentLabel: String,
+    val sex: com.kobe.smels.model.shared.Sex?,
+    val sequence1: ReportSheetSequenceCellDto,
+    val sequence2: ReportSheetSequenceCellDto
+)
+
+data class GradeReportSheetResponse(
+    val id: String,
+    val schoolId: String,
+    val academicYearId: String,
+    val classId: String,
+    val classSubjectId: String,
+    val termNumber: Int,
+    val teacherId: String?,
+    val status: com.kobe.smels.model.grading.ReportSheetStatus,
+    val teacherLabel: String?,
+    val subjectLabel: LocalizedTextDto,
+    val classLabel: String?,
+    val coefficient: BigDecimal,
+    val headcount: Int,
+    val boysCount: Int,
+    val girlsCount: Int,
+    val sexCountWarning: Boolean,
+    val sequence1ExamDate: java.time.LocalDate?,
+    val sequence2ExamDate: java.time.LocalDate?,
+    val sequence1Number: Int?,
+    val sequence2Number: Int?,
+    val appreciationScaleCode: String?,
+    val deadlineWarning: Boolean = false,
+    val lines: List<GradeReportSheetLineDto>,
+    val submittedAt: Instant?,
+    val visaSupervisor: ReportSheetVisaDto?,
+    val visaPrincipal: ReportSheetVisaDto?,
+    val rejectionReason: String?
 )

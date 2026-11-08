@@ -104,6 +104,22 @@ data class GradingScheme(
 
     /** Seuils éventuels du tableau d'honneur (vide = décision manuelle du conseil de classe). */
     var distinctionRules: List<DistinctionRule> = emptyList(),
+
+    /**
+     * Délai indicatif (heures) après [EvaluationSession.examDate] pour déposer la fiche de report.
+     * Réponse Q-37 : non bloquant par défaut (`reportSheetDeadlineBlocking = false`).
+     */
+    var reportSheetDeadlineHours: Int = 72,
+
+    /** Si true, refuse la soumission après le délai ; sinon avertissement seulement (Q-37). */
+    var reportSheetDeadlineBlocking: Boolean = false,
+
+    /** Lignes max par page PDF A4 paysage ; au-delà, 2e page avec en-tête répété (Q-35). */
+    var reportSheetMaxRowsPerPage: Int = 45,
+
+    /** Code d'échelle dans [appreciationScales] pour la colonne App (défaut LETTER, Q-10 / Q-36). */
+    var reportSheetAppreciationScaleCode: String = "LETTER",
+
     var active: Boolean = true
 ) : TenantDocument()
 

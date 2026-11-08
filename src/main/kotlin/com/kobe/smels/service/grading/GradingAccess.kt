@@ -21,6 +21,44 @@ internal object GradingAccess {
         }
     }
 
+    /** Visa Principal = DIRECTOR tant que Q-38 n'introduit pas PRINCIPAL. */
+    fun assertPrincipalVisa(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            throw ForbiddenException("FORBIDDEN", "Only DIRECTOR (Principal) can give final visa")
+        }
+    }
+
+    fun assertSurveillantGeneral(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(
+                Role.SURVEILLANT_GENERAL,
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN
+            )
+        ) {
+            throw ForbiddenException("FORBIDDEN", "Only Surveillant Général can visa report sheets")
+        }
+    }
+
+    fun canReadReportSheet(currentUser: CurrentUser, teacherId: String?): Boolean {
+        if (currentUser.hasAnyRole(
+                Role.SURVEILLANT_GENERAL,
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN
+            )
+        ) {
+            return true
+        }
+        return canManageSheet(currentUser, teacherId)
+    }
+
+    fun assertCanReadReportSheet(currentUser: CurrentUser, teacherId: String?) {
+        if (!canReadReportSheet(currentUser, teacherId)) {
+            throw ForbiddenException("FORBIDDEN", "Not allowed to read this report sheet")
+        }
+    }
+
     fun resolveSchoolId(currentUser: CurrentUser, override: String?): String =
         currentUser.requireSchoolId(override)
 

@@ -179,6 +179,7 @@ object AcademicMapper {
             name = schoolClass.name,
             section = schoolClass.section,
             defaultLanguage = schoolClass.defaultLanguage,
+            gradingSchemeId = schoolClass.gradingSchemeId,
             active = schoolClass.active
         )
 

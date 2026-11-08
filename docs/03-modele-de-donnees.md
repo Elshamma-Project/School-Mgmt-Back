@@ -46,8 +46,9 @@
 | grading | `grading_assessments` | `Assessment` | Colonnes d'une fiche : notes, **bonus**, **malus** |
 | grading | `grading_grades` | `Grade` | Valeurs saisies (une par élève et par colonne) |
 | grading | `grading_sequence_marks` | `SequenceMark` | **Note de séquence** totalisée (colonne DEVn du bulletin) |
-| grading | `grading_audit_entries` | `GradeAuditEntry` | Journal append-only (notes, notes de séquence, fiches) |
-| grading | `grading_schemes` | `GradingScheme` (+ `AppreciationScale`, `ScoreBand`, `DistinctionRule`) | Règles de notation configurables |
+| grading | `grading_report_sheets` | `GradeReportSheet` (+ lignes / cellules) | **Fiche de report** trimestrielle (instantané officiel, ≠ GradeSheet) |
+| grading | `grading_audit_entries` | `GradeAuditEntry` | Journal append-only (notes, notes de séquence, fiches, report sheets) |
+| grading | `grading_schemes` | `GradingScheme` (+ `AppreciationScale`, `ScoreBand`, `DistinctionRule`) | Règles de notation configurables (+ params fiche de report) |
 | reporting | `reporting_templates` | `ReportTemplate` | Gabarits de bulletin (annuel, trimestre) |
 | reporting | `reporting_report_cards` | `ReportCard` (+ blocs embarqués) | Bulletins générés, figés |
 | reporting | `reporting_period_reviews` | `StudentPeriodReview` | Absences, retards, sanctions, distinctions, décision du conseil |
@@ -62,6 +63,7 @@
 | Un enseignant liste ses classes et matières | `academic_class_subjects` par `teacherId` + année | `idx_teacher_year` |
 | Fiches d'un enseignant pour une séquence | `grading_sheets` par `teacherId` + `sessionId` | `idx_teacher_session` |
 | Une fiche par matière de classe et séquence | `grading_sheets` | `uk_classsubject_session` (unique) |
+| Une fiche de report par matière et trimestre | `grading_report_sheets` | `uk_classsubject_term` (unique) |
 | Doublon de note | `grading_grades` par `assessmentId` + `studentId` | `uk_assessment_student` (unique) |
 | Note de séquence d'un élève dans une fiche | `grading_sequence_marks` | `uk_sheet_student` (unique) |
 | Vue temps réel d'un élève ou d'un parent | `grading_sequence_marks` par `studentId` + année (+ séquence) | `idx_student_year_session` |
@@ -139,7 +141,9 @@ Les traductions marquées sont des propositions : l'ancien logiciel imprimait un
 Créées avec l'année (statut `PLANNED`). Sur le bulletin de trimestre, les deux séquences s'appellent « Eval1 / Eval2 » (`ReportTemplate`).
 
 ### 5.4 Barème par défaut (`grading_schemes`)
-`maxScore 20`, `passMark 10`, `classSuccessThreshold 12`, `decimals 2`, `roundingPolicy HALF_UP`, `roundTermSubjectAverages true`, `missingMarkPolicy IGNORE`, `absencePolicy EXCLUDE`, `rankingPolicy COMPETITION`, `rankingEligibility HAS_AVERAGE`, `annualAveragePolicy WEIGHTED_TOTAL`, `subjectYearAveragePolicy MEAN_OF_TERM_AVERAGES`, `honourRollMinAverage 12`, `honourRollBlockedBySanction true`, `effortSubjectThreshold 8` (hypothèse Q-28).
+`maxScore 20`, `passMark 10`, `classSuccessThreshold 12`, `decimals 2`, `roundingPolicy HALF_UP`, `roundTermSubjectAverages true`, `missingMarkPolicy IGNORE`, `absencePolicy EXCLUDE`, `rankingPolicy COMPETITION`, `rankingEligibility HAS_AVERAGE`, `annualAveragePolicy WEIGHTED_TOTAL`, `subjectYearAveragePolicy MEAN_OF_TERM_AVERAGES`, `honourRollMinAverage 12`, `honourRollBlockedBySanction true`, `effortSubjectThreshold 8` (hypothèse Q-28), `reportSheetDeadlineHours 72`, `reportSheetDeadlineBlocking false` (Q-37), `reportSheetMaxRowsPerPage 45` (Q-35), `reportSheetAppreciationScaleCode LETTER` (Q-36).
+
+**Évolutions modèle (fiche de report)** : `EvaluationSession.examDate` ; `Student.sex` nullable ; `Role.SURVEILLANT_GENERAL` ; `GradeAuditEntry` cible `REPORT_SHEET` + `approvedBy`/`approvedAt` ; collection `grading_report_sheets`.
 
 | Échelle | Tranches |
 |---|---|
