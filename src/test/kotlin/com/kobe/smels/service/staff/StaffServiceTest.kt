@@ -136,6 +136,86 @@ class StaffServiceTest {
             .verify()
     }
 
+    @Test
+    fun `admin cannot create leadership staff`() {
+        val request = CreateStaffRequest(
+            lastName = "DIR",
+            firstName = "Demo",
+            functions = setOf(StaffFunction.HEAD_OF_SCHOOL)
+        )
+        StepVerifier.create(Mono.defer { service.create(adminUser(), request) })
+            .expectError(ForbiddenException::class.java)
+            .verify()
+    }
+
+    @Test
+    fun `admin can create OTHER staff`() {
+        whenever(staffRepository.findBySchoolIdAndStaffNumber(any(), any())).thenReturn(Mono.empty())
+        whenever(staffRepository.save(any<Staff>())).thenAnswer { invocation ->
+            val staff = invocation.getArgument<Staff>(0)
+            staff.id = "staff-other-1"
+            Mono.just(staff)
+        }
+        whenever(outboxWriter.append(any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(Mono.just(sampleOutboxEvent()))
+
+        val request = CreateStaffRequest(
+            lastName = "AUTRE",
+            firstName = "Membre",
+            functions = setOf(StaffFunction.OTHER)
+        )
+
+        StepVerifier.create(service.create(adminUser(), request))
+            .assertNext { response ->
+                assertEquals("staff-other-1", response.id)
+                assertEquals(setOf(StaffFunction.OTHER), response.functions)
+                assertEquals("acc-admin", response.createdBy)
+                assertEquals("acc-admin", response.updatedBy)
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `admin cannot read leadership staff`() {
+        val staff = Staff(
+            id = "staff-dir",
+            schoolId = "school-1",
+            lastName = "DIR",
+            firstName = "Demo",
+            functions = setOf(StaffFunction.HEAD_OF_SCHOOL),
+            active = true
+        )
+        whenever(staffRepository.findByIdAndSchoolId("staff-dir", "school-1")).thenReturn(Mono.just(staff))
+
+        StepVerifier.create(service.getById(adminUser(), "staff-dir"))
+            .expectError(ForbiddenException::class.java)
+            .verify()
+    }
+
+    @Test
+    fun `admin can read peer admin but cannot deactivate`() {
+        val staff = Staff(
+            id = "staff-sec",
+            schoolId = "school-1",
+            lastName = "SEC",
+            firstName = "Demo",
+            functions = setOf(StaffFunction.SECRETARY),
+            active = true
+        )
+        whenever(staffRepository.findByIdAndSchoolId("staff-sec", "school-1")).thenReturn(Mono.just(staff))
+
+        StepVerifier.create(service.getById(adminUser(), "staff-sec"))
+            .assertNext { response ->
+                assertEquals("staff-sec", response.id)
+                assertFalse(response.canManage)
+            }
+            .verifyComplete()
+
+        StepVerifier.create(Mono.defer { service.deactivate(adminUser(), "staff-sec") })
+            .expectError(ForbiddenException::class.java)
+            .verify()
+    }
+
     private fun sampleOutboxEvent() = OutboxEvent(
         schoolId = "school-1",
         module = "staff",

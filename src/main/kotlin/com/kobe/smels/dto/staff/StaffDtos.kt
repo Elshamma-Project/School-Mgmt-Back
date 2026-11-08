@@ -87,7 +87,14 @@ data class StaffResponse(
     val hireDate: LocalDate?,
     val active: Boolean,
     /** Enrichi depuis le compte lié (`user`), null si aucun compte ou jamais connecté. */
-    val lastLoginAt: Instant? = null
+    val lastLoginAt: Instant? = null,
+    /** Droit de gestion (modifier / désactiver) pour l’appelant courant. */
+    val canManage: Boolean = true,
+    /** UserAccount.id créateur (audit Mongo). */
+    val createdBy: String? = null,
+    /** UserAccount.id dernier modificateur (audit Mongo). */
+    val updatedBy: String? = null,
+    val updatedAt: Instant? = null
 )
 
 /** DTO public inter-modules (pas de contact détaillé). */

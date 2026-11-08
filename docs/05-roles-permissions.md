@@ -12,7 +12,7 @@
 | `PARENT` | Parent / tuteur | **Tous ses enfants, et uniquement eux** (réponse Q-20), via `Student.guardians` |
 | `TEACHER` | Enseignant | Ses `ClassSubject` : ses fiches de notes, ses fiches de report, son emploi du temps |
 | `SURVEILLANT_GENERAL` | Surveillant Général | Lecture + visa SG des fiches de report (Q-38 : périmètre exact à confirmer) |
-| `ADMINISTRATION` | Secrétariat, censeur | Tout l'établissement, sauf comptes d'administration et réouverture ; régénération / correction fiche de report avec motif |
+| `ADMINISTRATION` | Secrétariat, censeur | Tout l'établissement, sauf **Direction** (RH), comptes d'administration (user) et réouverture ; régénération / correction fiche de report avec motif |
 | `DIRECTOR` | Directeur / chef d'établissement (= Principal provisoirement, Q-38) | Tout l'établissement ; visa final des fiches de report ; approbation des corrections post-dépôt |
 | `SUPER_ADMIN` | Développeur | Plateforme, tous établissements |
 
@@ -32,7 +32,9 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Compétences du trimestre (academic) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses ClassSubject |
 | Affecter un enseignant à une matière de classe | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Barèmes de notation, gabarits de bulletin (grading, reporting) | ✖ | ✖ | ✖ | lecture | ✔ | ✔ | un changement modifie les calculs |
-| Enseignants : CRUD (staff) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : sa fiche en lecture |
+| Enseignants / Autres : CRUD (staff) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : sa fiche en lecture ; admin : pas Direction ; acteur tracé (`createdBy`/`updatedBy`) |
+| Direction (HEAD_OF_SCHOOL, CENSOR) : CRUD (staff) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | admin : ni lecture ni création |
+| Autres admins / soutien (SECRETARY…) : lecture (staff) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | admin : lecture seule, aucune action |
 | **Comptes d'administration** : CRUD (user) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | |
 | Élèves, tuteurs : CRUD (student) | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | lecture de ses propres données ; enseignant : élèves de ses classes |
 | Inscriptions : CRUD (student) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |

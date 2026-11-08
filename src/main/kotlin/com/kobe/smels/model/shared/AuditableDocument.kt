@@ -17,8 +17,8 @@ import java.time.Instant
  * ces champs hérités (dont `version`) et ferait traiter l'objet comme un nouveau document.
  * On modifie l'instance chargée (`var`) puis on appelle `repository.save(...)`.
  *
- * Nécessite plus tard : `@EnableMongoAuditing` + un bean `AuditorAware<String>`
- * (voir docs/06-feuille-de-route.md).
+ * Activé via `@EnableReactiveMongoAuditing` + `ReactiveAuditorAware<String>`
+ * (`MongoConfig`) : `createdBy` / `updatedBy` = `UserAccount.id` de l’acteur.
  */
 abstract class AuditableDocument {
     @CreatedDate

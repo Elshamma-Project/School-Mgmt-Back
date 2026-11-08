@@ -8,6 +8,7 @@ import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.model.user.UserAccount
 import com.kobe.smels.repository.user.UserAccountRepository
+import com.kobe.smels.repository.user.UserAvatarRepository
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
@@ -24,6 +25,7 @@ import kotlin.test.assertTrue
 
 class AuthLockoutTest {
     private val userAccountRepository: UserAccountRepository = mock()
+    private val userAvatarRepository: UserAvatarRepository = mock()
     private val userSessionService: UserSessionService = mock()
     private val jwtService: JwtService = mock()
     private val passwordEncoder: PasswordEncoder = mock()
@@ -33,6 +35,7 @@ class AuthLockoutTest {
 
     private val service = AuthService(
         userAccountRepository,
+        userAvatarRepository,
         userSessionService,
         jwtService,
         passwordEncoder,

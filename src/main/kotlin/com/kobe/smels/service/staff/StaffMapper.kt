@@ -24,7 +24,11 @@ object StaffMapper {
             city = contact.city
         )
 
-    fun toResponse(staff: Staff, lastLoginAt: Instant? = null): StaffResponse =
+    fun toResponse(
+        staff: Staff,
+        lastLoginAt: Instant? = null,
+        canManage: Boolean = true
+    ): StaffResponse =
         StaffResponse(
             id = staff.id!!,
             schoolId = staff.schoolId,
@@ -41,7 +45,11 @@ object StaffMapper {
             teachableSubjectIds = staff.teachableSubjectIds,
             hireDate = staff.hireDate,
             active = staff.active,
-            lastLoginAt = lastLoginAt
+            lastLoginAt = lastLoginAt,
+            canManage = canManage,
+            createdBy = staff.createdBy,
+            updatedBy = staff.updatedBy,
+            updatedAt = staff.updatedAt
         )
 
     fun toSummary(staff: Staff): StaffSummaryDto =
