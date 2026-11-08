@@ -1,5 +1,6 @@
 package com.kobe.smels.configuration
 
+import com.kobe.smels.exception.UnauthorizedException
 import com.kobe.smels.service.user.JwtService
 import com.kobe.smels.service.user.UserSessionService
 import com.kobe.smels.shared.security.CurrentUser
@@ -18,13 +19,15 @@ import reactor.core.publisher.Mono
 /**
  * Valide le Bearer JWT et vérifie que la session associée est encore ACTIVE
  * (révocation, limite de sessions, logout).
+ *
+ * Ne pas exposer comme bean [WebFilter] (sinon double enregistrement Boot + Security).
+ * Utiliser [asWebFilter] uniquement via [SecurityConfig.addFilterAt].
  */
 @Component
 class JwtAuthenticationFilter(
     private val jwtService: JwtService,
     private val userSessionService: UserSessionService
-) : WebFilter {
-
+) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     private val passwordChangeAllowed = listOf(
@@ -36,7 +39,9 @@ class JwtAuthenticationFilter(
         "/api/v1/auth/sessions"
     )
 
-    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
+    fun asWebFilter(): WebFilter = WebFilter { exchange, chain -> filter(exchange, chain) }
+
+    private fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
         val header = exchange.request.headers.getFirst(HttpHeaders.AUTHORIZATION)
         if (header.isNullOrBlank() || !header.startsWith("Bearer ", ignoreCase = true)) {
             return chain.filter(exchange)
@@ -77,8 +82,11 @@ class JwtAuthenticationFilter(
                 }
             }
             .onErrorResume { error ->
-                log.debug("JWT rejected path={} reason={}", path, error.message)
-                chain.filter(exchange)
+                val code = (error as? UnauthorizedException)?.code ?: "INVALID_TOKEN"
+                val detail = error.message?.takeIf { it.isNotBlank() }
+                    ?: "Access token is invalid or expired"
+                log.debug("JWT rejected path={} code={} reason={}", path, code, detail)
+                writeUnauthorized(exchange, code, detail)
             }
     }
 
@@ -97,5 +105,19 @@ class JwtAuthenticationFilter(
         val body =
             """{"type":"urn:smels:error:password_change_required","title":"PASSWORD_CHANGE_REQUIRED","status":403,"detail":"Password change required before continuing","code":"PASSWORD_CHANGE_REQUIRED"}"""
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.toByteArray())))
+    }
+
+    private fun writeUnauthorized(exchange: ServerWebExchange, code: String, detail: String): Mono<Void> {
+        val response = exchange.response
+        if (response.isCommitted) {
+            return Mono.empty()
+        }
+        response.statusCode = HttpStatus.UNAUTHORIZED
+        response.headers.contentType = MediaType.APPLICATION_PROBLEM_JSON
+        val safeDetail = detail.replace("\"", "'")
+        val safeCode = code.replace("\"", "'")
+        val json =
+            """{"type":"urn:smels:error:${safeCode.lowercase()}","title":"$safeCode","status":401,"detail":"$safeDetail","code":"$safeCode","instance":"${exchange.request.path.value()}"}"""
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(json.toByteArray())))
     }
 }

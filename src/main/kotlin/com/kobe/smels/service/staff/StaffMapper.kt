@@ -5,6 +5,7 @@ import com.kobe.smels.dto.staff.StaffResponse
 import com.kobe.smels.dto.staff.StaffSummaryDto
 import com.kobe.smels.model.shared.ContactInfo
 import com.kobe.smels.model.staff.Staff
+import java.time.Instant
 
 object StaffMapper {
     fun toContact(dto: ContactInfoDto): ContactInfo =
@@ -23,7 +24,7 @@ object StaffMapper {
             city = contact.city
         )
 
-    fun toResponse(staff: Staff): StaffResponse =
+    fun toResponse(staff: Staff, lastLoginAt: Instant? = null): StaffResponse =
         StaffResponse(
             id = staff.id!!,
             schoolId = staff.schoolId,
@@ -39,7 +40,8 @@ object StaffMapper {
             employmentStatus = staff.employmentStatus,
             teachableSubjectIds = staff.teachableSubjectIds,
             hireDate = staff.hireDate,
-            active = staff.active
+            active = staff.active,
+            lastLoginAt = lastLoginAt
         )
 
     fun toSummary(staff: Staff): StaffSummaryDto =

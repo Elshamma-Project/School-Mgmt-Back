@@ -7,14 +7,17 @@ import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.user.AccountStatus
+import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.model.user.UserAccount
 import com.kobe.smels.repository.user.UserAccountRepository
+import com.kobe.smels.service.user.api.UserAccountApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
+import java.time.Instant
 
 /**
  * Gestion des comptes. Contrôles de rôle dans la couche service (docs/05).
@@ -24,7 +27,7 @@ class UserAccountService(
     private val userAccountRepository: UserAccountRepository,
     private val passwordEncoder: PasswordEncoder,
     private val userSessionService: UserSessionService
-) {
+) : UserAccountApi {
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun create(currentUser: CurrentUser, request: CreateUserAccountRequest): Mono<UserAccountResponse> {
@@ -83,6 +86,28 @@ class UserAccountService(
                 } else {
                     Mono.just(UserAccountMapper.toResponse(account))
                 }
+            }
+    }
+
+    override fun findStaffLastLogins(
+        schoolId: String,
+        staffIds: Collection<String>
+    ): Mono<Map<String, Instant>> {
+        val ids = staffIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (ids.isEmpty()) {
+            return Mono.just(emptyMap())
+        }
+        return userAccountRepository
+            .findBySchoolIdAndProfileTypeAndProfileIdIn(schoolId, ProfileType.STAFF, ids)
+            .collectList()
+            .map { accounts ->
+                accounts
+                    .mapNotNull { account ->
+                        val profileId = account.profileId?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+                        val lastLogin = account.lastLoginAt ?: return@mapNotNull null
+                        profileId to lastLogin
+                    }
+                    .toMap()
             }
     }
 

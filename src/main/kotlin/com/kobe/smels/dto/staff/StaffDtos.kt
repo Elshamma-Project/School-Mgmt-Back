@@ -7,6 +7,7 @@ import com.kobe.smels.model.staff.StaffFunction
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import java.time.Instant
 import java.time.LocalDate
 
 data class ContactInfoDto(
@@ -84,7 +85,9 @@ data class StaffResponse(
     val employmentStatus: EmploymentStatus?,
     val teachableSubjectIds: Set<String>,
     val hireDate: LocalDate?,
-    val active: Boolean
+    val active: Boolean,
+    /** Enrichi depuis le compte lié (`user`), null si aucun compte ou jamais connecté. */
+    val lastLoginAt: Instant? = null
 )
 
 /** DTO public inter-modules (pas de contact détaillé). */

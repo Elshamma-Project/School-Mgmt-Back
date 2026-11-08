@@ -69,7 +69,8 @@ class SecurityConfig(
                     }
             }
             .cors { it.configurationSource(corsConfigurationSource()) }
-            .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+            // Instance non-bean WebFilter : évite le double passage (Boot WebFilter + Security).
+            .addFilterAt(jwtAuthenticationFilter.asWebFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
             .build()
     }
 

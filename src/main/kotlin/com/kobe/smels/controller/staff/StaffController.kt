@@ -7,6 +7,7 @@ import com.kobe.smels.dto.staff.UpdateStaffIdentityRequest
 import com.kobe.smels.dto.staff.UpdateStaffRequest
 import com.kobe.smels.model.staff.StaffFunction
 import com.kobe.smels.service.staff.StaffService
+import com.kobe.smels.service.user.api.UserAccountApi
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -20,11 +21,13 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Mono
+import java.time.Instant
 
 @RestController
 @RequestMapping("/api/v1/staff")
 class StaffController(
-    private val staffService: StaffService
+    private val staffService: StaffService,
+    private val userAccountApi: UserAccountApi
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -36,7 +39,9 @@ class StaffController(
         @PathVariable id: String,
         @RequestParam(required = false) schoolId: String?
     ): Mono<StaffResponse> =
-        SecuritySupport.currentUser().flatMap { staffService.getById(it, id, schoolId) }
+        SecuritySupport.currentUser()
+            .flatMap { staffService.getById(it, id, schoolId) }
+            .flatMap { enrichOne(it) }
 
     @GetMapping
     fun list(
@@ -49,6 +54,7 @@ class StaffController(
     ): Mono<PageResponse<StaffResponse>> =
         SecuritySupport.currentUser()
             .flatMap { staffService.list(it, page, size, active, function, q, schoolId) }
+            .flatMap { enrichPage(it) }
 
     @PutMapping("/{id}")
     fun update(
@@ -80,4 +86,23 @@ class StaffController(
         @RequestParam(required = false) schoolId: String?
     ): Mono<StaffResponse> =
         SecuritySupport.currentUser().flatMap { staffService.reactivate(it, id, schoolId) }
+
+    private fun enrichPage(page: PageResponse<StaffResponse>): Mono<PageResponse<StaffResponse>> {
+        if (page.content.isEmpty()) {
+            return Mono.just(page)
+        }
+        val schoolId = page.content.first().schoolId
+        val ids = page.content.map { it.id }
+        return userAccountApi.findStaffLastLogins(schoolId, ids).map { logins ->
+            page.copy(content = page.content.map { applyLogin(it, logins) })
+        }
+    }
+
+    private fun enrichOne(staff: StaffResponse): Mono<StaffResponse> =
+        userAccountApi.findStaffLastLogins(staff.schoolId, listOf(staff.id)).map { logins ->
+            applyLogin(staff, logins)
+        }
+
+    private fun applyLogin(staff: StaffResponse, logins: Map<String, Instant>): StaffResponse =
+        staff.copy(lastLoginAt = logins[staff.id] ?: staff.lastLoginAt)
 }

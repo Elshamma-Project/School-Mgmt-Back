@@ -52,4 +52,5 @@ smels.security.bootstrap.username=superadmin@smels.local
 ## Notes
 
 - Le seed est **idempotent** et migre les anciens usernames courts (`directeur`, …) vers l’e-mail.
+- Les fiches `Staff` démo reçoivent le **même e-mail** que le compte lié (`contact.email`), pour l’affichage RH.
 - Ne jamais committer de vrais mots de passe ni de données nominatives réelles.

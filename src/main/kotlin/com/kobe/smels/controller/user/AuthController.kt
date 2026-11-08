@@ -26,7 +26,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @RestController
@@ -63,9 +62,11 @@ class AuthController(
     fun me(): Mono<UserAccountResponse> =
         SecuritySupport.currentUser().flatMap { authService.me(it) }
 
+    /** Liste JSON classique (`[{...}]`) — pas un stream Flux (le front attend un tableau). */
     @GetMapping("/sessions")
-    fun sessions(): Flux<SessionResponse> =
-        SecuritySupport.currentUser().flatMapMany { authService.listSessions(it) }
+    fun sessions(): Mono<List<SessionResponse>> =
+        SecuritySupport.currentUser()
+            .flatMap { authService.listSessions(it).collectList() }
 
     @DeleteMapping("/sessions/{sessionId}")
     fun revokeSession(@PathVariable sessionId: String): Mono<Void> =

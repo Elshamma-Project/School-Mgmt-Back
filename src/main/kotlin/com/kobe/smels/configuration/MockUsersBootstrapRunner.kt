@@ -1,6 +1,7 @@
 package com.kobe.smels.configuration
 
 import com.kobe.smels.model.academic.School
+import com.kobe.smels.model.shared.ContactInfo
 import com.kobe.smels.model.shared.LocalizedText
 import com.kobe.smels.model.shared.Sex
 import com.kobe.smels.model.staff.Civility
@@ -113,7 +114,8 @@ class MockUsersBootstrapRunner(
                 lastName = "Directeur",
                 firstName = "Demo",
                 civility = Civility.MR,
-                functions = setOf(StaffFunction.HEAD_OF_SCHOOL, StaffFunction.TEACHER)
+                functions = setOf(StaffFunction.HEAD_OF_SCHOOL, StaffFunction.TEACHER),
+                email = EMAIL_DIRECTOR
             ),
             upsertStaff(
                 id = STAFF_ADMIN,
@@ -121,7 +123,8 @@ class MockUsersBootstrapRunner(
                 lastName = "Administration",
                 firstName = "Demo",
                 civility = Civility.MME,
-                functions = setOf(StaffFunction.SECRETARY)
+                functions = setOf(StaffFunction.SECRETARY),
+                email = EMAIL_ADMIN
             ),
             upsertStaff(
                 id = STAFF_SG,
@@ -129,7 +132,8 @@ class MockUsersBootstrapRunner(
                 lastName = "Surveillant",
                 firstName = "General",
                 civility = Civility.MR,
-                functions = setOf(StaffFunction.SUPERVISOR)
+                functions = setOf(StaffFunction.SUPERVISOR),
+                email = EMAIL_SG
             ),
             upsertStaff(
                 id = STAFF_TEACHER,
@@ -137,7 +141,8 @@ class MockUsersBootstrapRunner(
                 lastName = "Enseignant",
                 firstName = "Demo",
                 civility = Civility.MME,
-                functions = setOf(StaffFunction.TEACHER)
+                functions = setOf(StaffFunction.TEACHER),
+                email = EMAIL_TEACHER
             )
         )
 
@@ -147,9 +152,25 @@ class MockUsersBootstrapRunner(
         lastName: String,
         firstName: String,
         civility: Civility,
-        functions: Set<StaffFunction>
+        functions: Set<StaffFunction>,
+        email: String
     ): Mono<Staff> =
         staffRepository.findById(id)
+            .flatMap { existing ->
+                // Réaligner le contact démo (anciens seeds sans e-mail).
+                existing.lastName = lastName
+                existing.firstName = firstName
+                existing.civility = civility
+                existing.functions = functions
+                existing.contact = ContactInfo(
+                    phones = existing.contact.phones,
+                    email = email,
+                    address = existing.contact.address,
+                    city = existing.contact.city
+                )
+                existing.active = true
+                staffRepository.save(existing)
+            }
             .switchIfEmpty(
                 Mono.defer {
                     staffRepository.save(
@@ -161,6 +182,7 @@ class MockUsersBootstrapRunner(
                             firstName = firstName,
                             civility = civility,
                             sex = Sex.MALE,
+                            contact = ContactInfo(email = email),
                             functions = functions,
                             active = true
                         )
