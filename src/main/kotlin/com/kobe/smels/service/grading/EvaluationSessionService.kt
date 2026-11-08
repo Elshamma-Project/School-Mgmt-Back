@@ -1,6 +1,7 @@
 package com.kobe.smels.service.grading
 
 import com.kobe.smels.dto.grading.EvaluationSessionResponse
+import com.kobe.smels.dto.grading.EvaluationSessionSummaryDto
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.grading.EvaluationSession
@@ -12,6 +13,7 @@ import com.kobe.smels.repository.grading.EvaluationSessionRepository
 import com.kobe.smels.repository.grading.GradeSheetRepository
 import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.ClassSubjectApi
+import com.kobe.smels.service.grading.api.EvaluationSessionApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
@@ -27,7 +29,7 @@ class EvaluationSessionService(
     private val classSubjectApi: ClassSubjectApi,
     private val academicYearApi: AcademicYearApi,
     private val outboxWriter: OutboxWriter
-) {
+) : EvaluationSessionApi {
     private val log = LoggerFactory.getLogger(javaClass)
 
     /** BR-20 : crée les 6 séquences d'une année si absentes. */
@@ -253,4 +255,23 @@ class EvaluationSessionService(
                 gradeSheetRepository.save(sheet)
             }
             .then()
+
+    override fun findByYear(schoolId: String, academicYearId: String): Flux<EvaluationSessionSummaryDto> =
+        evaluationSessionRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
+            .map { GradingMapper.toSessionSummary(it) }
+
+    override fun areRelevantSessionsClosed(
+        schoolId: String,
+        academicYearId: String,
+        sessionNumbers: List<Int>
+    ): Mono<Boolean> {
+        if (sessionNumbers.isEmpty()) return Mono.just(true)
+        return evaluationSessionRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
+            .filter { it.number in sessionNumbers }
+            .collectList()
+            .map { sessions ->
+                sessions.size == sessionNumbers.distinct().size &&
+                    sessions.all { it.status == SessionStatus.CLOSED }
+            }
+    }
 }

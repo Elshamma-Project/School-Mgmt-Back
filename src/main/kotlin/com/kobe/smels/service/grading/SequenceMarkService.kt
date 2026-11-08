@@ -186,6 +186,13 @@ class SequenceMarkService(
         sequenceMarkRepository.findBySchoolIdAndClassSubjectIdAndSessionId(schoolId, classSubjectId, sessionId)
             .map { GradingMapper.toSequenceMarkSummary(it) }
 
+    override fun findByClassSubject(
+        schoolId: String,
+        classSubjectId: String
+    ): Flux<SequenceMarkSummaryDto> =
+        sequenceMarkRepository.findBySchoolIdAndClassSubjectId(schoolId, classSubjectId)
+            .map { GradingMapper.toSequenceMarkSummary(it) }
+
     override fun findByStudentAndSession(
         schoolId: String,
         studentId: String,

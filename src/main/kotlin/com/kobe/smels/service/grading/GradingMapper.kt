@@ -1,15 +1,19 @@
 package com.kobe.smels.service.grading
 
+import com.kobe.smels.dto.grading.AppreciationScaleCalcDto
 import com.kobe.smels.dto.grading.AssessmentResponse
 import com.kobe.smels.dto.grading.EvaluationSessionResponse
+import com.kobe.smels.dto.grading.EvaluationSessionSummaryDto
 import com.kobe.smels.dto.grading.GradeReportSheetLineDto
 import com.kobe.smels.dto.grading.GradeReportSheetResponse
 import com.kobe.smels.dto.grading.GradeResponse
 import com.kobe.smels.dto.grading.GradeSheetResponse
+import com.kobe.smels.dto.grading.GradingSchemeCalcDto
 import com.kobe.smels.dto.grading.GradingSchemeResponse
 import com.kobe.smels.dto.grading.LocalizedTextDto
 import com.kobe.smels.dto.grading.ReportSheetSequenceCellDto
 import com.kobe.smels.dto.grading.ReportSheetVisaDto
+import com.kobe.smels.dto.grading.ScoreBandCalcDto
 import com.kobe.smels.dto.grading.SequenceMarkResponse
 import com.kobe.smels.dto.grading.SequenceMarkSummaryDto
 import com.kobe.smels.dto.grading.TotalizationRuleDto
@@ -135,6 +139,49 @@ object GradingMapper {
         reportSheetMaxRowsPerPage = s.reportSheetMaxRowsPerPage,
         reportSheetAppreciationScaleCode = s.reportSheetAppreciationScaleCode,
         active = s.active
+    )
+
+    fun toSchemeCalc(s: GradingScheme) = GradingSchemeCalcDto(
+        id = s.id!!,
+        schoolId = s.schoolId,
+        code = s.code,
+        passMark = s.passMark,
+        classSuccessThreshold = s.classSuccessThreshold,
+        roundTermSubjectAverages = s.roundTermSubjectAverages,
+        rankingPolicy = s.rankingPolicy,
+        effortSubjectThreshold = s.effortSubjectThreshold,
+        appreciationScales = s.appreciationScales.map { scale ->
+            AppreciationScaleCalcDto(
+                code = scale.code,
+                bands = scale.bands.map { band ->
+                    ScoreBandCalcDto(
+                        code = band.code,
+                        labelFr = band.label?.fr,
+                        labelEn = band.label?.en,
+                        minInclusive = band.minInclusive,
+                        maxExclusive = band.maxExclusive
+                    )
+                }
+            )
+        },
+        overallMentionBands = s.overallMentionBands.map { band ->
+            ScoreBandCalcDto(
+                code = band.code,
+                labelFr = band.label?.fr,
+                labelEn = band.label?.en,
+                minInclusive = band.minInclusive,
+                maxExclusive = band.maxExclusive
+            )
+        }
+    )
+
+    fun toSessionSummary(session: EvaluationSession) = EvaluationSessionSummaryDto(
+        id = session.id!!,
+        schoolId = session.schoolId,
+        academicYearId = session.academicYearId,
+        number = session.number,
+        termNumber = session.termNumber,
+        status = session.status
     )
 
     fun toReportSheetResponse(sheet: GradeReportSheet, deadlineWarning: Boolean = false) =

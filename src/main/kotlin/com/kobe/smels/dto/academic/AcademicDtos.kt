@@ -443,8 +443,18 @@ data class ClassSubjectSummaryDto(
     val coefficient: BigDecimal,
     val teacherId: String?,
     val weeklyHours: Int?,
+    val displayOrder: Int = 0,
     val maxScore: BigDecimal,
     val countsInAverage: Boolean,
+    val active: Boolean
+)
+
+data class SubjectGroupSummaryDto(
+    val id: String,
+    val schoolId: String,
+    val code: String,
+    val name: LocalizedTextDto,
+    val displayOrder: Int,
     val active: Boolean
 )
 

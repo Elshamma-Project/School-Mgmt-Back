@@ -6,6 +6,7 @@ import com.kobe.smels.dto.academic.CreateSubjectRequest
 import com.kobe.smels.dto.academic.PageResponse
 import com.kobe.smels.dto.academic.RoomResponse
 import com.kobe.smels.dto.academic.SubjectGroupResponse
+import com.kobe.smels.dto.academic.SubjectGroupSummaryDto
 import com.kobe.smels.dto.academic.SubjectResponse
 import com.kobe.smels.dto.academic.SubjectSummaryDto
 import com.kobe.smels.dto.academic.UpdateRoomRequest
@@ -20,6 +21,7 @@ import com.kobe.smels.repository.academic.RoomRepository
 import com.kobe.smels.repository.academic.SubjectGroupRepository
 import com.kobe.smels.repository.academic.SubjectRepository
 import com.kobe.smels.service.academic.api.SubjectApi
+import com.kobe.smels.service.academic.api.SubjectGroupApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
@@ -268,7 +270,7 @@ class SubjectService(
 @Service
 class SubjectGroupService(
     private val subjectGroupRepository: SubjectGroupRepository
-) {
+) : SubjectGroupApi {
     fun create(currentUser: CurrentUser, request: CreateSubjectGroupRequest): Mono<SubjectGroupResponse> {
         AcademicAccess.assertCanManage(currentUser)
         val schoolId = AcademicAccess.resolveSchoolId(currentUser, request.schoolId)
@@ -362,4 +364,9 @@ class SubjectGroupService(
             }
             .map { AcademicMapper.toGroupResponse(it) }
     }
+
+    override fun getSummary(schoolId: String, groupId: String): Mono<SubjectGroupSummaryDto> =
+        subjectGroupRepository.findByIdAndSchoolId(groupId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("SUBJECT_GROUP_NOT_FOUND", "Subject group not found")))
+            .map { AcademicMapper.toGroupSummary(it) }
 }

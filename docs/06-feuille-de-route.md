@@ -8,8 +8,8 @@
 | 1 | Projet : dépendances, configuration, Mongo, Docker, CI, **test d'architecture des modules** | à faire |
 | 2 | Référentiels (module `academic`, `staff`, `student`) | à faire |
 | 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | 🟡 services grading + report sheet faits ; export PDF GradeSheet multi-pages encore à peaufiner |
-| 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | à faire |
-| 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | à faire |
+| 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | ✅ `GradeCalculationEngine` + `GradeCalculationService` + tests fixtures docs/04 §6 |
+| 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | ✅ templates seed, `ReportCardService`, PDF Z1–Z10 1 page FR/EN (annuel + TERM_COMPETENCY) |
 | 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | à faire |
 | 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | 🟡 bases auth/roles/sessions faites ; appartenance métier module par module |
 | 8 | Modules suivants : cartes, inscriptions, notifications, fichiers, import des élèves | à faire |

@@ -96,6 +96,19 @@ data class StudentSummaryDto(
     val active: Boolean
 )
 
+/** Identité figée pour bulletin (reporting) — sans contact ni tuteurs. */
+data class StudentIdentityDto(
+    val id: String,
+    val schoolId: String,
+    val matricule: String,
+    val lastName: String,
+    val firstName: String,
+    val sex: Sex?,
+    val dateOfBirth: LocalDate?,
+    val placeOfBirth: String?,
+    val photoFileId: String?
+)
+
 data class CreateGuardianRequest(
     @field:NotBlank
     @field:Size(max = 120)

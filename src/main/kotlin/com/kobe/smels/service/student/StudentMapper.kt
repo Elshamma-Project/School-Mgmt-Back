@@ -6,6 +6,7 @@ import com.kobe.smels.dto.student.EnrollmentSummaryDto
 import com.kobe.smels.dto.student.GuardianLinkDto
 import com.kobe.smels.dto.student.GuardianResponse
 import com.kobe.smels.dto.student.GuardianSummaryDto
+import com.kobe.smels.dto.student.StudentIdentityDto
 import com.kobe.smels.dto.student.StudentResponse
 import com.kobe.smels.dto.student.StudentSummaryDto
 import com.kobe.smels.model.shared.ContactInfo
@@ -75,6 +76,19 @@ object StudentMapper {
             displayName = student.fullName(),
             sex = student.sex,
             active = student.active
+        )
+
+    fun toStudentIdentity(student: Student): StudentIdentityDto =
+        StudentIdentityDto(
+            id = student.id!!,
+            schoolId = student.schoolId,
+            matricule = student.matricule,
+            lastName = student.lastName,
+            firstName = student.firstName,
+            sex = student.sex,
+            dateOfBirth = student.dateOfBirth,
+            placeOfBirth = student.placeOfBirth,
+            photoFileId = student.photoFileId
         )
 
     fun toGuardianResponse(guardian: Guardian): GuardianResponse =

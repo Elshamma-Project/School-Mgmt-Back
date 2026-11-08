@@ -179,6 +179,42 @@ data class SequenceMarkSummaryDto(
     val status: GradeStatus
 )
 
+data class ScoreBandCalcDto(
+    val code: String,
+    val labelFr: String? = null,
+    val labelEn: String? = null,
+    val minInclusive: BigDecimal,
+    val maxExclusive: BigDecimal? = null
+)
+
+data class AppreciationScaleCalcDto(
+    val code: String,
+    val bands: List<ScoreBandCalcDto>
+)
+
+/** Barème pour calculs bulletin (reporting) — sans document Mongo. */
+data class GradingSchemeCalcDto(
+    val id: String,
+    val schoolId: String,
+    val code: String,
+    val passMark: BigDecimal,
+    val classSuccessThreshold: BigDecimal,
+    val roundTermSubjectAverages: Boolean,
+    val rankingPolicy: com.kobe.smels.model.grading.RankingPolicy,
+    val effortSubjectThreshold: BigDecimal?,
+    val appreciationScales: List<AppreciationScaleCalcDto>,
+    val overallMentionBands: List<ScoreBandCalcDto>
+)
+
+data class EvaluationSessionSummaryDto(
+    val id: String,
+    val schoolId: String,
+    val academicYearId: String,
+    val number: Int,
+    val termNumber: Int,
+    val status: SessionStatus
+)
+
 data class CreateGradingSchemeRequest(
     @field:NotBlank val code: String,
     @field:NotNull val name: LocalizedTextDto,

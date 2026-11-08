@@ -12,6 +12,11 @@ interface SequenceMarkApi {
         sessionId: String
     ): Flux<SequenceMarkSummaryDto>
 
+    fun findByClassSubject(
+        schoolId: String,
+        classSubjectId: String
+    ): Flux<SequenceMarkSummaryDto>
+
     fun findByStudentAndSession(
         schoolId: String,
         studentId: String,

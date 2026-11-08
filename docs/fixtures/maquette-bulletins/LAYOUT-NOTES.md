@@ -1,0 +1,25 @@
+# Notes layout — maquette-bulletins-kobe.pdf
+
+Source : `docs/maquette-bulletins-kobe.pdf` (Skia/Chromium, **3 pages** A4 portrait).
+Aligné sur `docs/01-analyse-bulletins.md` § 3 (Z1–Z10).
+
+## Pages
+1. Bulletin **annuel FR** (référence design principale)
+2. Bulletin **annuel EN** (même structure, libellés EN ; photo possible en Z2)
+3. Bulletin **trimestre** (Eval1/Eval2, compétences, rang matière)
+
+## Zones (à respecter dans ReportCardPdfService)
+
+| Zone | Contenu |
+|---|---|
+| Z1 | En-tête bilingue miroir (FR gauche / EN droite), logo centre, année, titre |
+| Z2 | Identité élève + classe ; photo si EN + photoFileId |
+| Z3 | Tableau : Discipline(+ens.) \| DEV1..n \| Moy/20 \| Coef \| Total \| App |
+| Z4 | Ligne groupe (fond distinct) : TOTAL GROUPE \| Σcoef \| Σtotal \| Moyenne |
+| Z5–Z9 | Bande basse 5 blocs : résultat, rappels trim., profil classe, travail, conduite |
+| Z10 | Visas parent / conseil / chef ; disclaimer école ; code 13 chiffres ; horodatage |
+
+## Contraintes
+- Une seule page A4 portrait ; ajuster police `minFontSizePt`–`maxFontSizePt`
+- Aucune marque tierce / USSD
+- Notes en noir (Q-15 non tranché)

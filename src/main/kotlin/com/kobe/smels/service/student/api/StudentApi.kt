@@ -1,6 +1,7 @@
 package com.kobe.smels.service.student.api
 
 import com.kobe.smels.dto.student.GuardianLinkDto
+import com.kobe.smels.dto.student.StudentIdentityDto
 import com.kobe.smels.dto.student.StudentSummaryDto
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -11,6 +12,7 @@ import reactor.core.publisher.Mono
  */
 interface StudentApi {
     fun getSummary(schoolId: String, studentId: String): Mono<StudentSummaryDto>
+    fun getIdentity(schoolId: String, studentId: String): Mono<StudentIdentityDto>
     fun findActiveBySchool(schoolId: String): Flux<StudentSummaryDto>
     fun findByGuardian(schoolId: String, guardianId: String): Flux<StudentSummaryDto>
     fun findGuardianLink(schoolId: String, studentId: String, guardianId: String): Mono<GuardianLinkDto>

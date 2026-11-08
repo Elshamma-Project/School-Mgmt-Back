@@ -251,6 +251,11 @@ class StudentService(
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .map { StudentMapper.toStudentSummary(it) }
 
+    override fun getIdentity(schoolId: String, studentId: String): Mono<com.kobe.smels.dto.student.StudentIdentityDto> =
+        studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+            .map { StudentMapper.toStudentIdentity(it) }
+
     override fun findActiveBySchool(schoolId: String): Flux<StudentSummaryDto> =
         studentRepository.findBySchoolIdAndActiveTrue(schoolId).map { StudentMapper.toStudentSummary(it) }
 

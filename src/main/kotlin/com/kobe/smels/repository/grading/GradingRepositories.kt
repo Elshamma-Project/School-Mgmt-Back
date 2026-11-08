@@ -126,6 +126,10 @@ interface SequenceMarkRepository : ReactiveMongoRepository<SequenceMark, String>
         classSubjectId: String,
         sessionId: String
     ): Flux<SequenceMark>
+    fun findBySchoolIdAndClassSubjectId(
+        schoolId: String,
+        classSubjectId: String
+    ): Flux<SequenceMark>
     fun findBySchoolIdAndStudentIdAndAcademicYearIdAndSessionId(
         schoolId: String,
         studentId: String,

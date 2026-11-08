@@ -14,6 +14,7 @@ import com.kobe.smels.dto.academic.SchoolClassResponse
 import com.kobe.smels.dto.academic.SchoolClassSummaryDto
 import com.kobe.smels.dto.academic.SchoolResponse
 import com.kobe.smels.dto.academic.SubjectGroupResponse
+import com.kobe.smels.dto.academic.SubjectGroupSummaryDto
 import com.kobe.smels.dto.academic.SubjectResponse
 import com.kobe.smels.dto.academic.SubjectSummaryDto
 import com.kobe.smels.dto.academic.TermCompetencyResponse
@@ -249,9 +250,20 @@ object AcademicMapper {
             coefficient = cs.coefficient,
             teacherId = cs.teacherId,
             weeklyHours = cs.weeklyHours,
+            displayOrder = cs.displayOrder,
             maxScore = cs.maxScore,
             countsInAverage = cs.countsInAverage,
             active = cs.active
+        )
+
+    fun toGroupSummary(group: SubjectGroup): SubjectGroupSummaryDto =
+        SubjectGroupSummaryDto(
+            id = group.id!!,
+            schoolId = group.schoolId,
+            code = group.code,
+            name = toLocalizedDto(group.name)!!,
+            displayOrder = group.displayOrder,
+            active = group.active
         )
 
     fun toTermCompetencyResponse(item: TermCompetency): TermCompetencyResponse =

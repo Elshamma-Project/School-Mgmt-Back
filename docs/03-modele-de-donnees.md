@@ -145,6 +145,8 @@ Créées avec l'année (statut `PLANNED`). Sur le bulletin de trimestre, les deu
 
 **Évolutions modèle (fiche de report)** : `EvaluationSession.examDate` ; `Student.sex` nullable ; `Role.SURVEILLANT_GENERAL` ; `GradeAuditEntry` cible `REPORT_SHEET` + `approvedBy`/`approvedAt` ; collection `grading_report_sheets`.
 
+**Évolutions modèle (bulletins)** : `StudentSnapshot.sex` devient `Sex?` (aligné sur `Student.sex` nullable). Calculs et PDF dans `service/reporting` (`GradeCalculationService`, `ReportCardService`, `ReportCardPdfService`) ; gabarits seed `ANNUAL_STANDARD` / `TERM_COMPETENCY`.
+
 | Échelle | Tranches |
 |---|---|
 | `LETTER` | C [0,12[ · B [12,14[ · B+ [14,16[ · A [16,20] |

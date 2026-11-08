@@ -47,3 +47,10 @@ out/
 
 ### Kotlin ###
 .kotlin
+
+### Local maquette tooling ###
+docs/fixtures/maquette-bulletins/node_modules/
+
+# Local maquette tooling
+docs/fixtures/maquette-bulletins/node_modules/
+

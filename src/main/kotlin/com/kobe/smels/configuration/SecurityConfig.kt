@@ -44,6 +44,7 @@ class SecurityConfig(
                     .pathMatchers(
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
+                        "/api/v1/public/report-cards/**",
                         "/actuator/health",
                         "/actuator/health/**",
                         "/actuator/info"

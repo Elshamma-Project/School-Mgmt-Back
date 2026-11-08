@@ -104,7 +104,8 @@ data class StudentSnapshot(
     val lastName: String,
     val firstName: String,
     val matricule: String,
-    val sex: Sex,
+    /** Nullable : aligné sur Student.sex (sexe manquant possible). */
+    val sex: Sex? = null,
     val dateOfBirth: LocalDate? = null,
     val placeOfBirth: String? = null,
     val repeater: Boolean = false,
