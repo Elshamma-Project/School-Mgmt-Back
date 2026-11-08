@@ -13,6 +13,7 @@ import com.kobe.smels.model.user.AccountStatus
 import com.kobe.smels.model.user.UserAccount
 import com.kobe.smels.repository.user.UserAccountRepository
 import com.kobe.smels.shared.security.CurrentUser
+import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -28,12 +29,16 @@ class AuthService(
     private val passwordEncoder: PasswordEncoder,
     private val securityProperties: SecurityProperties
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     fun login(
         request: LoginRequest,
         userAgent: String?,
         ipAddress: String?
     ): Mono<AuthTokensResponse> {
-        return findAccountForLogin(request.username.trim(), request.schoolId)
+        val username = request.username.trim()
+        log.info("auth.login start username={} schoolId={} ip={}", username, request.schoolId, ipAddress)
+        return findAccountForLogin(username, request.schoolId)
             .flatMap { account -> authenticate(account, request.password) }
             .flatMap { account ->
                 userSessionService.openSession(
@@ -44,9 +49,22 @@ class AuthService(
                 ).map { account to it }
             }
             .map { (account, issued) -> toTokensResponse(account, issued) }
+            .doOnNext { tokens ->
+                log.info(
+                    "auth.login ok username={} accountId={} sessionId={} mustChangePassword={}",
+                    username,
+                    tokens.user.id,
+                    tokens.sessionId,
+                    tokens.mustChangePassword
+                )
+            }
+            .doOnError { error ->
+                log.warn("auth.login failed username={} schoolId={} reason={}", username, request.schoolId, error.message)
+            }
     }
 
     fun refresh(rawRefreshToken: String): Mono<AuthTokensResponse> {
+        log.info("auth.refresh start")
         return userSessionService.findActiveByRefreshToken(rawRefreshToken)
             .flatMap { session ->
                 userAccountRepository.findById(session.accountId)
@@ -58,16 +76,39 @@ class AuthService(
                     }
             }
             .map { (account, issued) -> toTokensResponse(account, issued) }
+            .doOnNext { tokens ->
+                log.info(
+                    "auth.refresh ok accountId={} sessionId={}",
+                    tokens.user.id,
+                    tokens.sessionId
+                )
+            }
+            .doOnError { error ->
+                log.warn("auth.refresh failed reason={}", error.message)
+            }
     }
 
     fun logout(currentUser: CurrentUser): Mono<Void> {
+        log.info("auth.logout start user={} sessionId={}", currentUser.username, currentUser.sessionId)
         return userSessionService.requireActiveSession(currentUser.sessionId, currentUser.accountId)
             .flatMap { userSessionService.revoke(it, "LOGOUT") }
             .then()
+            .doOnSuccess {
+                log.info("auth.logout ok user={} sessionId={}", currentUser.username, currentUser.sessionId)
+            }
     }
 
     fun logoutAll(currentUser: CurrentUser): Mono<Long> {
+        log.info("auth.logoutAll start user={} accountId={}", currentUser.username, currentUser.accountId)
         return userSessionService.revokeAllForAccount(currentUser.accountId, "LOGOUT_ALL")
+            .doOnNext { count ->
+                log.info(
+                    "auth.logoutAll ok user={} accountId={} revoked={}",
+                    currentUser.username,
+                    currentUser.accountId,
+                    count
+                )
+            }
     }
 
     fun me(currentUser: CurrentUser): Mono<UserAccountResponse> {
@@ -97,6 +138,7 @@ class AuthService(
     }
 
     fun changePassword(currentUser: CurrentUser, request: ChangePasswordRequest): Mono<UserAccountResponse> {
+        log.info("auth.changePassword start user={} accountId={}", currentUser.username, currentUser.accountId)
         if (request.newPassword != request.confirmPassword) {
             return Mono.error(BusinessRuleException("PASSWORD_MISMATCH", "New password confirmation does not match"))
         }
@@ -121,6 +163,17 @@ class AuthService(
                     .filter { it.id != currentUser.sessionId }
                     .flatMap { userSessionService.revoke(it, "PASSWORD_CHANGED") }
                     .then(Mono.just(UserAccountMapper.toResponse(saved)))
+            }
+            .doOnNext {
+                log.info("auth.changePassword ok user={} accountId={}", currentUser.username, currentUser.accountId)
+            }
+            .doOnError { error ->
+                log.warn(
+                    "auth.changePassword failed user={} accountId={} reason={}",
+                    currentUser.username,
+                    currentUser.accountId,
+                    error.message
+                )
             }
     }
 
@@ -183,11 +236,25 @@ class AuthService(
     private fun registerFailedLogin(account: UserAccount): Mono<UserAccount> {
         account.failedLoginCount += 1
         val max = securityProperties.lockout.maxFailedAttempts
-        if (account.failedLoginCount >= max) {
+        val willLock = account.failedLoginCount >= max
+        if (willLock) {
             account.status = AccountStatus.LOCKED
             account.lockedUntil = Instant.now()
                 .plus(securityProperties.lockout.lockDurationMinutes, ChronoUnit.MINUTES)
             account.failedLoginCount = 0
+            log.warn(
+                "auth.login lockout accountId={} username={} schoolId={}",
+                account.id,
+                account.username,
+                account.schoolId
+            )
+        } else {
+            log.warn(
+                "auth.login bad credentials accountId={} username={} failedCount={}",
+                account.id,
+                account.username,
+                account.failedLoginCount
+            )
         }
         return userAccountRepository.save(account)
             .then(

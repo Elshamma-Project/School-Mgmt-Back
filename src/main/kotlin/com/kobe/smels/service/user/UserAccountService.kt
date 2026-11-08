@@ -11,6 +11,7 @@ import com.kobe.smels.model.user.Role
 import com.kobe.smels.model.user.UserAccount
 import com.kobe.smels.repository.user.UserAccountRepository
 import com.kobe.smels.shared.security.CurrentUser
+import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -24,14 +25,25 @@ class UserAccountService(
     private val passwordEncoder: PasswordEncoder,
     private val userSessionService: UserSessionService
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     fun create(currentUser: CurrentUser, request: CreateUserAccountRequest): Mono<UserAccountResponse> {
+        val username = request.username.trim()
+        log.info(
+            "user.create start by={} targetUsername={} schoolId={} roles={} profileType={}",
+            currentUser.username,
+            username,
+            request.schoolId,
+            request.roles.joinToString(",") { it.name },
+            request.profileType
+        )
         return Mono.fromCallable { validateCreateAuthorization(currentUser, request) }
-            .then(ensureUsernameAvailable(request.schoolId, request.username.trim()))
+            .then(ensureUsernameAvailable(request.schoolId, username))
             .then(
                 Mono.fromCallable {
                     UserAccount(
                         schoolId = if (request.roles.contains(Role.SUPER_ADMIN)) null else request.schoolId,
-                        username = request.username.trim(),
+                        username = username,
                         passwordHash = passwordEncoder.encode(request.password),
                         roles = request.roles,
                         profileType = request.profileType,
@@ -43,6 +55,23 @@ class UserAccountService(
             )
             .flatMap { userAccountRepository.save(it) }
             .map { UserAccountMapper.toResponse(it) }
+            .doOnNext { created ->
+                log.info(
+                    "user.create ok by={} accountId={} username={} schoolId={}",
+                    currentUser.username,
+                    created.id,
+                    created.username,
+                    created.schoolId
+                )
+            }
+            .doOnError { error ->
+                log.warn(
+                    "user.create failed by={} targetUsername={} reason={}",
+                    currentUser.username,
+                    username,
+                    error.message
+                )
+            }
     }
 
     fun getById(currentUser: CurrentUser, id: String): Mono<UserAccountResponse> {
@@ -58,6 +87,7 @@ class UserAccountService(
     }
 
     fun disable(currentUser: CurrentUser, id: String): Mono<UserAccountResponse> {
+        log.info("user.disable start by={} accountId={}", currentUser.username, id)
         return userAccountRepository.findById(id)
             .switchIfEmpty(Mono.error(NotFoundException("USER_NOT_FOUND", "User account not found")))
             .flatMap { account ->
@@ -71,9 +101,16 @@ class UserAccountService(
                             .thenReturn(UserAccountMapper.toResponse(saved))
                     }
             }
+            .doOnNext {
+                log.info("user.disable ok by={} accountId={}", currentUser.username, id)
+            }
+            .doOnError { error ->
+                log.warn("user.disable failed by={} accountId={} reason={}", currentUser.username, id, error.message)
+            }
     }
 
     fun resetPassword(currentUser: CurrentUser, id: String, temporaryPassword: String): Mono<UserAccountResponse> {
+        log.info("user.resetPassword start by={} accountId={}", currentUser.username, id)
         if (temporaryPassword.length < 8) {
             return Mono.error(BusinessRuleException("PASSWORD_TOO_SHORT", "Password must be at least 8 characters"))
         }
@@ -95,6 +132,17 @@ class UserAccountService(
                         userSessionService.revokeAllForAccount(saved.id!!, "PASSWORD_RESET")
                             .thenReturn(UserAccountMapper.toResponse(saved))
                     }
+            }
+            .doOnNext {
+                log.info("user.resetPassword ok by={} accountId={}", currentUser.username, id)
+            }
+            .doOnError { error ->
+                log.warn(
+                    "user.resetPassword failed by={} accountId={} reason={}",
+                    currentUser.username,
+                    id,
+                    error.message
+                )
             }
     }
 

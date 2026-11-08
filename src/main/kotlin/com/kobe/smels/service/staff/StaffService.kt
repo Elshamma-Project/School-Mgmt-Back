@@ -16,6 +16,7 @@ import com.kobe.smels.repository.staff.StaffRepository
 import com.kobe.smels.service.staff.api.StaffApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -29,10 +30,19 @@ class StaffService(
     private val outboxWriter: OutboxWriter
 ) : StaffApi {
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     fun create(currentUser: CurrentUser, request: CreateStaffRequest): Mono<StaffResponse> {
         assertCanManage(currentUser)
         val schoolId = currentUser.requireSchoolId(request.schoolId)
         val functions = request.functions.ifEmpty { setOf(StaffFunction.TEACHER) }
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.create")
+        log.info(
+            "staff.create start by={} schoolId={} functions={}",
+            currentUser.username,
+            schoolId,
+            functions.joinToString(",") { it.name }
+        )
 
         return ensureStaffNumberAvailable(schoolId, request.staffNumber, excludeId = null)
             .then(
@@ -56,6 +66,23 @@ class StaffService(
             )
             .flatMap { staffRepository.save(it) }
             .flatMap { saved -> emitChanged(saved).thenReturn(StaffMapper.toResponse(saved)) }
+            .doOnNext { response ->
+                log.info(
+                    "staff.create ok by={} schoolId={} staffId={} functions={}",
+                    currentUser.username,
+                    schoolId,
+                    response.id,
+                    response.functions.joinToString(",") { it.name }
+                )
+            }
+            .doOnError { error ->
+                log.warn(
+                    "staff.create failed by={} schoolId={} reason={}",
+                    currentUser.username,
+                    schoolId,
+                    error.message
+                )
+            }
     }
 
     fun update(
@@ -66,6 +93,8 @@ class StaffService(
     ): Mono<StaffResponse> {
         assertCanManage(currentUser)
         val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.update")
+        log.info("staff.update start by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
         return staffRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STAFF_NOT_FOUND", "Staff member not found")))
             .flatMap { staff ->
@@ -87,14 +116,33 @@ class StaffService(
             }
             .flatMap { staffRepository.save(it) }
             .flatMap { saved -> emitChanged(saved).thenReturn(StaffMapper.toResponse(saved)) }
+            .doOnNext {
+                log.info("staff.update ok by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
+            }
+            .doOnError { error ->
+                log.warn(
+                    "staff.update failed by={} schoolId={} staffId={} reason={}",
+                    currentUser.username,
+                    schoolId,
+                    id,
+                    error.message
+                )
+            }
     }
 
     fun getById(currentUser: CurrentUser, id: String, schoolIdOverride: String? = null): Mono<StaffResponse> {
         val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        log.debug("staff.getById by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
         return staffRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STAFF_NOT_FOUND", "Staff member not found")))
             .flatMap { staff ->
                 if (!canRead(currentUser, staff)) {
+                    log.warn(
+                        "staff.getById forbidden by={} schoolId={} staffId={}",
+                        currentUser.username,
+                        schoolId,
+                        id
+                    )
                     Mono.error(ForbiddenException("FORBIDDEN", "Cannot read this staff member"))
                 } else {
                     Mono.just(StaffMapper.toResponse(staff))
@@ -113,6 +161,17 @@ class StaffService(
     ): Mono<PageResponse<StaffResponse>> {
         assertCanList(currentUser)
         val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.list")
+        log.info(
+            "staff.list by={} schoolId={} page={} size={} active={} function={} hasQuery={}",
+            currentUser.username,
+            schoolId,
+            page,
+            size,
+            active,
+            function,
+            !q.isNullOrBlank()
+        )
         val pageable = PageRequest.of(
             page.coerceAtLeast(0),
             size.coerceIn(1, 100),
@@ -161,6 +220,15 @@ class StaffService(
                     totalPages = if (total == 0L) 0 else ceil(total.toDouble() / pageable.pageSize).toInt()
                 )
             }
+            .doOnNext { pageResult ->
+                log.info(
+                    "staff.list ok by={} schoolId={} returned={} totalElements={}",
+                    currentUser.username,
+                    schoolId,
+                    pageResult.content.size,
+                    pageResult.totalElements
+                )
+            }
     }
 
     /** BR-42 : désactiver plutôt que supprimer. */
@@ -171,6 +239,8 @@ class StaffService(
     ): Mono<StaffResponse> {
         assertCanManage(currentUser)
         val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.deactivate")
+        log.info("staff.deactivate start by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
         return staffRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STAFF_NOT_FOUND", "Staff member not found")))
             .flatMap { staff ->
@@ -178,6 +248,9 @@ class StaffService(
                 staffRepository.save(staff)
             }
             .flatMap { saved -> emitChanged(saved).thenReturn(StaffMapper.toResponse(saved)) }
+            .doOnNext {
+                log.info("staff.deactivate ok by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
+            }
     }
 
     fun reactivate(
@@ -187,6 +260,8 @@ class StaffService(
     ): Mono<StaffResponse> {
         assertCanManage(currentUser)
         val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.reactivate")
+        log.info("staff.reactivate start by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
         return staffRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STAFF_NOT_FOUND", "Staff member not found")))
             .flatMap { staff ->
@@ -194,6 +269,9 @@ class StaffService(
                 staffRepository.save(staff)
             }
             .flatMap { saved -> emitChanged(saved).thenReturn(StaffMapper.toResponse(saved)) }
+            .doOnNext {
+                log.info("staff.reactivate ok by={} schoolId={} staffId={}", currentUser.username, schoolId, id)
+            }
     }
 
     override fun getSummary(schoolId: String, staffId: String): Mono<StaffSummaryDto> =
@@ -223,7 +301,16 @@ class StaffService(
                 "active" to staff.active,
                 "functions" to staff.functions.map { it.name }
             )
-        ).then()
+        )
+            .doOnNext {
+                log.debug(
+                    "outbox appended eventType=staff.member.changed schoolId={} staffId={} active={}",
+                    staff.schoolId,
+                    staff.id,
+                    staff.active
+                )
+            }
+            .then()
 
     private fun ensureStaffNumberAvailable(
         schoolId: String,
@@ -276,4 +363,17 @@ class StaffService(
 
     private fun resolveSchoolId(currentUser: CurrentUser, overrideSchoolId: String?): String =
         currentUser.requireSchoolId(overrideSchoolId)
+
+    /** docs/05 + docs/08 : accès multi-établissements SUPER_ADMIN journalisé. */
+    private fun logSuperAdminTenantAction(currentUser: CurrentUser, schoolId: String, action: String) {
+        if (currentUser.isSuperAdmin()) {
+            log.info(
+                "SUPER_ADMIN tenant action action={} by={} targetSchoolId={} tokenSchoolId={}",
+                action,
+                currentUser.username,
+                schoolId,
+                currentUser.schoolId
+            )
+        }
+    }
 }

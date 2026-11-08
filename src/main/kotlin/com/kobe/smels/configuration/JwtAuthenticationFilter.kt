@@ -4,6 +4,7 @@ import com.kobe.smels.service.user.JwtService
 import com.kobe.smels.service.user.UserSessionService
 import com.kobe.smels.shared.security.CurrentUser
 import com.kobe.smels.shared.security.SmelsAuthentication
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -24,6 +25,8 @@ class JwtAuthenticationFilter(
     private val userSessionService: UserSessionService
 ) : WebFilter {
 
+    private val log = LoggerFactory.getLogger(javaClass)
+
     private val passwordChangeAllowed = listOf(
         "/api/v1/auth/change-password",
         "/api/v1/auth/logout",
@@ -42,22 +45,48 @@ class JwtAuthenticationFilter(
             return chain.filter(exchange)
         }
 
+        val path = exchange.request.path.pathWithinApplication().value()
         return Mono.fromCallable { jwtService.parseAccessToken(rawToken) }
             .flatMap { currentUser ->
                 userSessionService.requireActiveSession(currentUser.sessionId, currentUser.accountId)
                     .map { currentUser }
             }
             .flatMap { currentUser ->
-                val path = exchange.request.path.pathWithinApplication().value()
+                attachLogContext(exchange, currentUser)
                 if (currentUser.mustChangePassword && passwordChangeAllowed.none { path.startsWith(it) }) {
+                    log.warn(
+                        "JWT accepted but password change required user={} path={}",
+                        currentUser.username,
+                        path
+                    )
                     writePasswordChangeRequired(exchange)
                 } else {
+                    log.debug(
+                        "JWT ok user={} accountId={} schoolId={} roles={} sessionId={} path={}",
+                        currentUser.username,
+                        currentUser.accountId,
+                        currentUser.schoolId,
+                        currentUser.roles.joinToString(","),
+                        currentUser.sessionId,
+                        path
+                    )
                     val authentication = SmelsAuthentication(currentUser)
                     chain.filter(exchange)
                         .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
                 }
             }
-            .onErrorResume { chain.filter(exchange) }
+            .onErrorResume { error ->
+                log.debug("JWT rejected path={} reason={}", path, error.message)
+                chain.filter(exchange)
+            }
+    }
+
+    private fun attachLogContext(exchange: ServerWebExchange, currentUser: CurrentUser) {
+        exchange.attributes[RequestLoggingWebFilter.ATTR_USERNAME] = currentUser.username
+        exchange.attributes[RequestLoggingWebFilter.ATTR_ACCOUNT_ID] = currentUser.accountId
+        exchange.attributes[RequestLoggingWebFilter.ATTR_SCHOOL_ID] = currentUser.schoolId ?: "-"
+        exchange.attributes[RequestLoggingWebFilter.ATTR_ROLES] =
+            currentUser.roles.joinToString(",") { it.name }
     }
 
     private fun writePasswordChangeRequired(exchange: ServerWebExchange): Mono<Void> {
