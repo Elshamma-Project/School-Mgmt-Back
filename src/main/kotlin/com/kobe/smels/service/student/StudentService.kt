@@ -260,12 +260,38 @@ class StudentService(
         q: String?
     ): Mono<PageResponse<StudentResponse>> {
         logSuperAdminTenantAction(currentUser, schoolId, "student.list")
+        val pageIndex = page.coerceAtLeast(0)
+        val pageSize = size.coerceIn(1, 100)
+        val query = q?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
+
+        // Recherche texte : filtrer puis paginer (sinon la page Mongo coupe les résultats).
+        if (query != null && active != false) {
+            return studentRepository.findBySchoolIdAndActiveTrue(schoolId)
+                .filter { student ->
+                    student.fullName().lowercase().contains(query) ||
+                        student.matricule.lowercase().contains(query)
+                }
+                .collectList()
+                .map { all ->
+                    val sorted = all.sortedWith(compareBy({ it.lastName }, { it.firstName }))
+                    val from = (pageIndex * pageSize).coerceAtMost(sorted.size)
+                    val to = (from + pageSize).coerceAtMost(sorted.size)
+                    val slice = sorted.subList(from, to).map { StudentMapper.toStudentResponse(it) }
+                    PageResponse(
+                        content = slice,
+                        page = pageIndex,
+                        size = pageSize,
+                        totalElements = sorted.size.toLong(),
+                        totalPages = if (sorted.isEmpty()) 0 else ceil(sorted.size.toDouble() / pageSize).toInt()
+                    )
+                }
+        }
+
         val pageable = PageRequest.of(
-            page.coerceAtLeast(0),
-            size.coerceIn(1, 100),
+            pageIndex,
+            pageSize,
             Sort.by("lastName").ascending().and(Sort.by("firstName").ascending())
         )
-        val query = q?.trim()?.takeIf { it.isNotEmpty() }?.lowercase()
         val source = if (active != null) {
             studentRepository.findBySchoolIdAndActive(schoolId, active, pageable)
         } else {
@@ -277,23 +303,16 @@ class StudentService(
             studentRepository.countBySchoolId(schoolId)
         }
         return source
-            .filter { student ->
-                query == null ||
-                    student.fullName().lowercase().contains(query) ||
-                    student.matricule.lowercase().contains(query)
-            }
             .map { StudentMapper.toStudentResponse(it) }
             .collectList()
             .zipWith(totalMono)
             .map { tuple ->
-                val content = tuple.t1
-                val total = if (query == null) tuple.t2 else content.size.toLong()
                 PageResponse(
-                    content = content,
+                    content = tuple.t1,
                     page = pageable.pageNumber,
                     size = pageable.pageSize,
-                    totalElements = total,
-                    totalPages = if (total == 0L) 0 else ceil(total.toDouble() / pageable.pageSize).toInt()
+                    totalElements = tuple.t2,
+                    totalPages = if (tuple.t2 == 0L) 0 else ceil(tuple.t2.toDouble() / pageable.pageSize).toInt()
                 )
             }
     }

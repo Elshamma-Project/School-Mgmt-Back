@@ -197,7 +197,11 @@ data class EnrollmentResponse(
     val status: EnrollmentStatus,
     val enrolledOn: LocalDate?,
     val leftOn: LocalDate?,
-    val previousSchool: String?
+    val previousSchool: String?,
+    /** Enrichi depuis Student (même module) — null si fiche absente. */
+    val studentMatricule: String? = null,
+    val studentFullName: String? = null,
+    val studentSex: Sex? = null
 )
 
 /** Une année du parcours scolaire (libellés figés pour consultation historique). */

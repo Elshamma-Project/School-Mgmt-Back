@@ -10,6 +10,7 @@ import com.kobe.smels.dto.student.StudentIdentityDto
 import com.kobe.smels.dto.student.StudentResponse
 import com.kobe.smels.dto.student.StudentSummaryDto
 import com.kobe.smels.model.shared.ContactInfo
+import com.kobe.smels.model.shared.Sex
 import com.kobe.smels.model.student.Enrollment
 import com.kobe.smels.model.student.Guardian
 import com.kobe.smels.model.student.GuardianLink
@@ -112,7 +113,12 @@ object StudentMapper {
             active = guardian.active
         )
 
-    fun toEnrollmentResponse(enrollment: Enrollment): EnrollmentResponse =
+    fun toEnrollmentResponse(
+        enrollment: Enrollment,
+        studentMatricule: String? = null,
+        studentFullName: String? = null,
+        studentSex: Sex? = null
+    ): EnrollmentResponse =
         EnrollmentResponse(
             id = enrollment.id!!,
             schoolId = enrollment.schoolId,
@@ -126,7 +132,10 @@ object StudentMapper {
             status = enrollment.status,
             enrolledOn = enrollment.enrolledOn,
             leftOn = enrollment.leftOn,
-            previousSchool = enrollment.previousSchool
+            previousSchool = enrollment.previousSchool,
+            studentMatricule = studentMatricule,
+            studentFullName = studentFullName,
+            studentSex = studentSex
         )
 
     fun toEnrollmentSummary(enrollment: Enrollment): EnrollmentSummaryDto =

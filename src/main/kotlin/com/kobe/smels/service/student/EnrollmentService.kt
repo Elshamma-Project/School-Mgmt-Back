@@ -181,29 +181,56 @@ class EnrollmentService(
             !classId.isNullOrBlank(),
             status
         )
-        val pageable = PageRequest.of(page.coerceAtLeast(0), size.coerceIn(1, 100), Sort.by("enrolledOn").descending())
+        val sort = if (classId != null) {
+            Sort.by(Sort.Order.asc("rollNumber"), Sort.Order.asc("studentId"))
+        } else {
+            Sort.by("enrolledOn").descending()
+        }
+        val pageable = PageRequest.of(page.coerceAtLeast(0), size.coerceIn(1, 100), sort)
 
         val source: Flux<Enrollment>
         val totalMono: Mono<Long>
         when {
+            classId != null && academicYearId != null && status != null -> {
+                source = enrollmentRepository.findBySchoolIdAndClassIdAndAcademicYearIdAndStatus(
+                    schoolId, classId, academicYearId, status, pageable
+                )
+                totalMono = enrollmentRepository.countBySchoolIdAndClassIdAndAcademicYearIdAndStatus(
+                    schoolId, classId, academicYearId, status
+                )
+            }
+            classId != null && academicYearId != null -> {
+                source = enrollmentRepository.findBySchoolIdAndClassIdAndAcademicYearId(
+                    schoolId, classId, academicYearId, pageable
+                )
+                totalMono = enrollmentRepository.countBySchoolIdAndClassIdAndAcademicYearId(
+                    schoolId, classId, academicYearId
+                )
+            }
             classId != null && status != null -> {
                 source = enrollmentRepository.findBySchoolIdAndClassIdAndStatus(schoolId, classId, status, pageable)
                 totalMono = enrollmentRepository.countBySchoolIdAndClassIdAndStatus(schoolId, classId, status)
+            }
+            classId != null -> {
+                source = enrollmentRepository.findBySchoolIdAndClassId(schoolId, classId, pageable)
+                totalMono = enrollmentRepository.countBySchoolIdAndClassId(schoolId, classId)
             }
             academicYearId != null -> {
                 source = enrollmentRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId, pageable)
                 totalMono = enrollmentRepository.countBySchoolIdAndAcademicYearId(schoolId, academicYearId)
             }
             else -> {
-                // Liste large évitée : exiger au moins une année.
                 return Mono.error(
-                    ForbiddenException("FILTER_REQUIRED", "academicYearId or classId+status filter is required")
+                    ForbiddenException(
+                        "FILTER_REQUIRED",
+                        "academicYearId or classId filter is required"
+                    )
                 )
             }
         }
 
-        return source.map { StudentMapper.toEnrollmentResponse(it) }
-            .collectList()
+        return source.collectList()
+            .flatMap { enrollments -> enrichEnrollmentResponses(enrollments) }
             .zipWith(totalMono)
             .map { tuple ->
                 val content = tuple.t1
@@ -215,6 +242,26 @@ class EnrollmentService(
                     totalElements = total,
                     totalPages = if (total == 0L) 0 else ceil(total.toDouble() / pageable.pageSize).toInt()
                 )
+            }
+    }
+
+    private fun enrichEnrollmentResponses(enrollments: List<Enrollment>): Mono<List<EnrollmentResponse>> {
+        if (enrollments.isEmpty()) {
+            return Mono.just(emptyList())
+        }
+        val studentIds = enrollments.map { it.studentId }.distinct()
+        return studentRepository.findAllById(studentIds)
+            .collectMap { it.id!! }
+            .map { students ->
+                enrollments.map { enrollment ->
+                    val student = students[enrollment.studentId]
+                    StudentMapper.toEnrollmentResponse(
+                        enrollment = enrollment,
+                        studentMatricule = student?.matricule,
+                        studentFullName = student?.fullName(),
+                        studentSex = student?.sex
+                    )
+                }
             }
     }
 
