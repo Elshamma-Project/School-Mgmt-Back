@@ -8,9 +8,12 @@ import com.kobe.smels.model.user.SessionStatus
 import com.kobe.smels.model.user.UserAccount
 import com.kobe.smels.model.user.UserSession
 import com.kobe.smels.repository.user.UserSessionRepository
+import org.slf4j.LoggerFactory
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.time.Duration
 import java.time.Instant
 
 @Service
@@ -18,6 +21,8 @@ class UserSessionService(
     private val userSessionRepository: UserSessionRepository,
     private val securityProperties: SecurityProperties
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+
     data class IssuedSession(
         val session: UserSession,
         val rawRefreshToken: String
@@ -61,6 +66,11 @@ class UserSessionService(
             }
     }
 
+    /**
+     * Valide la session JWT. Le touch de [UserSession.lastSeenAt] est **throttlé**
+     * et ignore les collisions de version : chaque requête authentifiée ne doit pas
+     * provoquer de `OptimisticLockingFailureException` (sinon 401 → refresh → déconnexion).
+     */
     fun requireActiveSession(sessionId: String, accountId: String): Mono<UserSession> {
         return userSessionRepository.findById(sessionId)
             .switchIfEmpty(Mono.error(UnauthorizedException("SESSION_INVALID", "Session is not active")))
@@ -74,10 +84,7 @@ class UserSessionService(
                         revoke(session, "EXPIRED").then(
                             Mono.error(UnauthorizedException("SESSION_EXPIRED", "Session has expired"))
                         )
-                    else -> {
-                        session.lastSeenAt = Instant.now()
-                        userSessionRepository.save(session)
-                    }
+                    else -> touchLastSeen(session)
                 }
             }
     }
@@ -97,12 +104,53 @@ class UserSessionService(
             }
     }
 
+    /**
+     * Rotation du refresh. En cas de collision de version (touch concurrent),
+     * recharge et réessaie tant que le hash d’origine est encore présent.
+     * Si un autre refresh a déjà gagné, renvoie INVALID_REFRESH.
+     */
     fun rotateRefreshToken(session: UserSession): Mono<IssuedSession> {
-        val rawRefresh = TokenHashing.newRefreshToken()
-        session.refreshTokenHash = TokenHashing.sha256(rawRefresh)
-        session.lastSeenAt = Instant.now()
-        session.expiresAt = Instant.now().plusMillis(securityProperties.jwt.refreshTokenValidityMs)
-        return userSessionRepository.save(session).map { IssuedSession(it, rawRefresh) }
+        val sessionId = session.id
+            ?: return Mono.error(IllegalStateException("Session id required"))
+        val expectedHash = session.refreshTokenHash
+        return rotateRefreshTokenOnce(session)
+            .onErrorResume(OptimisticLockingFailureException::class.java) { error ->
+                log.debug(
+                    "auth.session.rotate version conflict sessionId={} — retry",
+                    sessionId
+                )
+                userSessionRepository.findById(sessionId)
+                    .switchIfEmpty(
+                        Mono.error(UnauthorizedException("SESSION_INVALID", "Session is not active"))
+                    )
+                    .flatMap { fresh ->
+                        when {
+                            fresh.status != SessionStatus.ACTIVE ->
+                                Mono.error(
+                                    UnauthorizedException("SESSION_REVOKED", "Session has been revoked")
+                                )
+                            fresh.expiresAt.isBefore(Instant.now()) ->
+                                revoke(fresh, "EXPIRED").then(
+                                    Mono.error(
+                                        UnauthorizedException("SESSION_EXPIRED", "Session has expired")
+                                    )
+                                )
+                            fresh.refreshTokenHash != expectedHash ->
+                                // Un autre refresh a déjà tourné le jeton.
+                                Mono.error(
+                                    UnauthorizedException("INVALID_REFRESH", "Refresh token is invalid")
+                                )
+                            else -> rotateRefreshTokenOnce(fresh)
+                        }
+                    }
+                    .onErrorResume(OptimisticLockingFailureException::class.java) {
+                        log.warn(
+                            "auth.session.rotate still conflicting sessionId={}",
+                            sessionId
+                        )
+                        Mono.error(error)
+                    }
+            }
     }
 
     fun revoke(session: UserSession, reason: String): Mono<UserSession> {
@@ -113,6 +161,23 @@ class UserSessionService(
         session.revokedAt = Instant.now()
         session.revokedReason = reason
         return userSessionRepository.save(session)
+            .onErrorResume(OptimisticLockingFailureException::class.java) {
+                val sessionId = session.id
+                    ?: return@onErrorResume Mono.just(session)
+                userSessionRepository.findById(sessionId)
+                    .flatMap { fresh ->
+                        if (fresh.status != SessionStatus.ACTIVE) {
+                            Mono.just(fresh)
+                        } else {
+                            fresh.status =
+                                if (reason == "EXPIRED") SessionStatus.EXPIRED else SessionStatus.REVOKED
+                            fresh.revokedAt = Instant.now()
+                            fresh.revokedReason = reason
+                            userSessionRepository.save(fresh)
+                        }
+                    }
+                    .defaultIfEmpty(session)
+            }
     }
 
     fun revokeByIdForAccount(sessionId: String, accountId: String): Mono<UserSession> {
@@ -132,6 +197,52 @@ class UserSessionService(
             accountId,
             SessionStatus.ACTIVE
         )
+    }
+
+    private fun rotateRefreshTokenOnce(session: UserSession): Mono<IssuedSession> {
+        val rawRefresh = TokenHashing.newRefreshToken()
+        session.refreshTokenHash = TokenHashing.sha256(rawRefresh)
+        session.lastSeenAt = Instant.now()
+        session.expiresAt = Instant.now().plusMillis(securityProperties.jwt.refreshTokenValidityMs)
+        return userSessionRepository.save(session).map { IssuedSession(it, rawRefresh) }
+    }
+
+    /**
+     * Met à jour [lastSeenAt] au plus une fois par [LAST_SEEN_TOUCH_INTERVAL].
+     * Une collision de version (requêtes parallèles / refresh) est ignorée :
+     * la session reste valide.
+     */
+    private fun touchLastSeen(session: UserSession): Mono<UserSession> {
+        val now = Instant.now()
+        val elapsed = Duration.between(session.lastSeenAt, now)
+        if (elapsed < LAST_SEEN_TOUCH_INTERVAL) {
+            return Mono.just(session)
+        }
+        val sessionId = session.id ?: return Mono.just(session)
+        session.lastSeenAt = now
+        return userSessionRepository.save(session)
+            .onErrorResume(OptimisticLockingFailureException::class.java) {
+                log.debug("auth.session.touch ignored version conflict sessionId={}", sessionId)
+                userSessionRepository.findById(sessionId)
+                    .flatMap { reloaded ->
+                        if (reloaded.status != SessionStatus.ACTIVE) {
+                            Mono.error(
+                                UnauthorizedException("SESSION_REVOKED", "Session has been revoked")
+                            )
+                        } else if (reloaded.expiresAt.isBefore(Instant.now())) {
+                            revoke(reloaded, "EXPIRED").then(
+                                Mono.error(
+                                    UnauthorizedException("SESSION_EXPIRED", "Session has expired")
+                                )
+                            )
+                        } else {
+                            Mono.just(reloaded)
+                        }
+                    }
+                    .switchIfEmpty(
+                        Mono.error(UnauthorizedException("SESSION_INVALID", "Session is not active"))
+                    )
+            }
     }
 
     private fun enforceMaxSessions(accountId: String): Mono<Void> {
@@ -156,5 +267,10 @@ class UserSessionService(
         } else {
             Mono.error(ForbiddenException("FORBIDDEN", "Cannot manage another account's sessions"))
         }
+    }
+
+    companion object {
+        /** Évite une tempête de `save` (et de `@Version`) sur chaque requête parallèle. */
+        val LAST_SEEN_TOUCH_INTERVAL: Duration = Duration.ofSeconds(60)
     }
 }

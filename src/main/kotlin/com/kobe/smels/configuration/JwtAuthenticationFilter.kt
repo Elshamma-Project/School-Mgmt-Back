@@ -6,6 +6,7 @@ import com.kobe.smels.service.user.UserSessionService
 import com.kobe.smels.shared.security.CurrentUser
 import com.kobe.smels.shared.security.SmelsAuthentication
 import org.slf4j.LoggerFactory
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -55,6 +56,15 @@ class JwtAuthenticationFilter(
         return Mono.fromCallable { jwtService.parseAccessToken(rawToken) }
             .flatMap { currentUser ->
                 userSessionService.requireActiveSession(currentUser.sessionId, currentUser.accountId)
+                    // Collision version résiduelle : 1 retry, jamais transformer en 401.
+                    .onErrorResume(OptimisticLockingFailureException::class.java) {
+                        log.debug(
+                            "JWT session touch conflict — retry sessionId={} path={}",
+                            currentUser.sessionId,
+                            path
+                        )
+                        userSessionService.requireActiveSession(currentUser.sessionId, currentUser.accountId)
+                    }
                     .map { currentUser }
             }
             .flatMap { currentUser ->
@@ -82,6 +92,14 @@ class JwtAuthenticationFilter(
                 }
             }
             .onErrorResume { error ->
+                if (error is OptimisticLockingFailureException) {
+                    log.warn("JWT session still conflicting after retry path={}", path)
+                    return@onErrorResume writeUnauthorized(
+                        exchange,
+                        "SESSION_BUSY",
+                        "Session is busy, retry shortly"
+                    )
+                }
                 val code = (error as? UnauthorizedException)?.code ?: "INVALID_TOKEN"
                 val detail = error.message?.takeIf { it.isNotBlank() }
                     ?: "Access token is invalid or expired"
