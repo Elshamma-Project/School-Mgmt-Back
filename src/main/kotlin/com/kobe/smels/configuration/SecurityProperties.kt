@@ -9,7 +9,9 @@ data class SecurityProperties(
     val cors: Cors = Cors(),
     val bootstrap: Bootstrap = Bootstrap(),
     /** Comptes de démo (tous les rôles). DEV uniquement — voir docs/mock-logins.md. */
-    val mockUsers: MockUsers = MockUsers()
+    val mockUsers: MockUsers = MockUsers(),
+    /** Provisionnement de comptes liés (ex. fiche Staff). */
+    val provisioning: Provisioning = Provisioning()
 ) {
     data class Jwt(
         val secret: String = "local-dev-only-change-me-not-for-production",
@@ -39,5 +41,13 @@ data class SecurityProperties(
         val password: String = "DemoPass123!",
         val schoolId: String = "school-demo-elshammah",
         val schoolCode: String = "ELSHAMMAH-DEMO"
+    )
+
+    data class Provisioning(
+        /**
+         * Mot de passe temporaire des comptes créés avec une fiche personnel.
+         * Changement obligatoire à la première connexion (`mustChangePassword`).
+         */
+        val temporaryPassword: String = "DemoPass123!"
     )
 }

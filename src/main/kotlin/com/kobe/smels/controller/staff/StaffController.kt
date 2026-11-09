@@ -1,11 +1,16 @@
 package com.kobe.smels.controller.staff
 
+import com.kobe.smels.configuration.SecurityProperties
 import com.kobe.smels.dto.staff.CreateStaffRequest
 import com.kobe.smels.dto.staff.PageResponse
 import com.kobe.smels.dto.staff.StaffResponse
 import com.kobe.smels.dto.staff.UpdateStaffIdentityRequest
 import com.kobe.smels.dto.staff.UpdateStaffRequest
+import com.kobe.smels.dto.user.CreateUserAccountRequest
+import com.kobe.smels.dto.user.StaffLinkedAccountDto
+import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.model.staff.StaffFunction
+import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.service.staff.StaffService
 import com.kobe.smels.service.user.api.UserAccountApi
 import com.kobe.smels.shared.security.SecuritySupport
@@ -21,18 +26,58 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Mono
-import java.time.Instant
 
 @RestController
 @RequestMapping("/api/v1/staff")
 class StaffController(
     private val staffService: StaffService,
-    private val userAccountApi: UserAccountApi
+    private val userAccountApi: UserAccountApi,
+    private val securityProperties: SecurityProperties
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(@Valid @RequestBody request: CreateStaffRequest): Mono<StaffResponse> =
-        SecuritySupport.currentUser().flatMap { staffService.create(it, request) }
+        SecuritySupport.currentUser().flatMap { currentUser ->
+            val wantLogin = request.createLoginAccount
+            val email = request.contact.email?.trim()?.lowercase()?.ifBlank { null }
+
+            if (wantLogin && email == null) {
+                return@flatMap Mono.error(
+                    BusinessRuleException(
+                        "EMAIL_REQUIRED",
+                        "Email is required to create a login account"
+                    )
+                )
+            }
+
+            staffService.create(currentUser, request).flatMap { staff ->
+                if (!wantLogin) {
+                    Mono.just(staff)
+                } else {
+                    val temporaryPassword = securityProperties.provisioning.temporaryPassword
+                    userAccountApi
+                        .createAccount(
+                            currentUser,
+                            CreateUserAccountRequest(
+                                username = email!!,
+                                password = temporaryPassword,
+                                schoolId = staff.schoolId,
+                                roles = StaffLoginRoles.fromFunctions(staff.functions),
+                                profileType = ProfileType.STAFF,
+                                profileId = staff.id,
+                                mustChangePassword = true
+                            )
+                        )
+                        .map { account ->
+                            staff.copy(
+                                hasLoginAccount = true,
+                                loginUsername = account.username,
+                                temporaryPassword = temporaryPassword
+                            )
+                        }
+                }
+            }
+        }
 
     @GetMapping("/{id}")
     fun get(
@@ -93,16 +138,25 @@ class StaffController(
         }
         val schoolId = page.content.first().schoolId
         val ids = page.content.map { it.id }
-        return userAccountApi.findStaffLastLogins(schoolId, ids).map { logins ->
-            page.copy(content = page.content.map { applyLogin(it, logins) })
+        return userAccountApi.findStaffLinkedAccounts(schoolId, ids).map { accounts ->
+            page.copy(content = page.content.map { applyLinkedAccount(it, accounts) })
         }
     }
 
     private fun enrichOne(staff: StaffResponse): Mono<StaffResponse> =
-        userAccountApi.findStaffLastLogins(staff.schoolId, listOf(staff.id)).map { logins ->
-            applyLogin(staff, logins)
+        userAccountApi.findStaffLinkedAccounts(staff.schoolId, listOf(staff.id)).map { accounts ->
+            applyLinkedAccount(staff, accounts)
         }
 
-    private fun applyLogin(staff: StaffResponse, logins: Map<String, Instant>): StaffResponse =
-        staff.copy(lastLoginAt = logins[staff.id] ?: staff.lastLoginAt)
+    private fun applyLinkedAccount(
+        staff: StaffResponse,
+        accounts: Map<String, StaffLinkedAccountDto>
+    ): StaffResponse {
+        val linked = accounts[staff.id]
+        return staff.copy(
+            lastLoginAt = linked?.lastLoginAt ?: staff.lastLoginAt,
+            hasLoginAccount = linked != null,
+            loginUsername = linked?.username ?: staff.loginUsername
+        )
+    }
 }

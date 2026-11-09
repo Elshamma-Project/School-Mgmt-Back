@@ -34,7 +34,12 @@ data class CreateStaffRequest(
     val teachableSubjectIds: Set<String> = emptySet(),
     val hireDate: LocalDate? = null,
     /** SUPER_ADMIN uniquement : cible un établissement. */
-    val schoolId: String? = null
+    val schoolId: String? = null,
+    /**
+     * Si true, provisionne un UserAccount lié (e-mail = identifiant de connexion).
+     * L’e-mail de contact est alors obligatoire.
+     */
+    val createLoginAccount: Boolean = true
 )
 
 data class UpdateStaffRequest(
@@ -88,6 +93,15 @@ data class StaffResponse(
     val active: Boolean,
     /** Enrichi depuis le compte lié (`user`), null si aucun compte ou jamais connecté. */
     val lastLoginAt: Instant? = null,
+    /** True si un UserAccount `profileType=STAFF` est lié à cette fiche. */
+    val hasLoginAccount: Boolean = false,
+    /** Identifiant de connexion (e-mail) du compte lié, si présent. */
+    val loginUsername: String? = null,
+    /**
+     * Mot de passe temporaire — présent uniquement juste après création
+     * si `createLoginAccount` a provisionné le compte. Jamais stocké sur Staff.
+     */
+    val temporaryPassword: String? = null,
     /** Droit de gestion (modifier / désactiver) pour l’appelant courant. */
     val canManage: Boolean = true,
     /** UserAccount.id créateur (audit Mongo). */

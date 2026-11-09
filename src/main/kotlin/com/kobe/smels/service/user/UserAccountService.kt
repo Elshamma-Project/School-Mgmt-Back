@@ -1,6 +1,7 @@
 package com.kobe.smels.service.user
 
 import com.kobe.smels.dto.user.CreateUserAccountRequest
+import com.kobe.smels.dto.user.StaffLinkedAccountDto
 import com.kobe.smels.dto.user.UserAccountResponse
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ConflictException
@@ -29,6 +30,11 @@ class UserAccountService(
     private val userSessionService: UserSessionService
 ) : UserAccountApi {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    override fun createAccount(
+        currentUser: CurrentUser,
+        request: CreateUserAccountRequest
+    ): Mono<UserAccountResponse> = create(currentUser, request)
 
     fun create(currentUser: CurrentUser, request: CreateUserAccountRequest): Mono<UserAccountResponse> {
         val username = request.username.trim().lowercase()
@@ -89,10 +95,10 @@ class UserAccountService(
             }
     }
 
-    override fun findStaffLastLogins(
+    override fun findStaffLinkedAccounts(
         schoolId: String,
         staffIds: Collection<String>
-    ): Mono<Map<String, Instant>> {
+    ): Mono<Map<String, StaffLinkedAccountDto>> {
         val ids = staffIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         if (ids.isEmpty()) {
             return Mono.just(emptyMap())
@@ -103,13 +109,26 @@ class UserAccountService(
             .map { accounts ->
                 accounts
                     .mapNotNull { account ->
-                        val profileId = account.profileId?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-                        val lastLogin = account.lastLoginAt ?: return@mapNotNull null
-                        profileId to lastLogin
+                        val profileId = account.profileId?.trim()?.takeIf { it.isNotEmpty() }
+                            ?: return@mapNotNull null
+                        profileId to StaffLinkedAccountDto(
+                            username = account.username,
+                            lastLoginAt = account.lastLoginAt
+                        )
                     }
                     .toMap()
             }
     }
+
+    override fun findStaffLastLogins(
+        schoolId: String,
+        staffIds: Collection<String>
+    ): Mono<Map<String, Instant>> =
+        findStaffLinkedAccounts(schoolId, staffIds).map { linked ->
+            linked.mapNotNull { (staffId, account) ->
+                account.lastLoginAt?.let { staffId to it }
+            }.toMap()
+        }
 
     fun disable(currentUser: CurrentUser, id: String): Mono<UserAccountResponse> {
         log.info("user.disable start by={} accountId={}", currentUser.username, id)
