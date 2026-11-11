@@ -54,6 +54,21 @@ data class EvaluationSessionResponse(
     val closedAt: Instant?
 )
 
+/**
+ * Mise à jour du calendrier de séquence (dates optionnelles ; `null` = ne pas modifier).
+ * Pour effacer une date déjà posée, envoyer une chaîne vide côté API JSON n’est pas supporté :
+ * utiliser le flag [clearExamDate] / [clearStartDate] / etc. si besoin plus tard.
+ */
+data class UpdateSessionScheduleRequest(
+    val examDate: LocalDate? = null,
+    val startDate: LocalDate? = null,
+    val endDate: LocalDate? = null,
+    val entryDeadline: LocalDate? = null,
+    val schoolId: String? = null
+)
+
+/** @deprecated préférer [UpdateSessionScheduleRequest] — conservé pour compat. */
+@Deprecated("Use UpdateSessionScheduleRequest")
 data class UpdateSessionExamDateRequest(
     @field:NotNull val examDate: LocalDate,
     val schoolId: String? = null

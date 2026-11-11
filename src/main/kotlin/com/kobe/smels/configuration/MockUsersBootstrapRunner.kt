@@ -391,44 +391,65 @@ class MockUsersBootstrapRunner(
 
     /** Année / niveaux / salles / groupes / matières / classes / ClassSubject. */
     private fun ensureAcademicDemo(schoolId: String): Mono<Void> {
-        val yearStart = LocalDate.of(2025, 9, 1)
-        val yearEnd = LocalDate.of(2026, 6, 30)
+        // Aligné sur « aujourd’hui » (2026) : année opérationnelle + sessions mock visibles.
+        val yearStart = LocalDate.of(2026, 9, 1)
+        val yearEnd = LocalDate.of(2027, 6, 30)
+        val demoTerms = listOf(
+            Term(
+                number = 1,
+                name = LocalizedText(fr = "1er trimestre", en = "1st term"),
+                startDate = yearStart,
+                endDate = LocalDate.of(2026, 12, 15)
+            ),
+            Term(
+                number = 2,
+                name = LocalizedText(fr = "2e trimestre", en = "2nd term"),
+                startDate = LocalDate.of(2027, 1, 5),
+                endDate = LocalDate.of(2027, 3, 31)
+            ),
+            Term(
+                number = 3,
+                name = LocalizedText(fr = "3e trimestre", en = "3rd term"),
+                startDate = LocalDate.of(2027, 4, 1),
+                endDate = yearEnd
+            )
+        )
         return academicYearRepository.findById(YEAR_DEMO)
+            .flatMap { existing ->
+                existing.label = "2026-2027"
+                existing.startDate = yearStart
+                existing.endDate = yearEnd
+                existing.terms = demoTerms
+                existing.current = true
+                existing.status = AcademicYearStatus.ACTIVE
+                academicYearRepository.save(existing)
+            }
             .switchIfEmpty(
                 Mono.defer {
                     academicYearRepository.save(
                         AcademicYear(
                             id = YEAR_DEMO,
                             schoolId = schoolId,
-                            label = "2025-2026",
+                            label = "2026-2027",
                             startDate = yearStart,
                             endDate = yearEnd,
                             current = true,
                             status = AcademicYearStatus.ACTIVE,
-                            terms = listOf(
-                                Term(
-                                    number = 1,
-                                    name = LocalizedText(fr = "1er trimestre", en = "1st term"),
-                                    startDate = yearStart,
-                                    endDate = LocalDate.of(2025, 12, 15)
-                                ),
-                                Term(
-                                    number = 2,
-                                    name = LocalizedText(fr = "2e trimestre", en = "2nd term"),
-                                    startDate = LocalDate.of(2026, 1, 5),
-                                    endDate = LocalDate.of(2026, 3, 31)
-                                ),
-                                Term(
-                                    number = 3,
-                                    name = LocalizedText(fr = "3e trimestre", en = "3rd term"),
-                                    startDate = LocalDate.of(2026, 4, 1),
-                                    endDate = yearEnd
-                                )
-                            )
+                            terms = demoTerms
                         )
                     )
                 }
             )
+            .flatMap { saved ->
+                // Une seule année courante : retirer le flag des autres années de l’école.
+                academicYearRepository.findBySchoolIdOrderByStartDateDesc(schoolId)
+                    .filter { it.id != saved.id && it.current }
+                    .concatMap { other ->
+                        other.current = false
+                        academicYearRepository.save(other)
+                    }
+                    .then(Mono.just(saved))
+            }
             .then(ensureGradingScheme(schoolId))
             .then(
                 Mono.`when`(

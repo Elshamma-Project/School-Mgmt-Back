@@ -10,7 +10,7 @@ import com.kobe.smels.dto.grading.RejectReportSheetRequest
 import com.kobe.smels.dto.grading.ReopenSessionRequest
 import com.kobe.smels.dto.grading.UpdateAssessmentRequest
 import com.kobe.smels.dto.grading.UpdateGradingSchemeRequest
-import com.kobe.smels.dto.grading.UpdateSessionExamDateRequest
+import com.kobe.smels.dto.grading.UpdateSessionScheduleRequest
 import com.kobe.smels.dto.grading.UpsertGradeRequest
 import com.kobe.smels.model.shared.Language
 import com.kobe.smels.service.grading.AssessmentService
@@ -84,9 +84,33 @@ class EvaluationSessionController(private val evaluationSessionService: Evaluati
     @PutMapping("/{id}/exam-date")
     fun updateExamDate(
         @PathVariable id: String,
-        @Valid @RequestBody request: UpdateSessionExamDateRequest
+        @Valid @RequestBody request: UpdateSessionScheduleRequest
     ) = SecuritySupport.currentUser().flatMap {
-        evaluationSessionService.updateExamDate(it, id, request.examDate, request.schoolId)
+        evaluationSessionService.updateSchedule(
+            currentUser = it,
+            id = id,
+            examDate = request.examDate,
+            startDate = request.startDate,
+            endDate = request.endDate,
+            entryDeadline = request.entryDeadline,
+            schoolIdOverride = request.schoolId,
+        )
+    }
+
+    @PutMapping("/{id}/schedule")
+    fun updateSchedule(
+        @PathVariable id: String,
+        @Valid @RequestBody request: UpdateSessionScheduleRequest
+    ) = SecuritySupport.currentUser().flatMap {
+        evaluationSessionService.updateSchedule(
+            currentUser = it,
+            id = id,
+            examDate = request.examDate,
+            startDate = request.startDate,
+            endDate = request.endDate,
+            entryDeadline = request.entryDeadline,
+            schoolIdOverride = request.schoolId,
+        )
     }
 }
 

@@ -88,15 +88,55 @@ class EvaluationSessionService(
         id: String,
         examDate: java.time.LocalDate,
         schoolIdOverride: String? = null
+    ): Mono<EvaluationSessionResponse> =
+        updateSchedule(
+            currentUser = currentUser,
+            id = id,
+            examDate = examDate,
+            startDate = null,
+            endDate = null,
+            entryDeadline = null,
+            schoolIdOverride = schoolIdOverride,
+        )
+
+    /**
+     * Calendrier de la séquence : date d’examen, période, délai de saisie.
+     * TODO(Q-04) : surcharge éventuelle par classe.
+     */
+    fun updateSchedule(
+        currentUser: CurrentUser,
+        id: String,
+        examDate: java.time.LocalDate?,
+        startDate: java.time.LocalDate?,
+        endDate: java.time.LocalDate?,
+        entryDeadline: java.time.LocalDate?,
+        schoolIdOverride: String? = null,
     ): Mono<EvaluationSessionResponse> {
         GradingAccess.assertAdmin(currentUser)
         val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        if (examDate == null && startDate == null && endDate == null && entryDeadline == null) {
+            return Mono.error(
+                BusinessRuleException("SCHEDULE_EMPTY", "Provide at least one schedule date to update")
+            )
+        }
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            return Mono.error(
+                BusinessRuleException("INVALID_PERIOD", "endDate must be on or after startDate")
+            )
+        }
         return evaluationSessionRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Evaluation session not found")))
             .flatMap { session ->
-                // TODO(Q-04) : surcharge examDate par classe
-                session.examDate = examDate
-                evaluationSessionRepository.save(session)
+                academicYearApi.assertWritable(schoolId, session.academicYearId)
+                    .then(
+                        Mono.defer {
+                            if (examDate != null) session.examDate = examDate
+                            if (startDate != null) session.startDate = startDate
+                            if (endDate != null) session.endDate = endDate
+                            if (entryDeadline != null) session.entryDeadline = entryDeadline
+                            evaluationSessionRepository.save(session)
+                        }
+                    )
             }
             .map { GradingMapper.toSessionResponse(it) }
     }
