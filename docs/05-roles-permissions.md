@@ -25,6 +25,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Ressource · action (module) | Élève | Parent | Ens. | Admin. | Dir. | Super | Condition |
 |---|---|---|---|---|---|---|---|
 | Établissement, année, séquences : créer / modifier (academic, grading) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
+| **Paramètres sensibles** (logo, identité, en-têtes, année courante) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | enseignant / SG : consultation seule ; modification = admin + directeur |
 | Ouvrir / clôturer une séquence (grading) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Rouvrir une séquence clôturée | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | provisoire (Q-04) |
 | Niveaux, classes, salles : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | |

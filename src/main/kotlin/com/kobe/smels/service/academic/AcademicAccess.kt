@@ -32,10 +32,16 @@ internal object AcademicAccess {
         }
     }
 
-    /** Identité, logo, en-têtes documents — directeur uniquement (+ SUPER_ADMIN). */
+    /**
+     * Paramètres sensibles (identité, logo, en-têtes, année courante) :
+     * directeur et administration (+ SUPER_ADMIN). Les autres rôles : lecture seule.
+     */
     fun assertCanManageSchoolSettings(currentUser: CurrentUser) {
-        if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
-            throw ForbiddenException("FORBIDDEN", "Only the director can manage school settings")
+        if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.ADMINISTRATION, Role.SUPER_ADMIN)) {
+            throw ForbiddenException(
+                "FORBIDDEN",
+                "Only director or administration can manage school settings"
+            )
         }
     }
 

@@ -198,6 +198,10 @@ class MockUsersBootstrapRunner(
                     school.signaturePlace = "YAOUNDE"
                     dirty = true
                 }
+                if (school.headOfSchoolStaffId.isNullOrBlank()) {
+                    school.headOfSchoolStaffId = STAFF_DIRECTOR
+                    dirty = true
+                }
                 if (dirty) schoolRepository.save(school) else Mono.just(school)
             }
 
@@ -227,6 +231,7 @@ class MockUsersBootstrapRunner(
             postalBox = "YDE",
             signaturePlace = "YAOUNDE",
             headTitle = LocalizedText(fr = "LE PRINCIPAL", en = "THE PRINCIPAL"),
+            headOfSchoolStaffId = STAFF_DIRECTOR,
             reportCardNotice = LocalizedText(
                 fr = "Bulletin consultable par les parents via l’espace famille.",
                 en = "Report card available to parents in the family portal."
