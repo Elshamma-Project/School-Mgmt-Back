@@ -28,6 +28,7 @@ import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.reporting.ReportCardRepository
 import com.kobe.smels.repository.reporting.StudentPeriodReviewRepository
 import com.kobe.smels.service.academic.api.AcademicYearApi
+import com.kobe.smels.service.academic.api.SchoolBrandApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.grading.api.EvaluationSessionApi
 import com.kobe.smels.service.staff.api.StaffApi
@@ -52,6 +53,7 @@ class ReportCardService(
     private val gradeCalculationService: GradeCalculationService,
     private val reportCardPdfService: ReportCardPdfService,
     private val schoolClassApi: SchoolClassApi,
+    private val schoolBrandApi: SchoolBrandApi,
     private val academicYearApi: AcademicYearApi,
     private val enrollmentApi: EnrollmentApi,
     private val studentApi: StudentApi,
@@ -277,8 +279,19 @@ class ReportCardService(
                     schoolId,
                     card.templateCode ?: ReportTemplateService.CODE_ANNUAL
                 ).flatMap { template ->
-                    academicYearApi.getSummary(schoolId, card.academicYearId).map { year ->
-                        reportCardPdfService.render(card, template, year.label)
+                    Mono.zip(
+                        academicYearApi.getSummary(schoolId, card.academicYearId),
+                        schoolBrandApi.getBulletinBrand(schoolId)
+                            .map { BulletinPdfContext.fromBrand(it) }
+                            .onErrorReturn(BulletinPdfContext())
+                            .defaultIfEmpty(BulletinPdfContext()),
+                    ).map { tuple ->
+                        reportCardPdfService.render(
+                            card,
+                            template,
+                            tuple.t1.label,
+                            context = tuple.t2,
+                        )
                     }
                 }
             }

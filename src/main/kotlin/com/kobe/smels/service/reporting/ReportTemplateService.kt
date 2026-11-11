@@ -8,6 +8,7 @@ import com.kobe.smels.model.reporting.ReportTemplate
 import com.kobe.smels.model.shared.Language
 import com.kobe.smels.model.shared.LocalizedText
 import com.kobe.smels.repository.reporting.ReportTemplateRepository
+import com.kobe.smels.service.academic.api.SchoolBrandApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -17,7 +18,8 @@ import java.math.BigDecimal
 @Service
 class ReportTemplateService(
     private val reportTemplateRepository: ReportTemplateRepository,
-    private val reportCardPdfService: ReportCardPdfService
+    private val reportCardPdfService: ReportCardPdfService,
+    private val schoolBrandApi: SchoolBrandApi,
 ) {
     fun ensureDefaults(schoolId: String): Mono<Void> =
         ensureCode(
@@ -41,6 +43,10 @@ class ReportTemplateService(
                 showEffortSubjects = false,
                 showTotalPointsOverMax = false,
                 classProfileThreshold = BigDecimal("12"),
+                legend = LocalizedText(
+                    fr = "A ≥ 16 · B+ ≥ 14 · B ≥ 12 · C < 12",
+                    en = "A ≥ 16 · B+ ≥ 14 · B ≥ 12 · C < 12"
+                ),
                 minFontSizePt = 6.5,
                 maxFontSizePt = 9.0,
                 active = true
@@ -127,9 +133,15 @@ class ReportTemplateService(
         val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
         return ensureDefaults(schoolId)
             .then(getByCode(schoolId, code.trim().uppercase()))
-            .map { template ->
-                val card = SampleReportCardFactory.build(schoolId, template, language)
-                reportCardPdfService.render(card, template, "2025-2026")
+            .flatMap { template ->
+                schoolBrandApi.getBulletinBrand(schoolId)
+                    .map { BulletinPdfContext.fromBrand(it) }
+                    .onErrorReturn(BulletinPdfContext())
+                    .defaultIfEmpty(BulletinPdfContext())
+                    .map { ctx ->
+                        val card = SampleReportCardFactory.build(schoolId, template, language)
+                        reportCardPdfService.render(card, template, "2026-2027", context = ctx)
+                    }
             }
     }
 
@@ -146,15 +158,20 @@ class ReportTemplateService(
     private fun ensureCode(schoolId: String, code: String, template: ReportTemplate): Mono<ReportTemplate> =
         reportTemplateRepository.findBySchoolIdAndCode(schoolId, code)
             .flatMap { existing ->
+                var dirty = false
                 // Réaligner le libellé du gabarit trimestre (maquette KOBE).
                 if (code == CODE_TERM &&
                     (existing.name.fr != template.name.fr || existing.name.en != template.name.en)
                 ) {
                     existing.name = template.name
-                    reportTemplateRepository.save(existing)
-                } else {
-                    Mono.just(existing)
+                    dirty = true
                 }
+                // Légende pied de page annuelle (maquette).
+                if (code == CODE_ANNUAL && existing.legend == null && template.legend != null) {
+                    existing.legend = template.legend
+                    dirty = true
+                }
+                if (dirty) reportTemplateRepository.save(existing) else Mono.just(existing)
             }
             .switchIfEmpty(
                 Mono.defer {

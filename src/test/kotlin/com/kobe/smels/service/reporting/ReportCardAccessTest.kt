@@ -40,6 +40,7 @@ class ReportCardAccessTest {
     private val gradeCalculationService: GradeCalculationService = mock()
     private val reportCardPdfService: ReportCardPdfService = mock()
     private val schoolClassApi: SchoolClassApi = mock()
+    private val schoolBrandApi: com.kobe.smels.service.academic.api.SchoolBrandApi = mock()
     private val academicYearApi: AcademicYearApi = mock()
     private val enrollmentApi: EnrollmentApi = mock()
     private val studentApi: StudentApi = mock()
@@ -54,6 +55,7 @@ class ReportCardAccessTest {
         gradeCalculationService,
         reportCardPdfService,
         schoolClassApi,
+        schoolBrandApi,
         academicYearApi,
         enrollmentApi,
         studentApi,

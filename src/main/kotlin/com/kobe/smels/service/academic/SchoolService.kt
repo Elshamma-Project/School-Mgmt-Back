@@ -1,6 +1,7 @@
 package com.kobe.smels.service.academic
 
 import com.kobe.smels.dto.academic.CreateSchoolRequest
+import com.kobe.smels.dto.academic.SchoolBulletinBrandDto
 import com.kobe.smels.dto.academic.SchoolPublicBrandResponse
 import com.kobe.smels.dto.academic.SchoolResponse
 import com.kobe.smels.dto.academic.UpdateSchoolRequest
@@ -12,6 +13,7 @@ import com.kobe.smels.model.academic.School
 import com.kobe.smels.model.academic.SchoolLogo
 import com.kobe.smels.repository.academic.SchoolLogoRepository
 import com.kobe.smels.repository.academic.SchoolRepository
+import com.kobe.smels.service.academic.api.SchoolBrandApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.bson.types.Binary
 import org.slf4j.LoggerFactory
@@ -25,7 +27,7 @@ import reactor.core.publisher.Mono
 class SchoolService(
     private val schoolRepository: SchoolRepository,
     private val schoolLogoRepository: SchoolLogoRepository
-) {
+) : SchoolBrandApi {
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun create(currentUser: CurrentUser, request: CreateSchoolRequest): Mono<SchoolResponse> {
@@ -163,6 +165,44 @@ class SchoolService(
         assertSchoolScope(currentUser, schoolId)
         return loadLogo(schoolId)
     }
+
+    override fun getBulletinBrand(schoolId: String): Mono<SchoolBulletinBrandDto> =
+        schoolRepository.findById(schoolId.trim())
+            .switchIfEmpty(Mono.error(NotFoundException("SCHOOL_NOT_FOUND", "School not found")))
+            .flatMap { school ->
+                val header = school.officialHeaders.firstOrNull()
+                val base = SchoolBulletinBrandDto(
+                    schoolId = school.id!!,
+                    nameFr = school.name.fr?.takeIf { it.isNotBlank() } ?: school.shortName.orEmpty(),
+                    nameEn = school.name.en?.takeIf { it.isNotBlank() } ?: school.shortName.orEmpty(),
+                    postalBox = school.postalBox,
+                    phones = school.contact.phones,
+                    republicFr = header?.republic?.fr,
+                    republicEn = header?.republic?.en,
+                    mottoFr = header?.motto?.fr,
+                    mottoEn = header?.motto?.en,
+                    ministryFr = header?.ministry?.fr,
+                    ministryEn = header?.ministry?.en,
+                    regionalDelegationFr = header?.regionalDelegation?.fr,
+                    regionalDelegationEn = header?.regionalDelegation?.en,
+                    divisionalDelegationFr = header?.divisionalDelegation?.fr,
+                    divisionalDelegationEn = header?.divisionalDelegation?.en,
+                )
+                val logoId = school.logoFileId
+                if (logoId.isNullOrBlank()) {
+                    Mono.just(base)
+                } else {
+                    schoolLogoRepository.findById(logoId)
+                        .map { logo ->
+                            base.copy(
+                                logoBytes = logo.data.data,
+                                logoContentType = logo.contentType,
+                            )
+                        }
+                        .defaultIfEmpty(base)
+                        .onErrorReturn(base)
+                }
+            }
 
     /** Branding login / écran public — école active uniquement. */
     fun getPublicBrand(schoolId: String): Mono<SchoolPublicBrandResponse> =

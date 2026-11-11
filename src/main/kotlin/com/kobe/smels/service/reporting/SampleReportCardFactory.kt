@@ -27,8 +27,7 @@ import java.time.Instant
 import java.time.LocalDate
 
 /**
- * Bulletin fictif anonymisé pour prévisualiser un [ReportTemplate] (maquette Z1–Z10).
- * Aucune donnée réelle d’élève.
+ * Bulletin fictif anonymisé — mêmes chiffres / structure que l’aperçu HTML maquette KOBE.
  */
 object SampleReportCardFactory {
 
@@ -36,10 +35,6 @@ object SampleReportCardFactory {
         val term = template.periodType == ReportPeriodType.TERM
         val seq = template.sequenceColumns
         val groups = if (term) termGroups(seq, language) else annualGroups(seq, language)
-        val totalCoef = groups.fold(BigDecimal.ZERO) { acc, g -> acc + g.totalCoefficient }
-        val totalPoints = groups.mapNotNull { it.totalPoints }.fold(BigDecimal.ZERO) { a, b -> a + b }
-        val average = if (totalCoef.compareTo(BigDecimal.ZERO) == 0) null
-        else totalPoints.divide(totalCoef, 2, java.math.RoundingMode.HALF_UP)
 
         return ReportCard(
             id = "sample-${template.code.lowercase()}",
@@ -48,62 +43,72 @@ object SampleReportCardFactory {
             enrollmentId = "enr-sample",
             studentId = "stu-sample",
             classId = "class-sample",
-            period = if (term) ReportPeriod(ReportPeriodType.TERM, 1) else ReportPeriod(ReportPeriodType.ANNUAL, null),
+            period = if (term) {
+                ReportPeriod(ReportPeriodType.TERM, 1)
+            } else {
+                ReportPeriod(ReportPeriodType.ANNUAL, null)
+            },
             revision = 1,
             status = ReportCardStatus.DRAFT,
             language = language,
-            verificationCode = "2503698410123",
+            verificationCode = "2027060100123",
             student = StudentSnapshot(
                 lastName = "NOM",
-                firstName = "PRENOMS",
-                matricule = "250369841",
+                firstName = "Prénoms",
+                matricule = "26A0001",
                 sex = Sex.FEMALE,
-                dateOfBirth = LocalDate.of(2012, 3, 15),
-                placeOfBirth = "YAOUNDE",
+                dateOfBirth = LocalDate.of(2015, 1, 1),
+                placeOfBirth = "Yaoundé",
                 repeater = false
             ),
             classInfo = ClassSnapshot(
-                className = if (language == Language.FR) "6EME A" else "FORM 1",
+                className = if (language == Language.FR) "6ème" else "Form 1",
                 levelCode = if (language == Language.FR) "6EME" else "FORM1",
                 section = if (language == Language.FR) Section.FRANCOPHONE else Section.ANGLOPHONE,
-                mainTeacherName = "ENSEIGNANT DEMO",
-                effectif = 28,
-                rankedCount = 26,
-                rollNumber = 12
+                mainTeacherName = "Mme T1",
+                effectif = 21,
+                rankedCount = 21,
+                rollNumber = 4
             ),
             groups = groups,
             overall = OverallResult(
-                average = average,
-                rank = 8,
-                rankedCount = 26,
-                totalCoefficient = totalCoef,
-                totalPoints = totalPoints,
+                average = BigDecimal("10.80"),
+                rank = 4,
+                rankedCount = 21,
+                totalCoefficient = groups.fold(BigDecimal.ZERO) { a, g -> a + g.totalCoefficient },
+                totalPoints = groups.mapNotNull { it.totalPoints }.fold(BigDecimal.ZERO) { a, b -> a + b },
                 mentionCode = "PASSABLE",
-                mentionLabel = if (language == Language.FR) "TRAVAIL PASSABLE" else "FAIR",
+                mentionLabel = if (language == Language.FR) "PASSABLE" else "FAIR",
                 subjectsPassed = if (term) 12 else null,
                 subjectsCounted = groups.sumOf { it.lines.size },
                 rankStatus = RankStatus.RANKED,
                 effortSubjectNames = if (template.showEffortSubjects) {
                     listOf(if (language == Language.FR) "MATHEMATIQUES" else "MATHEMATICS")
-                } else emptyList()
+                } else {
+                    emptyList()
+                }
             ),
             termRecaps = if (template.showTermRecap) {
                 listOf(
-                    TermRecap(1, BigDecimal("11.25"), 10, 26),
-                    TermRecap(2, BigDecimal("12.40"), 7, 26),
-                    TermRecap(3, BigDecimal("11.80"), 8, 26)
+                    TermRecap(1, BigDecimal("10.64"), 5, 21),
+                    TermRecap(2, BigDecimal("10.78"), 4, 21),
+                    TermRecap(3, BigDecimal("10.99"), 4, 21)
                 )
-            } else emptyList(),
+            } else {
+                emptyList()
+            },
             classProfile = if (template.showClassProfile) {
                 ClassProfile(
                     threshold = template.classProfileThreshold ?: BigDecimal("12"),
-                    countAtOrAboveThreshold = 11,
-                    classAverage = BigDecimal("11.42"),
-                    successRate = BigDecimal("42.31"),
-                    highestAverage = BigDecimal("16.80"),
-                    lowestAverage = BigDecimal("5.10")
+                    countAtOrAboveThreshold = 6,
+                    classAverage = BigDecimal("10.84"),
+                    successRate = BigDecimal("28.57"),
+                    highestAverage = BigDecimal("14.62"),
+                    lowestAverage = BigDecimal("6.38")
                 )
-            } else null,
+            } else {
+                null
+            },
             review = ReviewSnapshot(
                 absenceHoursTotal = 4,
                 absenceHoursUnjustified = 1,
@@ -113,14 +118,14 @@ object SampleReportCardFactory {
                 conductSanction = SanctionLevel.NONE
             ),
             signature = SignatureBlock(
-                place = "YAOUNDE",
-                date = LocalDate.of(2026, 5, 26),
-                signatoryTitle = if (language == Language.FR) "LE PRINCIPAL" else "THE PRINCIPAL",
-                signatoryName = "CHEF D'ETABLISSEMENT"
+                place = "Yaoundé",
+                date = LocalDate.of(2027, 6, 30),
+                signatoryTitle = if (language == Language.FR) "LE CHEF D'ÉTABLISSEMENT" else "THE PRINCIPAL",
+                signatoryName = null
             ),
             templateCode = template.code,
             calculationVersion = ReportTemplateService.CALCULATION_VERSION,
-            generatedAt = Instant.parse("2026-05-26T10:00:00Z")
+            generatedAt = Instant.parse("2027-07-01T09:15:00Z")
         )
     }
 
@@ -134,55 +139,72 @@ object SampleReportCardFactory {
                 status = if (raw == null) GradeStatus.PENDING else GradeStatus.SCORED
             )
         }
-        val lineMath = ReportLine(
-            classSubjectId = "cs-math",
-            subjectId = "subj-math",
-            subjectCode = "MATH",
-            subjectName = if (language == Language.FR) "Mathematiques" else "Mathematics",
-            teacherName = "T1",
-            marks = marks("12.50", "11.00", "13.25", "10.50", "14.00", "12.00"),
-            average = BigDecimal("12.21"),
-            coefficient = BigDecimal("4"),
-            total = BigDecimal("48.84"),
-            appreciationCode = "B",
-            appreciationLabel = "B",
-            displayOrder = 1
+        fun line(
+            id: String,
+            code: String,
+            nameFr: String,
+            nameEn: String,
+            teacher: String,
+            values: Array<String>,
+            coef: String,
+            avg: String,
+            total: String,
+            app: String,
+            order: Int
+        ) = ReportLine(
+            classSubjectId = "cs-$id",
+            subjectId = "subj-$id",
+            subjectCode = code,
+            subjectName = if (language == Language.FR) nameFr else nameEn,
+            teacherName = teacher,
+            marks = marks(*values),
+            average = BigDecimal(avg),
+            coefficient = BigDecimal(coef),
+            total = BigDecimal(total),
+            appreciationCode = app,
+            appreciationLabel = app,
+            displayOrder = order
         )
-        val lineFr = ReportLine(
-            classSubjectId = "cs-fr",
-            subjectId = "subj-fr",
-            subjectCode = "FR",
-            subjectName = if (language == Language.FR) "Francais" else "French",
-            teacherName = "T2",
-            marks = marks("14.00", "13.50", "12.00", "15.00", "13.00", "14.50"),
-            average = BigDecimal("13.67"),
-            coefficient = BigDecimal("3"),
-            total = BigDecimal("41.01"),
-            appreciationCode = "B+",
-            appreciationLabel = "B+",
-            displayOrder = 2
+
+        val langLines = listOf(
+            line("ang", "ANG", "Anglais", "English", "Mme T1", arrayOf("12", "11.5", "13", "10.5", "12.5", "11"), "3", "11.75", "35.25", "B", 1),
+            line("ee", "EE", "Expression écrite", "Written expression", "Mme T2", arrayOf("14", "13.5", "12", "15", "13", "14.5"), "2", "13.67", "27.34", "B+", 2),
+            line("eo", "EO", "Expression orale", "Oral expression", "Mme T2", arrayOf("13", "12", "11.5", "13.5", "12.5", "13"), "2", "12.58", "25.16", "B", 3),
+            line("et", "ET", "Étude de texte", "Text study", "Mme T2", arrayOf("11", "10", "9.5", "12", "11", "10.5"), "2", "10.67", "21.34", "C", 4),
+            line("ln", "LN", "Langues nationales", "National languages", "M. T4", arrayOf("8.5", "9", "10", "8", "9.5", "10"), "2", "9.17", "18.34", "C", 5),
+            line("cit", "CIT", "Citoyenneté", "Citizenship", "M. T5", arrayOf("15", "14", "13.5", "14.5", "15", "14"), "2", "14.33", "28.66", "A", 6),
         )
-        val g1 = ReportGroup(
-            groupId = "g-lang",
-            code = "LANG",
-            name = if (language == Language.FR) "TOTAL LANGUES ET LITTERATURES" else "TOTAL LANGUAGES AND LITERATURE",
-            displayOrder = 1,
-            lines = listOf(lineFr),
-            totalCoefficient = BigDecimal("3"),
-            totalPoints = BigDecimal("41.01"),
-            average = BigDecimal("13.67")
+        val sciLines = listOf(
+            line("math", "MATH", "Mathématiques", "Mathematics", "Mme T1", arrayOf("9", "8.5", "10", "11", "9.5", "10.5"), "4", "9.75", "39.00", "C", 1),
+            line("svt", "SVT", "SVTEEHB", "SVTEEHB", "M. T6", arrayOf("11", "12", "10.5", "11.5", "12", "11"), "3", "11.33", "33.99", "B", 2),
+            line("info", "INFO", "Informatique", "ICT", "M. T7", arrayOf("13", "12.5", "14", "13", "12", "13.5"), "2", "13.00", "26.00", "B+", 3),
+            line("geo", "GEO", "Géographie", "Geography", "Mme T8", arrayOf("10", "9.5", "11", "10.5", "9", "10"), "3", "10.00", "30.00", "C", 4),
+            line("hist", "HIST", "Histoire", "History", "Mme T8", arrayOf("7", "8.5", "9", "8", "7.5", "8.5"), "2", "8.08", "16.16", "D", 5),
+            line("eps", "EPS", "EPS", "PE", "M. T9", arrayOf("14", "15", "13.5", "14.5", "15", "14"), "2", "14.33", "28.66", "A", 6),
         )
-        val g2 = ReportGroup(
-            groupId = "g-sci",
-            code = "SCI",
-            name = if (language == Language.FR) "TOTAL SCIENCES" else "TOTAL SCIENCES",
-            displayOrder = 2,
-            lines = listOf(lineMath),
-            totalCoefficient = BigDecimal("4"),
-            totalPoints = BigDecimal("48.84"),
-            average = BigDecimal("12.21")
+
+        return listOf(
+            ReportGroup(
+                groupId = "g-lang",
+                code = "LANG",
+                name = if (language == Language.FR) "LANGUES ET LITTÉRATURES" else "LANGUAGE AND LITERATURE",
+                displayOrder = 1,
+                lines = langLines,
+                totalCoefficient = BigDecimal("13"),
+                totalPoints = BigDecimal("156.09"),
+                average = BigDecimal("11.44")
+            ),
+            ReportGroup(
+                groupId = "g-sci",
+                code = "SCI",
+                name = if (language == Language.FR) "SCIENCES ET TECHNOLOGIE" else "SCIENCE AND TECHNOLOGY",
+                displayOrder = 2,
+                lines = sciLines,
+                totalCoefficient = BigDecimal("16"),
+                totalPoints = BigDecimal("173.81"),
+                average = BigDecimal("10.12")
+            )
         )
-        return listOf(g1, g2)
     }
 
     private fun termGroups(seq: List<Int>, language: Language): List<ReportGroup> {
@@ -199,16 +221,16 @@ object SampleReportCardFactory {
             classSubjectId = "cs-math",
             subjectId = "subj-math",
             subjectCode = "MATH",
-            subjectName = if (language == Language.FR) "Mathematiques" else "Mathematics",
-            teacherName = "T1",
+            subjectName = if (language == Language.FR) "Mathématiques" else "Mathematics",
+            teacherName = "Mme T1",
             marks = marks("11.00", "13.50"),
             average = BigDecimal("12.25"),
             coefficient = BigDecimal("4"),
             total = BigDecimal("49.00"),
-            appreciationCode = "A",
-            appreciationLabel = "A",
+            appreciationCode = "B",
+            appreciationLabel = "B",
             competency = if (language == Language.FR) {
-                "Resoudre des problemes du premier degre"
+                "Résoudre des problèmes du 1er degré"
             } else {
                 "Solve first-degree problems"
             },
@@ -222,17 +244,17 @@ object SampleReportCardFactory {
             subjectId = "subj-eng",
             subjectCode = "ENG",
             subjectName = "English",
-            teacherName = "T3",
+            teacherName = "Mr T3",
             marks = marks("14.00", "12.50"),
             average = BigDecimal("13.25"),
             coefficient = BigDecimal("3"),
             total = BigDecimal("39.75"),
-            appreciationCode = "A+",
-            appreciationLabel = "A+",
+            appreciationCode = "B+",
+            appreciationLabel = "B+",
             competency = if (language == Language.FR) {
-                "Comprendre un texte narratif simple"
+                "Comprendre un texte narratif"
             } else {
-                "Understand a simple narrative text"
+                "Understand a narrative text"
             },
             subjectRank = 3,
             subjectClassAverage = BigDecimal("11.20"),
@@ -241,14 +263,24 @@ object SampleReportCardFactory {
         )
         return listOf(
             ReportGroup(
-                groupId = "g-core",
-                code = "CORE",
-                name = if (language == Language.FR) "TOTAL MATIERES PRINCIPALES" else "TOTAL CORE SUBJECTS",
+                groupId = "g-sci",
+                code = "SCI",
+                name = if (language == Language.FR) "SCIENCES" else "SCIENCES",
                 displayOrder = 1,
-                lines = listOf(lineMath, lineEng),
-                totalCoefficient = BigDecimal("7"),
-                totalPoints = BigDecimal("88.75"),
-                average = BigDecimal("12.68")
+                lines = listOf(lineMath),
+                totalCoefficient = BigDecimal("4"),
+                totalPoints = BigDecimal("49.00"),
+                average = BigDecimal("12.25")
+            ),
+            ReportGroup(
+                groupId = "g-lang",
+                code = "LANG",
+                name = if (language == Language.FR) "LANGUES" else "LANGUAGES",
+                displayOrder = 2,
+                lines = listOf(lineEng),
+                totalCoefficient = BigDecimal("3"),
+                totalPoints = BigDecimal("39.75"),
+                average = BigDecimal("13.25")
             )
         )
     }
