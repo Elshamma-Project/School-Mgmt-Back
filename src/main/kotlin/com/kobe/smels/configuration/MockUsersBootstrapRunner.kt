@@ -150,8 +150,19 @@ class MockUsersBootstrapRunner(
             )
             .flatMap { school ->
                 var dirty = false
-                if (school.officialHeaders.isEmpty()) {
+                // Réaligner l’en-tête officiel démo sur le modèle bulletin El Shammah (hors logo).
+                if (school.officialHeaders.isEmpty() || looksLikePlaceholderHeader(school)) {
                     school.officialHeaders = demoOfficialHeaders()
+                    dirty = true
+                }
+                if (school.name.fr?.contains("démo", ignoreCase = true) == true ||
+                    school.name.en?.contains("Demo", ignoreCase = true) == true
+                ) {
+                    school.name = LocalizedText(
+                        fr = "COLLÈGE BILINGUE EL SHAMMAH",
+                        en = "EL SHAMMAH BILINGUAL COLLEGE"
+                    )
+                    school.shortName = "El Shammah"
                     dirty = true
                 }
                 if (school.reportCardNotice == null) {
@@ -168,34 +179,52 @@ class MockUsersBootstrapRunner(
                     )
                     dirty = true
                 }
-                if (school.contact.city.isNullOrBlank()) {
+                if (school.contact.phones.isEmpty() ||
+                    school.contact.phones == listOf("+237 600 000 000")
+                ) {
                     school.contact = school.contact.copy(
-                        city = school.contact.city ?: "Yaoundé",
-                        address = school.contact.address ?: "Quartier démo",
-                        phones = school.contact.phones.ifEmpty { listOf("+237 600 000 000") }
+                        phones = listOf("690408433", "676595725", "656434258"),
+                        email = school.contact.email ?: "contact@elshammah.demo",
+                        address = school.contact.address,
+                        city = school.contact.city ?: "Yaoundé"
                     )
+                    dirty = true
+                }
+                if (school.postalBox.isNullOrBlank() || school.postalBox == "BP 0000") {
+                    school.postalBox = "YDE"
+                    dirty = true
+                }
+                if (school.signaturePlace.isNullOrBlank()) {
+                    school.signaturePlace = "YAOUNDE"
                     dirty = true
                 }
                 if (dirty) schoolRepository.save(school) else Mono.just(school)
             }
+
+    private fun looksLikePlaceholderHeader(school: School): Boolean {
+        val first = school.officialHeaders.firstOrNull() ?: return true
+        val ministryFr = first.ministry.fr.orEmpty()
+        // Ancien seed générique (casse / libellés différents du bulletin réel).
+        return ministryFr.contains("Ministère", ignoreCase = false) ||
+            first.regionalDelegation?.en?.contains("Centre Regional", ignoreCase = true) == true
+    }
 
     private fun demoSchool(schoolId: String, code: String): School =
         School(
             id = schoolId,
             code = code,
             name = LocalizedText(
-                fr = "Collège bilingue démo El Shammah",
-                en = "El Shammah Bilingual Demo College"
+                fr = "COLLÈGE BILINGUE EL SHAMMAH",
+                en = "EL SHAMMAH BILINGUAL COLLEGE"
             ),
-            shortName = "El Shammah Demo",
+            shortName = "El Shammah",
             officialHeaders = demoOfficialHeaders(),
             contact = ContactInfo(
-                phones = listOf("+237 600 000 000"),
+                phones = listOf("690408433", "676595725", "656434258"),
                 email = "contact@elshammah.demo",
-                address = "Quartier démo",
                 city = "Yaoundé"
             ),
-            postalBox = "BP 0000",
+            postalBox = "YDE",
             signaturePlace = "YAOUNDE",
             headTitle = LocalizedText(fr = "LE PRINCIPAL", en = "THE PRINCIPAL"),
             reportCardNotice = LocalizedText(
@@ -209,50 +238,57 @@ class MockUsersBootstrapRunner(
             active = true
         )
 
+    /**
+     * En-tête type bulletin : colonne FR | logo | colonne EN.
+     * Les libellés suivent le document officiel El Shammah (hors logo, fourni séparément).
+     */
     private fun demoOfficialHeaders(): List<OfficialHeader> =
         listOf(
             OfficialHeader(
                 cycles = setOf(Cycle.SECONDAIRE_1ER_CYCLE, Cycle.SECONDAIRE_2ND_CYCLE),
                 republic = LocalizedText(
-                    fr = "RÉPUBLIQUE DU CAMEROUN",
+                    fr = "REPUBLIQUE DU CAMEROUN",
                     en = "REPUBLIC OF CAMEROON"
                 ),
                 motto = LocalizedText(
-                    fr = "Paix – Travail – Patrie",
-                    en = "Peace – Work – Fatherland"
+                    fr = "Paix-Travail-Patrie",
+                    en = "Peace-Work-Fatherland"
                 ),
                 ministry = LocalizedText(
-                    fr = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES",
+                    fr = "MINISTERE DES ENSEIGNEMENTS SECONDAIRES",
                     en = "MINISTRY OF SECONDARY EDUCATION"
                 ),
                 regionalDelegation = LocalizedText(
-                    fr = "Délégation Régionale du Centre",
-                    en = "Centre Regional Delegation"
+                    fr = "DELEGATION REGIONALE DU CENTRE",
+                    en = "REGIONAL DELEGATION OF THE CENTER"
                 ),
                 divisionalDelegation = LocalizedText(
-                    fr = "Délégation Départementale du Mfoundi",
-                    en = "Mfoundi Divisional Delegation"
+                    fr = "DELEGATION DEPARTEMENTALE DU MFOUNDI",
+                    en = "DIVISIONAL DELEGATION OF MFOUNDI"
                 )
             ),
             OfficialHeader(
                 cycles = setOf(Cycle.PRIMAIRE, Cycle.MATERNELLE),
                 republic = LocalizedText(
-                    fr = "RÉPUBLIQUE DU CAMEROUN",
+                    fr = "REPUBLIQUE DU CAMEROUN",
                     en = "REPUBLIC OF CAMEROON"
                 ),
                 motto = LocalizedText(
-                    fr = "Paix – Travail – Patrie",
-                    en = "Peace – Work – Fatherland"
+                    fr = "Paix-Travail-Patrie",
+                    en = "Peace-Work-Fatherland"
                 ),
                 ministry = LocalizedText(
-                    fr = "MINISTÈRE DE L’ÉDUCATION DE BASE",
+                    fr = "MINISTERE DE L’EDUCATION DE BASE",
                     en = "MINISTRY OF BASIC EDUCATION"
                 ),
                 regionalDelegation = LocalizedText(
-                    fr = "Délégation Régionale du Centre",
-                    en = "Centre Regional Delegation"
+                    fr = "DELEGATION REGIONALE DU CENTRE",
+                    en = "REGIONAL DELEGATION OF THE CENTER"
                 ),
-                divisionalDelegation = null
+                divisionalDelegation = LocalizedText(
+                    fr = "DELEGATION DEPARTEMENTALE DU MFOUNDI",
+                    en = "DIVISIONAL DELEGATION OF MFOUNDI"
+                )
             )
         )
 
