@@ -30,6 +30,33 @@ class ReportTemplateController(
     @GetMapping
     fun list(@RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMapMany { reportTemplateService.list(it, schoolId) }
+
+    @GetMapping("/{code}")
+    fun getByCode(
+        @PathVariable code: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { reportTemplateService.getResponseByCode(it, code, schoolId) }
+
+    @GetMapping("/{code}/sample-pdf")
+    fun samplePdf(
+        @PathVariable code: String,
+        @RequestParam(required = false) schoolId: String?,
+        @RequestParam(required = false, defaultValue = "FR") language: String
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser().flatMap { user ->
+            val lang = runCatching {
+                com.kobe.smels.model.shared.Language.valueOf(language.trim().uppercase())
+            }.getOrDefault(com.kobe.smels.model.shared.Language.FR)
+            reportTemplateService.renderSamplePdf(user, code, lang, schoolId).map { bytes ->
+                ResponseEntity.ok()
+                    .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"bulletin-${code.lowercase()}-sample.pdf\""
+                    )
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(bytes)
+            }
+        }
 }
 
 @RestController

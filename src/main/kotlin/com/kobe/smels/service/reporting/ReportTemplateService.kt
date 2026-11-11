@@ -16,7 +16,8 @@ import java.math.BigDecimal
 
 @Service
 class ReportTemplateService(
-    private val reportTemplateRepository: ReportTemplateRepository
+    private val reportTemplateRepository: ReportTemplateRepository,
+    private val reportCardPdfService: ReportCardPdfService
 ) {
     fun ensureDefaults(schoolId: String): Mono<Void> =
         ensureCode(
@@ -51,7 +52,7 @@ class ReportTemplateService(
                 template = ReportTemplate(
                     schoolId = schoolId,
                     code = CODE_TERM,
-                    name = LocalizedText(fr = "Bulletin de trimestre (compétences)", en = "Term competency report"),
+                    name = LocalizedText(fr = "Bulletin trimestriel", en = "Term report card"),
                     periodType = ReportPeriodType.TERM,
                     languages = setOf(Language.FR, Language.EN),
                     sequenceColumns = listOf(1, 2),
@@ -100,6 +101,38 @@ class ReportTemplateService(
             )
             .switchIfEmpty(Mono.error(NotFoundException("TEMPLATE_NOT_FOUND", "Report template not found")))
 
+    fun getResponseByCode(
+        currentUser: CurrentUser,
+        code: String,
+        schoolIdOverride: String? = null
+    ): Mono<ReportTemplateResponse> {
+        ReportingAccess.assertCanReadTemplates(currentUser)
+        val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        return ensureDefaults(schoolId)
+            .then(getByCode(schoolId, code.trim().uppercase()))
+            .map { toResponse(it) }
+    }
+
+    /**
+     * PDF d’exemple (données anonymisées) pour visualiser le gabarit A4 une page
+     * sans générer un vrai bulletin élève.
+     */
+    fun renderSamplePdf(
+        currentUser: CurrentUser,
+        code: String,
+        language: Language = Language.FR,
+        schoolIdOverride: String? = null
+    ): Mono<ByteArray> {
+        ReportingAccess.assertCanReadTemplates(currentUser)
+        val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
+        return ensureDefaults(schoolId)
+            .then(getByCode(schoolId, code.trim().uppercase()))
+            .map { template ->
+                val card = SampleReportCardFactory.build(schoolId, template, language)
+                reportCardPdfService.render(card, template, "2025-2026")
+            }
+    }
+
     fun resolveForPeriod(
         schoolId: String,
         periodType: ReportPeriodType,
@@ -112,6 +145,17 @@ class ReportTemplateService(
 
     private fun ensureCode(schoolId: String, code: String, template: ReportTemplate): Mono<ReportTemplate> =
         reportTemplateRepository.findBySchoolIdAndCode(schoolId, code)
+            .flatMap { existing ->
+                // Réaligner le libellé du gabarit trimestre (maquette KOBE).
+                if (code == CODE_TERM &&
+                    (existing.name.fr != template.name.fr || existing.name.en != template.name.en)
+                ) {
+                    existing.name = template.name
+                    reportTemplateRepository.save(existing)
+                } else {
+                    Mono.just(existing)
+                }
+            }
             .switchIfEmpty(
                 Mono.defer {
                     reportTemplateRepository.save(template)
@@ -126,6 +170,17 @@ class ReportTemplateService(
         periodType = t.periodType,
         sequenceColumns = t.sequenceColumns,
         appreciationScaleCode = t.appreciationScaleCode,
+        showCompetency = t.showCompetency,
+        showSubjectRank = t.showSubjectRank,
+        showSubjectClassAverage = t.showSubjectClassAverage,
+        showSubjectPassedCount = t.showSubjectPassedCount,
+        showGroupTotals = t.showGroupTotals,
+        showTermRecap = t.showTermRecap,
+        showClassProfile = t.showClassProfile,
+        showEffortSubjects = t.showEffortSubjects,
+        showTotalPointsOverMax = t.showTotalPointsOverMax,
+        classProfileThreshold = t.classProfileThreshold,
+        legend = t.legend?.let { LocalizedTextDto(it.fr, it.en) },
         minFontSizePt = t.minFontSizePt,
         maxFontSizePt = t.maxFontSizePt,
         active = t.active
