@@ -44,6 +44,7 @@ import java.security.SecureRandom
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.Optional
 
 @Service
 class ReportCardService(
@@ -285,12 +286,16 @@ class ReportCardService(
                             .map { BulletinPdfContext.fromBrand(it) }
                             .onErrorReturn(BulletinPdfContext())
                             .defaultIfEmpty(BulletinPdfContext()),
+                        studentApi.findSchoolPhotoBytes(schoolId, card.studentId)
+                            .map { Optional.of(it) }
+                            .defaultIfEmpty(Optional.empty()),
                     ).map { tuple ->
+                        val photo = tuple.t3.orElse(null)
                         reportCardPdfService.render(
                             card,
                             template,
                             tuple.t1.label,
-                            context = tuple.t2,
+                            context = tuple.t2.copy(studentPhotoBytes = photo),
                         )
                     }
                 }

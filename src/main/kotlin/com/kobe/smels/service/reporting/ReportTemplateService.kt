@@ -147,7 +147,10 @@ class ReportTemplateService(
                         .defaultIfEmpty("—"),
                 ).map { tuple ->
                     val card = SampleReportCardFactory.build(schoolId, template, language)
-                    reportCardPdfService.render(card, template, tuple.t2, context = tuple.t1)
+                    val ctx = tuple.t1.copy(
+                        studentPhotoBytes = SampleReportCardFactory.loadSampleSchoolPhoto(),
+                    )
+                    reportCardPdfService.render(card, template, tuple.t2, context = ctx)
                 }
             }
     }

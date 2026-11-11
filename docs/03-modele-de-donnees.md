@@ -39,7 +39,8 @@
 | academic | `academic_subject_groups` | `SubjectGroup` | Blocs de sous-total |
 | academic | `academic_class_subjects` | `ClassSubject` | **Pivot** matière-classe : coefficient, groupe, enseignant, heures, langue |
 | academic | `academic_term_competencies` | `TermCompetency` | Compétence visée par matière et trimestre (bulletin de trimestre) |
-| student | `student_students` | `Student` (+ `GuardianLink`) | Élèves |
+| student | `student_students` | `Student` (+ `GuardianLink`) | Élèves ; `photoFileId` → photo **scolaire** (bulletin), pas l’avatar compte |
+| student | `student_school_photos` | `StudentSchoolPhoto` | Binaire photo scolaire élève (bulletins / cartes) — distinct de `user_avatars` |
 | student | `student_guardians` | `Guardian` | Parents / tuteurs |
 | student | `student_enrollments` | `Enrollment` | Inscription d'un élève dans une classe pour une année |
 | staff | `staff_members` | `Staff` | Enseignants et administration (civilité pour l'emploi du temps) |
@@ -171,7 +172,7 @@ Voir `fixtures/timetable-grid.json` : 8 périodes (7:35 → 15:10), 2 pauses, ne
 | Sujet | Traitement |
 |---|---|
 | Disponibilités des enseignants, contraintes de génération automatique de l'emploi du temps | module `timetable`, évolution (Q-32) |
-| Cartes d'élèves, frais, notifications, stockage de fichiers | modules futurs ; le modèle ne contient que des références (`photoFileId`, `logoFileId`, `pdfFileId`) |
+| Cartes d'élèves, frais, notifications | modules futurs ; fichiers déjà gérés : `StudentSchoolPhoto` (`photoFileId`), `SchoolLogo` (`logoFileId`), `UserAvatar` (`avatarFileId`) ; PDF bulletin via `pdfFileId` |
 | Détail de chaque absence | compteurs seulement (`StudentPeriodReview`) |
 | Authentification et autorisations | `UserAccount` + `UserSession` (max 2 sessions) ; voir `05-roles-permissions.md` |
 | Import des élèves | plus tard ; création un par un en attendant |

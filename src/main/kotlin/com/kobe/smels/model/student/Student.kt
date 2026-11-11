@@ -43,7 +43,10 @@ data class Student(
     var placeOfBirth: String? = null,
     var nationality: String? = null,
 
-    /** Référence du fichier photo (le bulletin anglophone observé en imprime une, le francophone non). */
+    /**
+     * Photo **scolaire** (bulletins, cartes) → `student_school_photos`.
+     * Distincte de la photo de profil du compte élève (`UserAccount.avatarFileId`).
+     */
     var photoFileId: String? = null,
 
     var contact: ContactInfo = ContactInfo(),

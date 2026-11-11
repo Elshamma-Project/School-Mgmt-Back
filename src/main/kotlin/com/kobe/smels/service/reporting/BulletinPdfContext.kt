@@ -22,6 +22,8 @@ data class BulletinPdfContext(
     val divisionalFr: String = "",
     val divisionalEn: String = "",
     val logoBytes: ByteArray? = null,
+    /** Photo scolaire élève (bulletin) — jamais l’avatar compte. */
+    val studentPhotoBytes: ByteArray? = null,
 ) {
     val phoneLine: String
         get() = phones.filter { it.isNotBlank() }.joinToString(" / ")

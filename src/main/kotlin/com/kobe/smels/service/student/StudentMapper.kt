@@ -64,6 +64,7 @@ object StudentMapper {
             placeOfBirth = student.placeOfBirth,
             nationality = student.nationality,
             photoFileId = student.photoFileId,
+            hasSchoolPhoto = !student.photoFileId.isNullOrBlank(),
             contact = toContactDto(student.contact),
             guardians = student.guardians.map { toGuardianLinkDto(it) },
             active = student.active

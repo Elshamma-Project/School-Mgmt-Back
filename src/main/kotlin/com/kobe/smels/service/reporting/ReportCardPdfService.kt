@@ -93,7 +93,7 @@ class ReportCardPdfService {
 
         document.add(headerBlock(card, academicYearLabel, context, bold, small, muted, titleWhite, lang))
         document.add(spacer(3f))
-        document.add(identityGrid(card, bold, regular, muted, lang))
+        document.add(identityGrid(card, bold, regular, muted, lang, context.studentPhotoBytes))
         document.add(spacer(4f))
         document.add(
             marksTable(card, template, bold, regular, small, smallBold, headerWhite, failFont, lang, passMark)
@@ -222,6 +222,7 @@ class ReportCardPdfService {
         regular: Font,
         muted: Font,
         lang: Language,
+        studentPhotoBytes: ByteArray?,
     ): PdfPTable {
         val s = card.student
         val fullName = listOf(s.lastName, s.firstName).filter { it.isNotBlank() }.joinToString(" ")
@@ -249,9 +250,10 @@ class ReportCardPdfService {
             L("EFFECTIF DE LA CLASSE", "N° ON ROLL") to card.classInfo.effectif.toString(),
             L("LANGUE DU BULLETIN", "REPORT LANGUAGE") to if (lang == Language.FR) "Français" else "English",
         )
-        val table = PdfPTable(3)
+        // 3 colonnes champs + 1 colonne photo (rowspan 3)
+        val table = PdfPTable(floatArrayOf(1f, 1f, 1f, 0.55f))
         table.widthPercentage = 100f
-        cells.forEach { (label, value) ->
+        cells.forEachIndexed { index, (label, value) ->
             val p = Paragraph()
             p.leading = muted.size + 0.6f
             p.add(Chunk("$label\n", muted))
@@ -262,8 +264,51 @@ class ReportCardPdfService {
             c.setPaddingTop(1.5f)
             c.setPaddingBottom(1.5f)
             table.addCell(c)
+            if (index % 3 == 2) {
+                if (index == 2) {
+                    table.addCell(studentPhotoCell(studentPhotoBytes, muted, lang))
+                }
+                // rowspan déjà posé : ne rien ajouter sur les lignes 2 et 3
+            }
         }
         return table
+    }
+
+    private fun studentPhotoCell(
+        studentPhotoBytes: ByteArray?,
+        muted: Font,
+        lang: Language,
+    ): PdfPCell {
+        val cell = if (studentPhotoBytes != null && studentPhotoBytes.isNotEmpty()) {
+            try {
+                val img = Image.getInstance(studentPhotoBytes)
+                img.scaleToFit(48f, 58f)
+                PdfPCell(img, false).apply {
+                    horizontalAlignment = Element.ALIGN_CENTER
+                    verticalAlignment = Element.ALIGN_MIDDLE
+                }
+            } catch (_: Exception) {
+                photoPlaceholderCell(muted, lang)
+            }
+        } else {
+            photoPlaceholderCell(muted, lang)
+        }
+        cell.rowspan = 3
+        cell.borderColor = LINE
+        cell.setPadding(2f)
+        cell.fixedHeight = 58f
+        return cell
+    }
+
+    private fun photoPlaceholderCell(muted: Font, lang: Language): PdfPCell {
+        val label = if (lang == Language.FR) "PHOTO" else "PHOTO"
+        val p = Paragraph(label, muted)
+        p.alignment = Element.ALIGN_CENTER
+        return PdfPCell(p).apply {
+            horizontalAlignment = Element.ALIGN_CENTER
+            verticalAlignment = Element.ALIGN_MIDDLE
+            backgroundColor = TINT
+        }
     }
 
     private fun marksTable(

@@ -13,6 +13,11 @@ import reactor.core.publisher.Mono
 interface StudentApi {
     fun getSummary(schoolId: String, studentId: String): Mono<StudentSummaryDto>
     fun getIdentity(schoolId: String, studentId: String): Mono<StudentIdentityDto>
+    /**
+     * Octets de la photo scolaire (bulletin). [Mono.empty] si absente.
+     * Jamais l’avatar compte.
+     */
+    fun findSchoolPhotoBytes(schoolId: String, studentId: String): Mono<ByteArray>
     fun findActiveBySchool(schoolId: String): Flux<StudentSummaryDto>
     fun findByGuardian(schoolId: String, guardianId: String): Flux<StudentSummaryDto>
     fun findGuardianLink(schoolId: String, studentId: String, guardianId: String): Mono<GuardianLinkDto>

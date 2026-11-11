@@ -16,6 +16,7 @@ import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
+import com.kobe.smels.repository.student.StudentSchoolPhotoRepository
 import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
@@ -33,6 +34,7 @@ import kotlin.test.assertEquals
 class StudentAcademicRecordTest {
     private val studentRepository: StudentRepository = mock()
     private val guardianRepository: GuardianRepository = mock()
+    private val studentSchoolPhotoRepository: StudentSchoolPhotoRepository = mock()
     private val outboxWriter: OutboxWriter = mock()
     private val classSubjectApi: ClassSubjectApi = mock()
     private val enrollmentApi: EnrollmentApi = mock()
@@ -41,6 +43,7 @@ class StudentAcademicRecordTest {
     private val service = StudentService(
         studentRepository,
         guardianRepository,
+        studentSchoolPhotoRepository,
         outboxWriter,
         classSubjectApi,
         enrollmentApi,

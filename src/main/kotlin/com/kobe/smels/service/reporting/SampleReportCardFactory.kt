@@ -31,6 +31,12 @@ import java.time.LocalDate
  */
 object SampleReportCardFactory {
 
+    /** Image mock gabarit — `docs/fixtures/mock/sample-student-school-photo.png`. */
+    fun loadSampleSchoolPhoto(): ByteArray? =
+        SampleReportCardFactory::class.java.getResourceAsStream(
+            "/reporting/sample-student-school-photo.png"
+        )?.use { it.readBytes() }
+
     fun build(schoolId: String, template: ReportTemplate, language: Language): ReportCard {
         val term = template.periodType == ReportPeriodType.TERM
         val seq = template.sequenceColumns
@@ -59,7 +65,8 @@ object SampleReportCardFactory {
                 sex = Sex.FEMALE,
                 dateOfBirth = LocalDate.of(2015, 1, 1),
                 placeOfBirth = "Yaoundé",
-                repeater = false
+                repeater = false,
+                photoFileId = "sample-school-photo",
             ),
             classInfo = ClassSnapshot(
                 className = if (language == Language.FR) "6ème" else "Form 1",

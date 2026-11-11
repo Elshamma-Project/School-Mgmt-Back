@@ -80,7 +80,9 @@ data class StudentResponse(
     val dateOfBirth: LocalDate?,
     val placeOfBirth: String?,
     val nationality: String?,
+    /** Id binaire photo scolaire (bulletin) — pas l’avatar compte. */
     val photoFileId: String?,
+    val hasSchoolPhoto: Boolean,
     val contact: ContactInfoDto,
     val guardians: List<GuardianLinkDto>,
     val active: Boolean

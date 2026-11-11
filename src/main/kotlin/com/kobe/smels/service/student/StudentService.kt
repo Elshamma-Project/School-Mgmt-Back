@@ -8,14 +8,17 @@ import com.kobe.smels.dto.student.StudentResponse
 import com.kobe.smels.dto.student.StudentSummaryDto
 import com.kobe.smels.dto.student.StudentYearRecordResponse
 import com.kobe.smels.dto.student.UpdateStudentRequest
+import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.student.Student
+import com.kobe.smels.model.student.StudentSchoolPhoto
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.student.GuardianRepository
 import com.kobe.smels.repository.student.StudentRepository
+import com.kobe.smels.repository.student.StudentSchoolPhotoRepository
 import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
@@ -23,9 +26,12 @@ import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.service.student.api.StudentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
+import org.bson.types.Binary
 import org.slf4j.LoggerFactory
+import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.codec.multipart.FilePart
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -35,12 +41,18 @@ import kotlin.math.ceil
 class StudentService(
     private val studentRepository: StudentRepository,
     private val guardianRepository: GuardianRepository,
+    private val studentSchoolPhotoRepository: StudentSchoolPhotoRepository,
     private val outboxWriter: OutboxWriter,
     private val classSubjectApi: ClassSubjectApi,
     private val enrollmentApi: EnrollmentApi,
     private val academicYearApi: AcademicYearApi,
     private val schoolClassApi: SchoolClassApi
 ) : StudentApi {
+
+    companion object {
+        private val SCHOOL_PHOTO_TYPES = setOf("image/jpeg", "image/png", "image/webp")
+        private const val SCHOOL_PHOTO_MAX_BYTES = 512 * 1024
+    }
 
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -412,6 +424,138 @@ class StudentService(
         studentRepository.findByIdAndSchoolId(studentId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .map { StudentMapper.toStudentIdentity(it) }
+
+    override fun findSchoolPhotoBytes(schoolId: String, studentId: String): Mono<ByteArray> =
+        studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .flatMap { student ->
+                val photoId = student.photoFileId
+                if (photoId.isNullOrBlank()) {
+                    Mono.empty()
+                } else {
+                    studentSchoolPhotoRepository.findById(photoId)
+                        .switchIfEmpty(
+                            studentSchoolPhotoRepository.findBySchoolIdAndStudentId(schoolId, studentId)
+                        )
+                        .map { it.data.data }
+                }
+            }
+
+    /**
+     * Upload / remplace la photo scolaire (bulletin). Distincte de l’avatar compte.
+     */
+    fun uploadSchoolPhoto(
+        currentUser: CurrentUser,
+        studentId: String,
+        file: FilePart,
+        schoolIdParam: String?,
+    ): Mono<StudentResponse> {
+        assertCanManage(currentUser)
+        val contentType = file.headers().contentType?.toString()?.substringBefore(";")?.trim()?.lowercase()
+            ?: ""
+        if (contentType !in SCHOOL_PHOTO_TYPES) {
+            return Mono.error(
+                BusinessRuleException("SCHOOL_PHOTO_TYPE", "School photo must be JPEG, PNG or WebP")
+            )
+        }
+        val schoolId = currentUser.requireSchoolId(schoolIdParam)
+        logSuperAdminTenantAction(currentUser, schoolId, "student.uploadSchoolPhoto")
+        return DataBufferUtils.join(file.content())
+            .flatMap { buffer ->
+                val size = buffer.readableByteCount()
+                if (size <= 0) {
+                    DataBufferUtils.release(buffer)
+                    return@flatMap Mono.error(BusinessRuleException("SCHOOL_PHOTO_EMPTY", "School photo is empty"))
+                }
+                if (size > SCHOOL_PHOTO_MAX_BYTES) {
+                    DataBufferUtils.release(buffer)
+                    return@flatMap Mono.error(
+                        BusinessRuleException("SCHOOL_PHOTO_TOO_LARGE", "School photo must be at most 512 KB")
+                    )
+                }
+                val bytes = ByteArray(size)
+                buffer.read(bytes)
+                DataBufferUtils.release(buffer)
+                Mono.just(bytes to contentType)
+            }
+            .flatMap { (bytes, type) ->
+                studentRepository.findByIdAndSchoolId(studentId, schoolId)
+                    .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+                    .flatMap { student ->
+                        val previousId = student.photoFileId
+                        val photo = StudentSchoolPhoto(
+                            id = previousId,
+                            schoolId = schoolId,
+                            studentId = student.id!!,
+                            contentType = type,
+                            sizeBytes = bytes.size.toLong(),
+                            data = Binary(bytes),
+                        )
+                        studentSchoolPhotoRepository.save(photo)
+                            .flatMap { saved ->
+                                student.photoFileId = saved.id
+                                studentRepository.save(student)
+                            }
+                            .flatMap { saved ->
+                                emitStudentChanged(saved).thenReturn(StudentMapper.toStudentResponse(saved))
+                            }
+                    }
+            }
+    }
+
+    fun getSchoolPhoto(
+        currentUser: CurrentUser,
+        studentId: String,
+        schoolIdParam: String?,
+    ): Mono<StudentSchoolPhoto> {
+        val schoolId = currentUser.requireSchoolId(schoolIdParam)
+        return studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+            .flatMap { student ->
+                canRead(currentUser, student).flatMap { allowed ->
+                    if (!allowed) {
+                        Mono.error(ForbiddenException("FORBIDDEN", "Insufficient rights to view this student"))
+                    } else {
+                        val photoId = student.photoFileId
+                            ?: return@flatMap Mono.error(
+                                NotFoundException("SCHOOL_PHOTO_NOT_FOUND", "No school photo")
+                            )
+                        studentSchoolPhotoRepository.findById(photoId)
+                            .switchIfEmpty(
+                                studentSchoolPhotoRepository.findBySchoolIdAndStudentId(schoolId, studentId)
+                                    .switchIfEmpty(
+                                        Mono.error(NotFoundException("SCHOOL_PHOTO_NOT_FOUND", "No school photo"))
+                                    )
+                            )
+                    }
+                }
+            }
+    }
+
+    fun deleteSchoolPhoto(
+        currentUser: CurrentUser,
+        studentId: String,
+        schoolIdParam: String?,
+    ): Mono<StudentResponse> {
+        assertCanManage(currentUser)
+        val schoolId = currentUser.requireSchoolId(schoolIdParam)
+        logSuperAdminTenantAction(currentUser, schoolId, "student.deleteSchoolPhoto")
+        return studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+            .flatMap { student ->
+                val photoId = student.photoFileId
+                student.photoFileId = null
+                studentRepository.save(student)
+                    .flatMap { saved ->
+                        val cleanup = when {
+                            !photoId.isNullOrBlank() -> studentSchoolPhotoRepository.deleteById(photoId)
+                            else -> studentSchoolPhotoRepository.deleteBySchoolIdAndStudentId(schoolId, studentId)
+                        }
+                        cleanup
+                            .then(emitStudentChanged(saved))
+                            .thenReturn(StudentMapper.toStudentResponse(saved))
+                    }
+            }
+    }
 
     override fun findActiveBySchool(schoolId: String): Flux<StudentSummaryDto> =
         studentRepository.findBySchoolIdAndActiveTrue(schoolId).map { StudentMapper.toStudentSummary(it) }

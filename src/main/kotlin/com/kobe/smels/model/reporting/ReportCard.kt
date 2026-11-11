@@ -109,6 +109,7 @@ data class StudentSnapshot(
     val dateOfBirth: LocalDate? = null,
     val placeOfBirth: String? = null,
     val repeater: Boolean = false,
+    /** Photo scolaire figée (pas l’avatar compte). */
     val photoFileId: String? = null
 )
 

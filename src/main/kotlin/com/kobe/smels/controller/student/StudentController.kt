@@ -8,6 +8,10 @@ import com.kobe.smels.service.student.StudentService
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.http.codec.multipart.FilePart
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -15,6 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Mono
@@ -63,6 +68,35 @@ class StudentController(
         @RequestParam(required = false) schoolId: String?
     ): Mono<StudentResponse> =
         SecuritySupport.currentUser().flatMap { studentService.update(it, id, request, schoolId) }
+
+    /** Photo scolaire (bulletin) — distincte de l’avatar compte `/auth/me/avatar`. */
+    @PutMapping("/{id}/school-photo", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadSchoolPhoto(
+        @PathVariable id: String,
+        @RequestPart("file") file: FilePart,
+        @RequestParam(required = false) schoolId: String?,
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.uploadSchoolPhoto(it, id, file, schoolId) }
+
+    @GetMapping("/{id}/school-photo")
+    fun schoolPhoto(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?,
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser()
+            .flatMap { studentService.getSchoolPhoto(it, id, schoolId) }
+            .map { photo ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(photo.contentType))
+                    .body(photo.data.data)
+            }
+
+    @DeleteMapping("/{id}/school-photo")
+    fun deleteSchoolPhoto(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?,
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.deleteSchoolPhoto(it, id, schoolId) }
 
     @PostMapping("/{id}/deactivate")
     fun deactivate(
