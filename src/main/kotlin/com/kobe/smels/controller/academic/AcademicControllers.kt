@@ -87,6 +87,24 @@ class SchoolController(private val schoolService: SchoolService) {
         SecuritySupport.currentUser().flatMap { schoolService.deleteLogo(it, id) }
 }
 
+/** Marque établissement pour l’écran de connexion (sans authentification). */
+@RestController
+@RequestMapping("/api/v1/public/schools")
+class PublicSchoolController(private val schoolService: SchoolService) {
+    @GetMapping("/{id}/brand")
+    fun brand(@PathVariable id: String) = schoolService.getPublicBrand(id)
+
+    @GetMapping("/{id}/logo")
+    fun logo(@PathVariable id: String): Mono<ResponseEntity<ByteArray>> =
+        schoolService.getPublicLogo(id)
+            .map { logo ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(logo.contentType))
+                    .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                    .body(logo.data.data)
+            }
+}
+
 @RestController
 @RequestMapping("/api/v1/academic-years")
 class AcademicYearController(private val academicYearService: AcademicYearService) {

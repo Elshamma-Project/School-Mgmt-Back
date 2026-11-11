@@ -12,6 +12,7 @@ import com.kobe.smels.dto.academic.OfficialHeaderDto
 import com.kobe.smels.dto.academic.RoomResponse
 import com.kobe.smels.dto.academic.SchoolClassResponse
 import com.kobe.smels.dto.academic.SchoolClassSummaryDto
+import com.kobe.smels.dto.academic.SchoolPublicBrandResponse
 import com.kobe.smels.dto.academic.SchoolResponse
 import com.kobe.smels.dto.academic.SubjectGroupResponse
 import com.kobe.smels.dto.academic.SubjectGroupSummaryDto
@@ -20,6 +21,7 @@ import com.kobe.smels.dto.academic.SubjectSummaryDto
 import com.kobe.smels.dto.academic.TermCompetencyResponse
 import com.kobe.smels.dto.academic.TermDto
 import com.kobe.smels.model.academic.AcademicYear
+import com.kobe.smels.model.academic.AcademicYearStatus
 import com.kobe.smels.model.academic.ClassSubject
 import com.kobe.smels.model.academic.Level
 import com.kobe.smels.model.academic.OfficialHeader
@@ -73,6 +75,15 @@ object AcademicMapper {
             ministry = toLocalizedDto(header.ministry)!!,
             regionalDelegation = toLocalizedDto(header.regionalDelegation),
             divisionalDelegation = toLocalizedDto(header.divisionalDelegation)
+        )
+
+    fun toPublicBrand(school: School): SchoolPublicBrandResponse =
+        SchoolPublicBrandResponse(
+            id = school.id!!,
+            code = school.code,
+            name = toLocalizedDto(school.name)!!,
+            shortName = school.shortName,
+            hasLogo = !school.logoFileId.isNullOrBlank()
         )
 
     fun toSchoolResponse(school: School): SchoolResponse =

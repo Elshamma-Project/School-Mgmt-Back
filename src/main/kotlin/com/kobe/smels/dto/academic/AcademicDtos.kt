@@ -109,6 +109,15 @@ data class SchoolResponse(
     val active: Boolean
 )
 
+/** Marque publique (écran de connexion) — sans contact ni champs internes. */
+data class SchoolPublicBrandResponse(
+    val id: String,
+    val code: String,
+    val name: LocalizedTextDto,
+    val shortName: String?,
+    val hasLogo: Boolean
+)
+
 data class TermDto(
     @field:Min(1)
     @field:Max(3)

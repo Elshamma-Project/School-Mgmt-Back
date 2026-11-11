@@ -1,6 +1,7 @@
 package com.kobe.smels.service.academic
 
 import com.kobe.smels.dto.academic.CreateSchoolRequest
+import com.kobe.smels.dto.academic.SchoolPublicBrandResponse
 import com.kobe.smels.dto.academic.SchoolResponse
 import com.kobe.smels.dto.academic.UpdateSchoolRequest
 import com.kobe.smels.exception.BusinessRuleException
@@ -160,7 +161,24 @@ class SchoolService(
 
     fun getLogo(currentUser: CurrentUser, schoolId: String): Mono<SchoolLogo> {
         assertSchoolScope(currentUser, schoolId)
-        return schoolRepository.findById(schoolId)
+        return loadLogo(schoolId)
+    }
+
+    /** Branding login / écran public — école active uniquement. */
+    fun getPublicBrand(schoolId: String): Mono<SchoolPublicBrandResponse> =
+        schoolRepository.findById(schoolId.trim())
+            .filter { it.active }
+            .switchIfEmpty(Mono.error(NotFoundException("SCHOOL_NOT_FOUND", "School not found")))
+            .map { AcademicMapper.toPublicBrand(it) }
+
+    fun getPublicLogo(schoolId: String): Mono<SchoolLogo> =
+        schoolRepository.findById(schoolId.trim())
+            .filter { it.active }
+            .switchIfEmpty(Mono.error(NotFoundException("SCHOOL_NOT_FOUND", "School not found")))
+            .flatMap { loadLogo(it.id!!) }
+
+    private fun loadLogo(schoolId: String): Mono<SchoolLogo> =
+        schoolRepository.findById(schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("SCHOOL_NOT_FOUND", "School not found")))
             .flatMap { school ->
                 val logoId = school.logoFileId
@@ -171,7 +189,6 @@ class SchoolService(
                             .switchIfEmpty(Mono.error(NotFoundException("LOGO_NOT_FOUND", "No school logo")))
                     )
             }
-    }
 
     fun deleteLogo(currentUser: CurrentUser, schoolId: String): Mono<SchoolResponse> {
         AcademicAccess.assertCanManageSchoolSettings(currentUser)

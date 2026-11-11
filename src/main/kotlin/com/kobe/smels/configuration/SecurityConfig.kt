@@ -45,6 +45,7 @@ class SecurityConfig(
                         "/api/v1/auth/login",
                         "/api/v1/auth/refresh",
                         "/api/v1/public/report-cards/**",
+                        "/api/v1/public/schools/**",
                         "/actuator/health",
                         "/actuator/health/**",
                         "/actuator/info"
