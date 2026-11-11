@@ -16,6 +16,7 @@ import com.lowagie.text.FontFactory
 import com.lowagie.text.PageSize
 import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
+import com.lowagie.text.Rectangle
 import com.lowagie.text.pdf.Barcode128
 import com.lowagie.text.pdf.PdfPCell
 import com.lowagie.text.pdf.PdfPTable
@@ -29,17 +30,23 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * PDF bulletin A4 portrait, une seule page (Z1–Z10, docs/01 + maquette KOBE).
+ * PDF bulletin A4 portrait, une seule page (Z1–Z10, maquette KOBE).
+ * Palette : #0F3D4C / #1C6E7D / #E6F0F2 / #C98A1B / #B3261E.
  * Ajuste la police entre [ReportTemplate.minFontSizePt] et maxFontSizePt.
  */
 @Service
 class ReportCardPdfService {
 
-    fun render(card: ReportCard, template: ReportTemplate, academicYearLabel: String): ByteArray {
+    fun render(
+        card: ReportCard,
+        template: ReportTemplate,
+        academicYearLabel: String,
+        passMark: BigDecimal = BigDecimal("10"),
+    ): ByteArray {
         var fontSize = template.maxFontSizePt
         var lastError: String? = null
         while (fontSize >= template.minFontSizePt - 0.01) {
-            val bytes = build(card, template, academicYearLabel, fontSize.toFloat())
+            val bytes = build(card, template, academicYearLabel, fontSize.toFloat(), passMark)
             val pages = pageCount(bytes)
             if (pages == 1) return bytes
             lastError = "Content spans $pages pages at ${"%.1f".format(fontSize)}pt"
@@ -58,142 +65,176 @@ class ReportCardPdfService {
         card: ReportCard,
         template: ReportTemplate,
         academicYearLabel: String,
-        fontSize: Float
+        fontSize: Float,
+        passMark: BigDecimal,
     ): ByteArray {
         val out = ByteArrayOutputStream()
-        val document = Document(PageSize.A4, 22f, 22f, 18f, 16f)
+        // 8 mm ≈ 22.7 pt
+        val margin = 22.7f
+        val document = Document(PageSize.A4, margin, margin, margin, margin)
         val writer = PdfWriter.getInstance(document, out)
         document.open()
 
         val lang = card.language
-        val bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, fontSize)
-        val regular = FontFactory.getFont(FontFactory.HELVETICA, fontSize)
-        val small = FontFactory.getFont(FontFactory.HELVETICA, (fontSize - 0.8f).coerceAtLeast(5f))
-        val smallBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, (fontSize - 0.8f).coerceAtLeast(5f))
-        val titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, fontSize + 1.5f)
+        val bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, fontSize, INK)
+        val regular = FontFactory.getFont(FontFactory.HELVETICA, fontSize, INK)
+        val small = FontFactory.getFont(FontFactory.HELVETICA, (fontSize - 0.8f).coerceAtLeast(5.2f), INK)
+        val smallBold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, (fontSize - 0.8f).coerceAtLeast(5.2f), INK)
+        val muted = FontFactory.getFont(FontFactory.HELVETICA, (fontSize - 1.2f).coerceAtLeast(5.2f), MUTED)
+        val titleWhite = FontFactory.getFont(FontFactory.HELVETICA_BOLD, (fontSize + 2f).coerceAtMost(11f), Color.WHITE)
+        val headerWhite = FontFactory.getFont(FontFactory.HELVETICA_BOLD, (fontSize - 0.6f).coerceAtLeast(5.2f), Color.WHITE)
+        val avgFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, (fontSize + 6f).coerceAtMost(15f), INK)
+        val failFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, fontSize, FAIL)
 
-        // Z1
-        document.add(headerTable(card, academicYearLabel, bold, small, titleFont, lang))
-        document.add(Paragraph(" ", small))
-
-        // Z2
-        document.add(identityTable(card, bold, regular, small, lang))
-        document.add(Paragraph(" ", small))
-
-        // Z3 + Z4
-        document.add(marksTable(card, template, bold, regular, small, smallBold, lang, fontSize))
-        document.add(Paragraph(" ", small))
-
-        // Z5–Z9
-        document.add(bottomBand(card, template, bold, regular, small, lang))
-        document.add(Paragraph(" ", small))
-
-        // Z10
-        document.add(footerBlock(card, writer, bold, small, lang))
-
-        val legendText = when (lang) {
-            Language.FR -> template.legend?.fr
-            Language.EN -> template.legend?.en
-        }
-        if (!legendText.isNullOrBlank()) {
-            document.add(Paragraph(legendText, small))
-        }
+        document.add(headerBlock(card, academicYearLabel, bold, small, muted, titleWhite, lang))
+        document.add(spacer(3f))
+        document.add(identityGrid(card, bold, regular, muted, lang))
+        document.add(spacer(4f))
+        document.add(
+            marksTable(card, template, bold, regular, small, smallBold, headerWhite, failFont, lang, passMark)
+        )
+        document.add(spacer(4f))
+        document.add(resultsBand(card, template, bold, regular, small, muted, avgFont, lang))
+        document.add(spacer(3f))
+        document.add(workConductBand(card, bold, small, muted, lang))
+        document.add(spacer(3f))
+        document.add(visasBlock(card, bold, muted, lang))
+        document.add(spacer(3f))
+        document.add(footerBlock(card, template, writer, muted, small, lang))
 
         document.close()
         return out.toByteArray()
     }
 
-    private fun headerTable(
+    private fun headerBlock(
         card: ReportCard,
         yearLabel: String,
         bold: Font,
         small: Font,
-        titleFont: Font,
-        lang: Language
+        muted: Font,
+        titleWhite: Font,
+        lang: Language,
     ): PdfPTable {
-        val table = PdfPTable(floatArrayOf(1f, 0.35f, 1f))
-        table.widthPercentage = 100f
+        val wrap = PdfPTable(1)
+        wrap.widthPercentage = 100f
+
+        val top = PdfPTable(floatArrayOf(1f, 0.28f, 1f))
+        top.widthPercentage = 100f
+        val schoolName = card.classInfo.className
         val fr = Paragraph().apply {
-            add(Chunk("RÉPUBLIQUE DU CAMEROUN\n", small))
-            add(Chunk("Paix – Travail – Patrie\n", small))
+            leading = small.size + 1.2f
+            add(Chunk("RÉPUBLIQUE DU CAMEROUN\n", bold))
+            add(Chunk("Paix – Travail – Patrie\n", muted))
             add(Chunk("MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES\n", small))
-            add(Chunk(card.classInfo.className + "\n", small))
+            add(Chunk("DÉLÉGATION RÉGIONALE\n", small))
+            add(Chunk("DÉLÉGATION DÉPARTEMENTALE\n", small))
+            add(Chunk("$schoolName\n", bold))
+            add(Chunk("B.P. / Tél.", muted))
+            alignment = Element.ALIGN_CENTER
         }
         val en = Paragraph().apply {
-            add(Chunk("REPUBLIC OF CAMEROON\n", small))
-            add(Chunk("Peace – Work – Fatherland\n", small))
+            leading = small.size + 1.2f
+            add(Chunk("REPUBLIC OF CAMEROON\n", bold))
+            add(Chunk("Peace – Work – Fatherland\n", muted))
             add(Chunk("MINISTRY OF SECONDARY EDUCATION\n", small))
+            add(Chunk("REGIONAL DELEGATION\n", small))
+            add(Chunk("DIVISIONAL DELEGATION\n", small))
+            add(Chunk("NAME OF THE SCHOOL\n", bold))
+            add(Chunk("P.O. Box / Tel.", muted))
+            alignment = Element.ALIGN_CENTER
         }
-        addBorderless(table, fr, Element.ALIGN_LEFT)
-        addBorderless(table, Paragraph(Chunk("LOGO", bold)), Element.ALIGN_CENTER)
-        addBorderless(table, en, Element.ALIGN_RIGHT)
+        addBorderless(top, fr, Element.ALIGN_CENTER)
+        val logo = Paragraph().apply {
+            alignment = Element.ALIGN_CENTER
+            add(Chunk("LOGO\n", bold))
+            add(Chunk("ÉCOLE", muted))
+        }
+        addBorderless(top, logo, Element.ALIGN_CENTER)
+        addBorderless(top, en, Element.ALIGN_CENTER)
+        wrap.addCell(borderlessCell(top))
 
-        val title = when {
+        val titleFr = when {
             card.period.type == ReportPeriodType.TERM ->
-                if (lang == Language.FR) "BULLETIN DE TRIMESTRE ${card.period.number}"
-                else "TERM ${card.period.number} REPORT CARD"
-            else ->
-                if (lang == Language.FR) "BULLETIN ANNUEL DE NOTES"
-                else "ANNUAL REPORT CARD"
+                "BULLETIN DE TRIMESTRE ${card.period.number ?: 1}"
+            else -> "BULLETIN ANNUEL DE NOTES"
         }
-        val titleCell = PdfPCell(Phrase("$title  —  $yearLabel", titleFont))
-        titleCell.colspan = 3
-        titleCell.horizontalAlignment = Element.ALIGN_CENTER
-        titleCell.border = 0
-        titleCell.setPadding(4f)
-        table.addCell(titleCell)
-        return table
+        val titleEn = when {
+            card.period.type == ReportPeriodType.TERM ->
+                "TERM ${card.period.number ?: 1} REPORT CARD"
+            else -> "ANNUAL REPORT CARD"
+        }
+        val yearPrefix = if (lang == Language.FR) "Année scolaire" else "School year"
+        val banner = PdfPTable(floatArrayOf(3.2f, 1f))
+        banner.widthPercentage = 100f
+        val titleCell = PdfPCell(Phrase("$titleFr  ·  $titleEn", titleWhite))
+        titleCell.backgroundColor = INK
+        titleCell.border = Rectangle.NO_BORDER
+        titleCell.setPadding(6f)
+        titleCell.verticalAlignment = Element.ALIGN_MIDDLE
+        banner.addCell(titleCell)
+        val yearFont = FontFactory.getFont(FontFactory.HELVETICA, small.size, Color(215, 230, 234))
+        val yearCell = PdfPCell(Phrase("$yearPrefix $yearLabel", yearFont))
+        yearCell.backgroundColor = INK
+        yearCell.border = Rectangle.NO_BORDER
+        yearCell.horizontalAlignment = Element.ALIGN_RIGHT
+        yearCell.verticalAlignment = Element.ALIGN_MIDDLE
+        yearCell.setPadding(6f)
+        banner.addCell(yearCell)
+
+        val bannerWrap = PdfPCell(banner)
+        bannerWrap.border = Rectangle.NO_BORDER
+        bannerWrap.setPadding(0f)
+        bannerWrap.setPaddingTop(4f)
+        wrap.addCell(bannerWrap)
+        return wrap
     }
 
-    private fun identityTable(
+    private fun identityGrid(
         card: ReportCard,
         bold: Font,
         regular: Font,
-        small: Font,
-        lang: Language
+        muted: Font,
+        lang: Language,
     ): PdfPTable {
-        val table = PdfPTable(4)
-        table.widthPercentage = 100f
         val s = card.student
         val fullName = listOf(s.lastName, s.firstName).filter { it.isNotBlank() }.joinToString(" ")
-        fun label(fr: String, en: String) = if (lang == Language.FR) fr else en
-        row(table, label("Noms et prénoms", "Full names"), fullName, bold, regular)
-        row(table, label("Classe", "Class"), card.classInfo.className, bold, regular)
-        row(table, label("Matricule", "Matricule"), s.matricule, bold, regular)
-        row(
-            table,
-            label("Sexe", "Sex"),
-            when (s.sex) {
-                Sex.MALE -> if (lang == Language.FR) "Masculin" else "Male"
-                Sex.FEMALE -> if (lang == Language.FR) "Féminin" else "Female"
-                null -> ""
-            },
-            bold,
-            regular
+        val birth = buildString {
+            s.dateOfBirth?.let { append(it.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))) }
+            if (!s.placeOfBirth.isNullOrBlank()) {
+                if (isNotEmpty()) append(" — ")
+                append(s.placeOfBirth)
+            }
+        }
+        val sex = when (s.sex) {
+            Sex.MALE -> if (lang == Language.FR) "Masculin" else "Male"
+            Sex.FEMALE -> if (lang == Language.FR) "Féminin" else "Female"
+            null -> "—"
+        }
+        fun L(fr: String, en: String) = if (lang == Language.FR) fr else en
+        val cells = listOf(
+            L("NOMS ET PRÉNOMS", "FULL NAMES") to fullName,
+            L("CLASSE", "CLASS") to card.classInfo.className,
+            L("MATRICULE", "MATRICULE") to s.matricule,
+            L("NÉ(E) LE / À", "DATE / PLACE OF BIRTH") to birth.ifBlank { "—" },
+            L("SEXE", "SEX") to sex,
+            L("REDOUBLANT(E)", "REPEATER") to if (s.repeater) L("Oui", "Yes") else L("Non", "No"),
+            L("PROFESSEUR PRINCIPAL", "CLASS MASTER") to (card.classInfo.mainTeacherName ?: "—"),
+            L("EFFECTIF DE LA CLASSE", "N° ON ROLL") to card.classInfo.effectif.toString(),
+            L("LANGUE DU BULLETIN", "REPORT LANGUAGE") to if (lang == Language.FR) "Français" else "English",
         )
-        row(
-            table,
-            label("Redoublant", "Repeater"),
-            if (s.repeater) label("Oui", "Yes") else label("Non", "No"),
-            bold,
-            regular
-        )
-        row(
-            table,
-            label("Effectif", "N° on roll"),
-            card.classInfo.effectif.toString(),
-            bold,
-            regular
-        )
-        row(
-            table,
-            label("Prof. principal", "Class master"),
-            card.classInfo.mainTeacherName ?: "",
-            bold,
-            regular
-        )
-        if (lang == Language.EN && !s.photoFileId.isNullOrBlank()) {
-            row(table, "Photo", "[photo]", bold, small)
+        val table = PdfPTable(3)
+        table.widthPercentage = 100f
+        cells.forEach { (label, value) ->
+            val p = Paragraph()
+            p.leading = muted.size + 1.5f
+            p.add(Chunk("$label\n", muted))
+            p.add(Chunk(value, bold))
+            val c = PdfPCell(p)
+            c.borderColor = LINE
+            c.setPadding(4f)
+            c.setPaddingTop(3f)
+            c.setPaddingBottom(3f)
+            table.addCell(c)
         }
         return table
     }
@@ -205,41 +246,65 @@ class ReportCardPdfService {
         regular: Font,
         small: Font,
         smallBold: Font,
+        headerWhite: Font,
+        failFont: Font,
         lang: Language,
-        fontSize: Float
+        passMark: BigDecimal,
     ): PdfPTable {
         val seqCols = template.sequenceColumns
-        val colCount = 1 + seqCols.size + 4
-        val widths = FloatArray(colCount)
-        widths[0] = 2.6f
-        for (i in 1..seqCols.size) widths[i] = 0.7f
-        widths[seqCols.size + 1] = 0.8f
-        widths[seqCols.size + 2] = 0.6f
-        widths[seqCols.size + 3] = 0.8f
-        widths[seqCols.size + 4] = 0.7f
+        val extras = listOfNotNull(
+            if (template.showSubjectRank) "POS" else null,
+            if (template.showSubjectClassAverage) "CL." else null,
+            if (template.showSubjectPassedCount) "≥10" else null,
+        )
+        val headers = mutableListOf(
+            if (lang == Language.FR) "DISCIPLINES / ENS." else "SUBJECTS / TCH."
+        )
+        seqCols.forEachIndexed { i, n ->
+            headers += if (template.periodType == ReportPeriodType.TERM) "E${i + 1}" else "D$n"
+        }
+        headers += if (lang == Language.FR) "MOY" else "AV"
+        headers += "COEF"
+        headers += if (template.periodType == ReportPeriodType.TERM) "×CF" else "TOT"
+        headers += extras
+        headers += if (lang == Language.FR) "APP." else "REM."
+
+        // Largeurs relatives : matière + colonnes numériques serrées (A4, sans débordement).
+        val widths = FloatArray(headers.size)
+        widths[0] = 2.35f
+        var idx = 1
+        repeat(seqCols.size) {
+            widths[idx++] = 0.48f
+        }
+        widths[idx++] = 0.58f // moy
+        widths[idx++] = 0.42f // coef
+        widths[idx++] = 0.58f // total
+        repeat(extras.size) {
+            widths[idx++] = 0.45f
+        }
+        widths[idx] = 0.5f // app
         val table = PdfPTable(widths)
         table.widthPercentage = 100f
         table.headerRows = 1
 
-        val headers = mutableListOf(if (lang == Language.FR) "Discipline" else "Subject")
-        seqCols.forEach { n ->
-            headers += if (template.periodType == ReportPeriodType.TERM) "Eval$n" else "DEV$n"
-        }
-        headers += if (lang == Language.FR) "Moy/20" else "Av/20"
-        headers += if (lang == Language.FR) "Coef" else "Coef"
-        headers += "Total"
-        headers += if (lang == Language.FR) "App." else "Grade"
-        headers.forEach { h ->
-            val c = PdfPCell(Phrase(h, smallBold))
-            c.horizontalAlignment = Element.ALIGN_CENTER
-            c.backgroundColor = Color(230, 230, 230)
-            c.setPadding(1.5f)
+        headers.forEachIndexed { index, h ->
+            val c = PdfPCell(Phrase(h, headerWhite))
+            c.backgroundColor = HEADER
+            c.borderColor = HEADER
+            c.horizontalAlignment = if (index == 0) Element.ALIGN_LEFT else Element.ALIGN_CENTER
+            c.setPadding(1.2f)
+            c.setPaddingTop(2f)
+            c.setPaddingBottom(2f)
             table.addCell(c)
         }
 
         card.groups.sortedBy { it.displayOrder }.forEach { group ->
-            group.lines.forEach { line -> addSubjectRow(table, line, seqCols, small, regular, template) }
-            addGroupRow(table, group, seqCols.size, smallBold, lang)
+            group.lines.forEach { line ->
+                addSubjectRow(table, line, seqCols, template, regular, small, failFont, passMark)
+            }
+            if (template.showGroupTotals) {
+                addGroupRow(table, group, seqCols.size, extras.size, smallBold, lang)
+            }
         }
         return table
     }
@@ -248,201 +313,355 @@ class ReportCardPdfService {
         table: PdfPTable,
         line: ReportLine,
         seqCols: List<Int>,
-        small: Font,
+        template: ReportTemplate,
         regular: Font,
-        template: ReportTemplate
+        small: Font,
+        failFont: Font,
+        passMark: BigDecimal,
     ) {
         val name = Paragraph()
-        name.add(Chunk(line.subjectName, regular))
+        name.leading = regular.size + 1f
+        name.add(Chunk(line.subjectName.uppercase(), FontFactory.getFont(FontFactory.HELVETICA_BOLD, regular.size, INK)))
         if (!line.teacherName.isNullOrBlank()) {
-            name.add(Chunk("\n${line.teacherName}", small))
+            name.add(Chunk("\n${line.teacherName}", FontFactory.getFont(FontFactory.HELVETICA, small.size - 0.4f, MUTED)))
         }
         if (template.showCompetency && !line.competency.isNullOrBlank()) {
-            name.add(Chunk("\n${line.competency}", small))
+            name.add(Chunk("\n${line.competency}", FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, small.size - 0.6f, MUTED)))
         }
         val nameCell = PdfPCell(name)
+        nameCell.borderColor = LINE
         nameCell.setPadding(1.2f)
         table.addCell(nameCell)
 
         val bySession = line.marks.associateBy { it.sessionNumber }
         seqCols.forEach { n ->
-            val mark = bySession[n]
-            val text = when {
-                mark?.value != null -> fmt(mark.value!!)
-                else -> "-"
-            }
-            cell(table, text, small)
+            val mark = bySession[n]?.value
+            markCell(table, mark, small, failFont, passMark)
         }
-        cell(table, line.average?.let { fmt(it) } ?: "-", small)
-        cell(table, fmt(line.coefficient), small)
-        cell(table, line.total?.let { fmt(it) } ?: "-", small)
-        var app = line.appreciationLabel ?: line.appreciationCode ?: ""
-        if (template.showSubjectRank && line.subjectRank != null) {
-            app = listOf(app, ordinal(line.subjectRank!!)).filter { it.isNotBlank() }.joinToString(" ")
+        markCell(table, line.average, small, failFont, passMark)
+        centerCell(table, fmt(line.coefficient, 0), small)
+        centerCell(table, line.total?.let { fmt(it) } ?: "—", small)
+        if (template.showSubjectRank) {
+            centerCell(table, line.subjectRank?.let { ordinal(it) } ?: "—", small)
         }
-        cell(table, app, small)
+        if (template.showSubjectClassAverage) {
+            centerCell(table, line.subjectClassAverage?.let { fmt(it) } ?: "—", small)
+        }
+        if (template.showSubjectPassedCount) {
+            centerCell(table, line.subjectPassedCount?.toString() ?: "—", small)
+        }
+        centerCell(table, line.appreciationLabel ?: line.appreciationCode ?: "", small)
     }
 
     private fun addGroupRow(
         table: PdfPTable,
         group: ReportGroup,
         seqCount: Int,
+        extraCount: Int,
         font: Font,
-        lang: Language
+        lang: Language,
     ) {
         val label = if (lang == Language.FR) "TOTAL ${group.name}" else "TOTAL ${group.name}"
-        val c0 = PdfPCell(Phrase(label, font))
+        val c0 = PdfPCell(Phrase(label.uppercase(), font))
         c0.colspan = 1 + seqCount
-        c0.backgroundColor = Color(255, 220, 180)
-        c0.setPadding(1.5f)
+        c0.backgroundColor = TINT
+        c0.borderColor = INK
+        c0.setPadding(2.5f)
         table.addCell(c0)
-        cellBg(table, "", font, Color(255, 220, 180))
-        cellBg(table, fmt(group.totalCoefficient), font, Color(255, 220, 180))
-        cellBg(table, group.totalPoints?.let { fmt(it) } ?: "-", font, Color(255, 220, 180))
-        val moy = group.average?.let {
-            (if (lang == Language.FR) "Moy: " else "Av: ") + fmt(it)
-        } ?: ""
-        cellBg(table, moy, font, Color(255, 220, 180))
+        cellBg(table, group.average?.let { "${fmt(it)}/20" } ?: "—", font, TINT)
+        cellBg(table, fmt(group.totalCoefficient, 0), font, TINT)
+        cellBg(table, group.totalPoints?.let { fmt(it) } ?: "—", font, TINT)
+        repeat(extraCount + 1) {
+            cellBg(table, "", font, TINT)
+        }
     }
 
-    private fun bottomBand(
+    private fun resultsBand(
         card: ReportCard,
         template: ReportTemplate,
         bold: Font,
         regular: Font,
         small: Font,
-        lang: Language
+        muted: Font,
+        avgFont: Font,
+        lang: Language,
     ): PdfPTable {
-        val table = PdfPTable(5)
+        val table = PdfPTable(3)
         table.widthPercentage = 100f
+        table.setWidths(floatArrayOf(1f, 1f, 1.15f))
         val o = card.overall
-        val z5 = buildString {
-            append(if (lang == Language.FR) "Moyenne: " else "Average: ")
-            append(o.average?.let { fmt(it) } ?: "-")
-            append(" / 20\n")
-            append(if (lang == Language.FR) "Rang: " else "Rank: ")
-            if (o.rankStatus.name == "RANKED" && o.rank != null) append("${o.rank} / ${o.rankedCount}")
-            else append("-")
-            append("\n")
-            append(o.mentionLabel ?: o.mentionCode ?: "")
-            if (o.subjectsPassed != null) {
-                append("\nPASSED IN ${o.subjectsPassed}/${o.subjectsCounted}")
-            }
-            if (template.showEffortSubjects && o.effortSubjectNames.isNotEmpty()) {
-                append("\nMAKE EFFORT IN: ${o.effortSubjectNames.joinToString(", ")}")
-            }
-            if (template.showTotalPointsOverMax && o.totalPoints != null) {
-                append("\n${fmt(o.totalPoints!!)} / ${fmt(o.totalCoefficient.multiply(BigDecimal("20")))}")
-            }
+
+        val resultBody = Paragraph().apply {
+            leading = avgFont.size
+            add(Chunk(o.average?.let { "${fmt(it)}/20" } ?: "—", avgFont))
+            add(Chunk("\n", small))
+            add(Chunk(if (lang == Language.FR) "Rang " else "Rank ", muted))
+            val rankText = if (o.rankStatus.name == "RANKED" && o.rank != null) {
+                "${o.rank}/${o.rankedCount}"
+            } else "—"
+            add(Chunk(rankText, bold))
+            add(Chunk("\n\n", small))
         }
-        val z6 = buildString {
-            append(if (lang == Language.FR) "Rappels\n" else "Term recap\n")
+        val mention = o.mentionLabel ?: o.mentionCode ?: ""
+        val mentionTable = PdfPTable(1)
+        if (mention.isNotBlank()) {
+            val pill = PdfPCell(Phrase(mention.uppercase(), FontFactory.getFont(FontFactory.HELVETICA_BOLD, small.size, Color.WHITE)))
+            pill.backgroundColor = AMBER
+            pill.border = Rectangle.NO_BORDER
+            pill.horizontalAlignment = Element.ALIGN_CENTER
+            pill.setPadding(3f)
+            mentionTable.addCell(pill)
+        }
+        resultBody.add(mentionTable)
+        table.addCell(
+            framed(
+                if (lang == Language.FR) "Résultat annuel" else "Annual result",
+                resultBody,
+                bold,
+                muted,
+            )
+        )
+
+        val mid = Paragraph().apply { leading = small.size + 1.5f }
+        if (template.showTermRecap) {
+            mid.add(Chunk(if (lang == Language.FR) "MOY.     RANG\n" else "AVG.     RANK\n", muted))
             card.termRecaps.forEach { t ->
-                append("T${t.termNumber}: ${t.average?.let { fmt(it) } ?: "-"}")
-                if (t.rank != null) append(" (${t.rank})")
-                append("\n")
+                val label = if (lang == Language.FR) "TRIM ${t.termNumber}" else "TERM ${t.termNumber}"
+                mid.add(Chunk("$label   ${t.average?.let { fmt(it) } ?: "—"}   ", regular))
+                mid.add(Chunk("${t.rank ?: "—"}/${t.rankedCount ?: o.rankedCount}\n", regular))
             }
-        }
-        val z7 = buildString {
-            val p = card.classProfile
-            append(if (lang == Language.FR) "Profil classe\n" else "Class profile\n")
-            if (p != null) {
-                append(">= ${fmt(p.threshold)}: ${p.countAtOrAboveThreshold}\n")
-                append("Avg: ${p.classAverage?.let { fmt(it) } ?: "-"}\n")
-                append("%: ${p.successRate?.let { fmt(it) } ?: "-"}\n")
-                append("Max: ${p.highestAverage?.let { fmt(it) } ?: "-"}\n")
-                append("Min: ${p.lowestAverage?.let { fmt(it) } ?: "-"}")
+            table.addCell(
+                framed(
+                    if (lang == Language.FR) "Rappels des moyennes" else "Term averages",
+                    mid,
+                    bold,
+                    muted,
+                )
+            )
+        } else {
+            mid.add(Chunk(o.totalPoints?.let { fmt(it) } ?: "—", avgFont))
+            mid.add(Chunk("\n", small))
+            if (o.subjectsPassed != null) {
+                mid.add(
+                    Chunk(
+                        if (lang == Language.FR) "ADMIS EN ${o.subjectsPassed}/${o.subjectsCounted}"
+                        else "PASSED IN ${o.subjectsPassed}/${o.subjectsCounted}",
+                        small,
+                    )
+                )
             }
+            table.addCell(
+                framed(
+                    if (lang == Language.FR) "Total points" else "Total points",
+                    mid,
+                    bold,
+                    muted,
+                )
+            )
         }
+
+        val profile = Paragraph().apply { leading = small.size + 1.8f }
+        val p = card.classProfile
+        if (template.showClassProfile && p != null) {
+            fun line(label: String, value: String) {
+                profile.add(Chunk("$label  ", muted))
+                profile.add(Chunk("$value\n", bold))
+            }
+            line(
+                if (lang == Language.FR) "Élèves ≥ ${fmt(p.threshold, 0)}" else "Pupils ≥ ${fmt(p.threshold, 0)}",
+                p.countAtOrAboveThreshold.toString(),
+            )
+            line(if (lang == Language.FR) "Moyenne classe" else "Class average", p.classAverage?.let { fmt(it) } ?: "—")
+            line("%", p.successRate?.let { "${fmt(it)} %" } ?: "—")
+            line(
+                if (lang == Language.FR) "Max — min" else "Max — min",
+                "${p.highestAverage?.let { fmt(it) } ?: "—"} — ${p.lowestAverage?.let { fmt(it) } ?: "—"}",
+            )
+        }
+        table.addCell(
+            framed(
+                if (lang == Language.FR) "Profil de la classe" else "Class profile",
+                profile,
+                bold,
+                muted,
+            )
+        )
+        return table
+    }
+
+    private fun workConductBand(
+        card: ReportCard,
+        bold: Font,
+        small: Font,
+        muted: Font,
+        lang: Language,
+    ): PdfPTable {
+        val table = PdfPTable(2)
+        table.widthPercentage = 100f
         val rev = card.review
-        val z8 = buildString {
-            append(if (lang == Language.FR) "Travail\n" else "Work\n")
-            append("Honour: ${rev?.distinction ?: "-"}\n")
-            append("Warn: ${rev?.workSanction ?: "-"}")
+        val work = Paragraph().apply {
+            leading = small.size + 2f
+            add(dot(if (lang == Language.FR) "Tableau d'honneur" else "Honour roll", rev?.distinction?.name ?: "—", muted, bold))
+            add(dot(if (lang == Language.FR) "Encouragements — félicitations" else "Encouragement — congratulations", "—", muted, bold))
+            add(dot(if (lang == Language.FR) "Avertissement — blâme travail" else "Warning — blame (work)", rev?.workSanction?.name ?: "—", muted, bold))
         }
-        val z9 = buildString {
-            append(if (lang == Language.FR) "Conduite\n" else "Conduct\n")
-            append("Abs: ${rev?.absenceHoursTotal ?: 0}h\n")
-            append("NJ: ${rev?.absenceHoursUnjustified ?: 0}h\n")
-            append("Late: ${rev?.lateCount ?: 0}\n")
-            append("Warn: ${rev?.conductSanction ?: "-"}")
+        val conduct = Paragraph().apply {
+            leading = small.size + 2f
+            add(dot(if (lang == Language.FR) "Absences (h)" else "Absences (h)", "${rev?.absenceHoursTotal ?: 0}", muted, bold))
+            add(dot(if (lang == Language.FR) "Retards" else "Lates", "${rev?.lateCount ?: 0}", muted, bold))
+            add(dot(if (lang == Language.FR) "Avertissement — blâme conduite" else "Warning — blame (conduct)", rev?.conductSanction?.name ?: "—", muted, bold))
         }
-        listOf(z5, z6, z7, z8, z9).forEach {
-            val c = PdfPCell(Phrase(it, small))
-            c.setPadding(3f)
-            table.addCell(c)
+        table.addCell(framed(if (lang == Language.FR) "Travail de l'élève" else "Student's work", work, bold, muted))
+        table.addCell(framed(if (lang == Language.FR) "Conduite de l'élève" else "Student's conduct", conduct, bold, muted))
+        return table
+    }
+
+    private fun visasBlock(
+        card: ReportCard,
+        bold: Font,
+        muted: Font,
+        lang: Language,
+    ): PdfPTable {
+        val table = PdfPTable(3)
+        table.widthPercentage = 100f
+        fun visa(title: String, footer: String? = null): PdfPCell {
+            val p = Paragraph()
+            p.add(Chunk(title, bold))
+            if (footer != null) {
+                p.add(Chunk("\n\n\n$footer", muted))
+            } else {
+                p.add(Chunk("\n\n\n", muted))
+            }
+            val c = PdfPCell(p)
+            c.borderColor = LINE
+            c.fixedHeight = 52f
+            c.setPadding(5f)
+            return c
         }
+        table.addCell(visa(if (lang == Language.FR) "VISA DU PARENT" else "PARENT VISA"))
+        table.addCell(visa(if (lang == Language.FR) "DÉCISION DU CONSEIL DE CLASSE" else "CLASS COUNCIL DECISION"))
+        val sig = card.signature
+        val placeDate = buildString {
+            append(sig?.place ?: "Yaoundé")
+            append(if (lang == Language.FR) ", le " else ", ")
+            append(sig?.date?.toString() ?: "… / … / …")
+        }
+        table.addCell(
+            visa(
+                if (lang == Language.FR) "LE CHEF D'ÉTABLISSEMENT" else "THE PRINCIPAL",
+                placeDate,
+            )
+        )
         return table
     }
 
     private fun footerBlock(
         card: ReportCard,
+        template: ReportTemplate,
         writer: PdfWriter,
-        bold: Font,
+        muted: Font,
         small: Font,
-        lang: Language
+        lang: Language,
     ): PdfPTable {
-        val table = PdfPTable(3)
+        val table = PdfPTable(floatArrayOf(1.1f, 2.2f, 1.2f))
         table.widthPercentage = 100f
-        val visaParent = if (lang == Language.FR) "Visa du parent" else "Parent visa"
-        val decision = if (lang == Language.FR) "Décision du conseil" else "Council decision"
-        val visaChef = buildString {
-            append(if (lang == Language.FR) "Visa du chef" else "Head visa")
-            append("\n")
-            card.signature?.let { sig ->
-                append(listOfNotNull(sig.place, sig.date?.toString(), sig.signatoryTitle, sig.signatoryName)
-                    .joinToString(" — "))
-            }
-        }
-        listOf(visaParent, decision, visaChef).forEach {
-            val c = PdfPCell(Phrase("$it\n\n\n", small))
-            c.fixedHeight = 48f
-            table.addCell(c)
-        }
+
+        val left = PdfPCell(Phrase("Développé par KOBE Corporation", muted))
+        left.border = Rectangle.NO_BORDER
+        left.verticalAlignment = Element.ALIGN_BOTTOM
+        table.addCell(left)
+
+        val legendText = when (lang) {
+            Language.FR -> template.legend?.fr
+            Language.EN -> template.legend?.en
+        }.orEmpty()
         val disclaimer = if (lang == Language.FR) {
-            "Le bulletin est délivré sans rature ni surcharge."
+            "Bulletin délivré sans rature ni surcharge"
         } else {
-            "This report card is issued without alteration."
+            "Report card issued without alteration"
         }
-        val disc = PdfPCell(Phrase(disclaimer, small))
-        disc.colspan = 2
-        disc.border = 0
-        table.addCell(disc)
+        val stamped = card.generatedAt.atZone(ZoneId.of("Africa/Douala"))
+            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
+        val center = Paragraph().apply {
+            alignment = Element.ALIGN_CENTER
+            leading = muted.size + 1.2f
+            add(Chunk("$disclaimer\n", muted))
+            if (legendText.isNotBlank()) add(Chunk("$legendText\n", muted))
+            add(Chunk(if (lang == Language.FR) "Imprimé le $stamped" else "Printed on $stamped", muted))
+        }
+        val centerCell = PdfPCell()
+        centerCell.border = Rectangle.NO_BORDER
+        centerCell.addElement(center)
+        table.addCell(centerCell)
 
         val barcode = Barcode128()
         barcode.code = card.verificationCode
-        barcode.barHeight = 18f
-        barcode.x = 0.8f
-        val img = barcode.createImageWithBarcode(writer.directContent, null, null)
-        img.scaleAbsolute(120f, 28f)
-        val barCell = PdfPCell(img)
-        barCell.border = 0
-        barCell.horizontalAlignment = Element.ALIGN_RIGHT
-        table.addCell(barCell)
-
-        val stamped = card.generatedAt.atZone(ZoneId.of("Africa/Douala"))
-            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
-        val stamp = PdfPCell(Phrase("${card.verificationCode}  |  $stamped", small))
-        stamp.colspan = 3
-        stamp.border = 0
-        table.addCell(stamp)
+        barcode.barHeight = 16f
+        barcode.x = 0.7f
+        val img = barcode.createImageWithBarcode(writer.directContent, INK, INK)
+        img.scaleAbsolute(118f, 26f)
+        val right = Paragraph().apply {
+            alignment = Element.ALIGN_RIGHT
+            add(Chunk(img, 0f, 0f))
+            add(Chunk("\n${card.verificationCode}", small))
+        }
+        val rightCell = PdfPCell()
+        rightCell.border = Rectangle.NO_BORDER
+        rightCell.horizontalAlignment = Element.ALIGN_RIGHT
+        rightCell.addElement(right)
+        table.addCell(rightCell)
         return table
     }
 
-    private fun row(table: PdfPTable, label: String, value: String, bold: Font, regular: Font) {
-        val l = PdfPCell(Phrase(label, bold))
-        l.setPadding(1.5f)
-        table.addCell(l)
-        val v = PdfPCell(Phrase(value, regular))
-        v.colspan = 3
-        v.setPadding(1.5f)
-        table.addCell(v)
+    private fun framed(title: String, body: Paragraph, titleFont: Font, muted: Font): PdfPCell {
+        val inner = PdfPTable(1)
+        inner.widthPercentage = 100f
+        val head = PdfPCell(Phrase(title.uppercase(), FontFactory.getFont(FontFactory.HELVETICA_BOLD, muted.size, INK)))
+        head.backgroundColor = TINT
+        head.borderColor = LINE
+        head.setPadding(3f)
+        inner.addCell(head)
+        val content = PdfPCell()
+        content.borderColor = LINE
+        content.setPadding(5f)
+        content.addElement(body)
+        inner.addCell(content)
+        val outer = PdfPCell(inner)
+        outer.border = Rectangle.NO_BORDER
+        outer.setPadding(1.5f)
+        return outer
     }
 
-    private fun cell(table: PdfPTable, text: String, font: Font) {
+    private fun dot(label: String, value: String, muted: Font, bold: Font): Phrase {
+        val p = Phrase()
+        p.add(Chunk("$label ……………… ", muted))
+        p.add(Chunk("$value\n", bold))
+        return p
+    }
+
+    private fun markCell(
+        table: PdfPTable,
+        value: BigDecimal?,
+        normal: Font,
+        failFont: Font,
+        passMark: BigDecimal,
+    ) {
+        if (value == null) {
+            centerCell(table, "—", normal)
+            return
+        }
+        val font = if (value.compareTo(passMark) < 0) failFont else normal
+        centerCell(table, fmt(value), font)
+    }
+
+    private fun centerCell(table: PdfPTable, text: String, font: Font) {
         val c = PdfPCell(Phrase(text, font))
         c.horizontalAlignment = Element.ALIGN_CENTER
-        c.setPadding(1.2f)
+        c.verticalAlignment = Element.ALIGN_MIDDLE
+        c.borderColor = LINE
+        c.setPadding(0.8f)
+        c.setPaddingTop(1.2f)
+        c.setPaddingBottom(1.2f)
         table.addCell(c)
     }
 
@@ -450,20 +669,40 @@ class ReportCardPdfService {
         val c = PdfPCell(Phrase(text, font))
         c.horizontalAlignment = Element.ALIGN_CENTER
         c.backgroundColor = bg
-        c.setPadding(1.2f)
+        c.borderColor = INK
+        c.setPadding(2f)
         table.addCell(c)
     }
 
     private fun addBorderless(table: PdfPTable, content: Paragraph, align: Int) {
         val c = PdfPCell()
         c.addElement(content)
-        c.border = 0
+        c.border = Rectangle.NO_BORDER
         c.horizontalAlignment = align
         table.addCell(c)
     }
 
-    private fun fmt(v: BigDecimal): String =
-        v.setScale(2, RoundingMode.HALF_UP).toPlainString()
+    private fun borderlessCell(inner: PdfPTable): PdfPCell {
+        val c = PdfPCell(inner)
+        c.border = Rectangle.NO_BORDER
+        c.setPadding(0f)
+        return c
+    }
+
+    private fun spacer(height: Float): Paragraph {
+        val p = Paragraph(" ")
+        p.leading = height
+        return p
+    }
+
+    private fun fmt(v: BigDecimal, scale: Int = 2): String {
+        val scaled = v.setScale(scale, RoundingMode.HALF_UP)
+        if (scale == 0) return scaled.toPlainString()
+        // Compact : 12 ou 12,5 (évite 12,00 sur colonnes étroites A4).
+        val stripped = scaled.stripTrailingZeros()
+        val plain = if (stripped.scale() <= 0) stripped.toBigInteger().toString() else stripped.toPlainString()
+        return plain.replace('.', ',')
+    }
 
     private fun ordinal(n: Int): String {
         val mod100 = n % 100
@@ -475,5 +714,15 @@ class ReportCardPdfService {
             else -> "th"
         }
         return "$n$suffix"
+    }
+
+    companion object {
+        private val INK = Color(0x0F, 0x3D, 0x4C)
+        private val HEADER = Color(0x1C, 0x6E, 0x7D)
+        private val TINT = Color(0xE6, 0xF0, 0xF2)
+        private val AMBER = Color(0xC9, 0x8A, 0x1B)
+        private val FAIL = Color(0xB3, 0x26, 0x1E)
+        private val MUTED = Color(0x55, 0x70, 0x7A)
+        private val LINE = Color(0x9D, 0xB4, 0xBB)
     }
 }

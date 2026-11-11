@@ -19,7 +19,17 @@ Aligné sur `docs/01-analyse-bulletins.md` § 3 (Z1–Z10).
 | Z5–Z9 | Bande basse 5 blocs : résultat, rappels trim., profil classe, travail, conduite |
 | Z10 | Visas parent / conseil / chef ; disclaimer école ; code 13 chiffres ; horodatage |
 
+## Palette (spec design KOBE)
+| Rôle | Hex |
+|---|---|
+| Titres / texte fort | `#0F3D4C` |
+| En-tête tableau | `#1C6E7D` |
+| Lignes de groupe / titres de cadres | `#E6F0F2` |
+| Pastille mention générale | `#C98A1B` |
+| Notes &lt; seuil (passMark) | `#B3261E` |
+| Secondaire | `#55707A` / `#9DB4BB` |
+
 ## Contraintes
-- Une seule page A4 portrait ; ajuster police `minFontSizePt`–`maxFontSizePt`
-- Aucune marque tierce / USSD
-- Notes en noir (Q-15 non tranché)
+- Une seule page A4 portrait ; marges 8 mm ; ajuster police `minFontSizePt`–`maxFontSizePt` (plancher lecture 5,2 pt)
+- Pied : « Développé par KOBE Corporation » uniquement (pas de marque tierce / USSD)
+- Notes sous le seuil de validation (`GradingScheme.passMark`) en rouge discret
