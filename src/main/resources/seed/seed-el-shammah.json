@@ -1,0 +1,5167 @@
+{
+  "_meta": {
+    "title": "Seed El Shammah — sections francophone et anglophone — structure académique (sans élèves, notes ni enseignants)",
+    "generatedFrom": "13 bulletins 2025-2026 : francophones (6IEME, 5IEME, 4IEME ALL, 4IEME ESP, 3IEME ALL, 2NDE ALL, 2NDE ESP, 2NDE C), anglophones (FORM 1 trimestre 1, FORM 2, FORM 3, FORM 4 ARTS, FORM 4 SC) + en-tête de l'emploi du temps 2026-2027",
+    "format": "Un tableau par collection MongoDB. Pas d'identifiants : les références sont symboliques et un chargeur doit les résoudre en ObjectId (voir 'references').",
+    "references": {
+      "schoolCode": "academic_schools.code",
+      "academicYearLabel": "academic_years.label",
+      "levelCode": "academic_levels.code",
+      "groupCode": "academic_subject_groups.code",
+      "subjectCode": "academic_subjects.code",
+      "className": "academic_classes.name (unique par année)",
+      "sequences": "grading_sessions.number"
+    },
+    "conventions": [
+      "Les champs BigDecimal sont écrits en chaînes décimales.",
+      "Un champ « _confirm » signale une valeur déduite ou approximative à valider avec l'école ; un chargeur peut l'ignorer mais ne doit pas l'effacer.",
+      "Les noms anglais (name.en) sont des PROPOSITIONS sauf indication contraire : les bulletins francophones n'impriment que le français.",
+      "coefficient = null : coefficient inconnu (voir _openQuestions) ; le chargeur doit refuser ou demander la valeur, jamais mettre 0.",
+      "Aucune donnée d'élève, de note ou d'enseignant dans ce fichier (règle 12 d'AGENTS.md)."
+    ],
+    "version": 2,
+    "supersedes": "seed-el-shammah-francophone.json (même clés naturelles : le chargeur met à jour les documents existants, il ne les duplique pas)"
+  },
+  "academic_schools": [
+    {
+      "code": "ELSHAMMAH",
+      "name": {
+        "fr": "COLLÈGE BILINGUE EL SHAMMAH",
+        "en": "EL SHAMMAH BILINGUAL COLLEGE"
+      },
+      "shortName": "El Shammah",
+      "officialHeaders": [
+        {
+          "cycles": [
+            "SECONDAIRE_1ER_CYCLE",
+            "SECONDAIRE_2ND_CYCLE"
+          ],
+          "republic": {
+            "fr": "RÉPUBLIQUE DU CAMEROUN",
+            "en": "REPUBLIC OF CAMEROON"
+          },
+          "motto": {
+            "fr": "Paix - Travail - Patrie",
+            "en": "Peace - Work - Fatherland"
+          },
+          "ministry": {
+            "fr": "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES",
+            "en": "MINISTRY OF SECONDARY EDUCATION"
+          },
+          "regionalDelegation": {
+            "fr": "DÉLÉGATION RÉGIONALE DU CENTRE",
+            "en": "REGIONAL DELEGATION OF THE CENTER"
+          },
+          "divisionalDelegation": {
+            "fr": "DÉLÉGATION DÉPARTEMENTALE DU MFOUNDI",
+            "en": "DIVISIONAL DELEGATION OF MFOUNDI"
+          }
+        }
+      ],
+      "contact": {
+        "phones": [
+          "690408433",
+          "676595725",
+          "656434258"
+        ],
+        "email": "contact@elshammahschool.com",
+        "address": "Nkolndongo",
+        "city": "Yaoundé",
+        "_confirm": "Les numéros diffèrent selon les documents : emploi du temps 2026-2027 = (+237) 675 86 85 79 / 670 19 49 02 ; fiche de report = 675 86 85 79 / 656 43 42 58 ; l'e-mail est coupé sur l'emploi du temps (lu en entier sur la photo de la fiche)."
+      },
+      "postalBox": "YDE",
+      "signaturePlace": "YAOUNDÉ",
+      "headTitle": {
+        "fr": "LE PRINCIPAL",
+        "en": "THE PRINCIPAL"
+      },
+      "reportCardNotice": null,
+      "reportCardDisclaimer": {
+        "fr": "Le bulletin est délivré sans rature ni surcharge.",
+        "en": "This report card is issued without erasure or alteration."
+      },
+      "timezone": "Africa/Douala",
+      "active": true,
+      "_extra": {
+        "registrationNumber": "5LI2GSAD114132125",
+        "_confirm": "Numéro d'immatriculation imprimé sur l'emploi du temps (la photo de la fiche se lit « SL12... ») ; le modèle School n'a pas encore ce champ (Q-45).",
+        "postalBoxNote": "Les bulletins impriment « B.P : YDE » sans numéro.",
+        "nameVariant": "Le bulletin de trimestre Form 1 imprime « COLLEGE BILINGUE INTERNATIONAL EL SHAMMAH » / « EL SHAMMAH INTERNATIONAL BILINGUAL » (nom coupé) alors que les bulletins annuels impriment « COLLEGE BILINGUE EL SHAMMAH » (Q-49)."
+      }
+    }
+  ],
+  "academic_years": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "label": "2025-2026",
+      "startDate": "2025-09-01",
+      "endDate": "2026-06-30",
+      "current": false,
+      "status": "CLOSED",
+      "terms": [
+        {
+          "number": 1,
+          "name": {
+            "fr": "Trimestre 1",
+            "en": "Term 1"
+          },
+          "startDate": "2025-09-01",
+          "endDate": "2025-12-19"
+        },
+        {
+          "number": 2,
+          "name": {
+            "fr": "Trimestre 2",
+            "en": "Term 2"
+          },
+          "startDate": "2026-01-05",
+          "endDate": "2026-03-27"
+        },
+        {
+          "number": 3,
+          "name": {
+            "fr": "Trimestre 3",
+            "en": "Term 3"
+          },
+          "startDate": "2026-03-30",
+          "endDate": "2026-06-30"
+        }
+      ],
+      "_confirm": "Dates approximatives (non imprimées sur les bulletins) : à remplacer par le calendrier réel de l'école (Q-46)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "label": "2026-2027",
+      "startDate": "2026-09-07",
+      "endDate": "2027-06-30",
+      "current": true,
+      "status": "ACTIVE",
+      "terms": [
+        {
+          "number": 1,
+          "name": {
+            "fr": "Trimestre 1",
+            "en": "Term 1"
+          },
+          "startDate": "2026-09-07",
+          "endDate": "2026-12-18"
+        },
+        {
+          "number": 2,
+          "name": {
+            "fr": "Trimestre 2",
+            "en": "Term 2"
+          },
+          "startDate": "2027-01-04",
+          "endDate": "2027-03-26"
+        },
+        {
+          "number": 3,
+          "name": {
+            "fr": "Trimestre 3",
+            "en": "Term 3"
+          },
+          "startDate": "2027-03-29",
+          "endDate": "2027-06-30"
+        }
+      ],
+      "_confirm": "Dates approximatives : Q-46."
+    }
+  ],
+  "academic_levels": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "6EME",
+      "name": {
+        "fr": "6ème",
+        "en": "6ème"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 1,
+      "equivalenceIndex": 1,
+      "nextLevelCode": "5EME",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "5EME",
+      "name": {
+        "fr": "5ème",
+        "en": "5ème"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 2,
+      "equivalenceIndex": 2,
+      "nextLevelCode": "4EME",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "4EME",
+      "name": {
+        "fr": "4ème",
+        "en": "4ème"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 3,
+      "equivalenceIndex": 3,
+      "nextLevelCode": "3EME",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "3EME",
+      "name": {
+        "fr": "3ème",
+        "en": "3ème"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 4,
+      "equivalenceIndex": 4,
+      "nextLevelCode": "2NDE",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "2NDE",
+      "name": {
+        "fr": "2nde",
+        "en": "2nde"
+      },
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 5,
+      "equivalenceIndex": 5,
+      "nextLevelCode": "1ERE",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "1ERE",
+      "name": {
+        "fr": "1ère",
+        "en": "1ère"
+      },
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 6,
+      "equivalenceIndex": 6,
+      "nextLevelCode": "TLE",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "TLE",
+      "name": {
+        "fr": "Terminale",
+        "en": "Terminale"
+      },
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "section": "FRANCOPHONE",
+      "order": 7,
+      "equivalenceIndex": 7,
+      "nextLevelCode": null,
+      "active": false,
+      "_confirm": "Niveau non vu (ni bulletin ni emploi du temps) : à activer si l'école le propose (Q-48)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FORM1",
+      "name": {
+        "fr": "Form 1",
+        "en": "Form 1"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 1,
+      "equivalenceIndex": 1,
+      "nextLevelCode": "FORM2",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FORM2",
+      "name": {
+        "fr": "Form 2",
+        "en": "Form 2"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 2,
+      "equivalenceIndex": 2,
+      "nextLevelCode": "FORM3",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FORM3",
+      "name": {
+        "fr": "Form 3",
+        "en": "Form 3"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 3,
+      "equivalenceIndex": 3,
+      "nextLevelCode": "FORM4",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FORM4",
+      "name": {
+        "fr": "Form 4",
+        "en": "Form 4"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 4,
+      "equivalenceIndex": 4,
+      "nextLevelCode": "FORM5",
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FORM5",
+      "name": {
+        "fr": "Form 5",
+        "en": "Form 5"
+      },
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 5,
+      "equivalenceIndex": 5,
+      "nextLevelCode": "LOWER6",
+      "active": false,
+      "_confirm": "Niveau non vu (ni bulletin ni emploi du temps) : à activer si l'école le propose (Q-48)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "LOWER6",
+      "name": {
+        "fr": "Lower Sixth",
+        "en": "Lower Sixth"
+      },
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 6,
+      "equivalenceIndex": 6,
+      "nextLevelCode": "UPPER6",
+      "active": false,
+      "_confirm": "Niveau non vu (ni bulletin ni emploi du temps) : à activer si l'école le propose (Q-48)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "UPPER6",
+      "name": {
+        "fr": "Upper Sixth",
+        "en": "Upper Sixth"
+      },
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "section": "ANGLOPHONE",
+      "order": 7,
+      "equivalenceIndex": 7,
+      "nextLevelCode": null,
+      "active": false,
+      "_confirm": "Niveau non vu (ni bulletin ni emploi du temps) : à activer si l'école le propose (Q-48)."
+    }
+  ],
+  "academic_subject_groups": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "LANG_LIT",
+      "name": {
+        "fr": "LANGUES ET LITTÉRATURES",
+        "en": "LANGUAGE AND LITERATURE"
+      },
+      "displayOrder": 1,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "HUM_SOC",
+      "name": {
+        "fr": "SCIENCES HUMAINES ET SOCIALES",
+        "en": "HUMAN AND SOCIAL SCIENCES"
+      },
+      "displayOrder": 2,
+      "active": true,
+      "_confirm": "Libellé français proposé (groupe imprimé en anglais uniquement)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "SCI_TECH",
+      "name": {
+        "fr": "SCIENCES ET TECHNOLOGIE",
+        "en": "SCIENCE AND TECHNOLOGY"
+      },
+      "displayOrder": 3,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "DEV_PERS",
+      "name": {
+        "fr": "DÉVELOPPEMENT PERSONNEL",
+        "en": "PERSONAL DEVELOPMENT"
+      },
+      "displayOrder": 4,
+      "active": true,
+      "_confirm": "Libellé anglais proposé (non imprimé sur les bulletins francophones). Contient EPS, Aptitude de vie, Travail manuel comme VOC (« VOCATIONAL STUDIES ») sur les bulletins anglophones : même groupe sous deux noms ? (Q-43)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "VOC",
+      "name": {
+        "fr": "ÉTUDES PROFESSIONNELLES",
+        "en": "VOCATIONAL STUDIES"
+      },
+      "displayOrder": 5,
+      "active": true,
+      "_confirm": "Libellé français proposé (groupe imprimé en anglais uniquement)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ARTS_NC",
+      "name": {
+        "fr": "ARTS ET CULTURE NATIONALE",
+        "en": "ARTS AND NATIONAL CULTURE"
+      },
+      "displayOrder": 6,
+      "active": true,
+      "_confirm": "Libellé imprimé en anglais (« ARTS AND NATIONAL CULTURE ») même sur les bulletins français ; le libellé français est une proposition."
+    }
+  ],
+  "academic_subjects": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ANG",
+      "name": {
+        "fr": "ANGLAIS",
+        "en": "ENGLISH LANGUAGE"
+      },
+      "shortName": null,
+      "timetableAlias": "ANGLAIS",
+      "kind": "ACADEMIC",
+      "teachingLanguage": "EN",
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "EXP_ECR",
+      "name": {
+        "fr": "EXPRESSION ÉCRITE",
+        "en": "WRITTEN EXPRESSION"
+      },
+      "shortName": null,
+      "timetableAlias": "EXP. ÉCRITE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "EXP_ORA",
+      "name": {
+        "fr": "EXPRESSION ORALE",
+        "en": "ORAL EXPRESSION"
+      },
+      "shortName": null,
+      "timetableAlias": "EXP. ORALE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "CORR_ORTH",
+      "name": {
+        "fr": "CORRECTION ORTHOGRAPHIQUE",
+        "en": "SPELLING CORRECTION"
+      },
+      "shortName": null,
+      "timetableAlias": "CORR. ORTH.",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ETUDE_TXT",
+      "name": {
+        "fr": "ÉTUDE DE TEXTE",
+        "en": "TEXT STUDY"
+      },
+      "shortName": null,
+      "timetableAlias": "ÉTUDE DE TEXTE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "LITT",
+      "name": {
+        "fr": "LITTÉRATURE",
+        "en": "LITERATURE"
+      },
+      "shortName": null,
+      "timetableAlias": "LITTÉRATURE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "LANG_FR",
+      "name": {
+        "fr": "LANGUE FRANÇAISE",
+        "en": "FRENCH LANGUAGE"
+      },
+      "shortName": null,
+      "timetableAlias": "FRANÇAIS",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ALL",
+      "name": {
+        "fr": "ALLEMAND",
+        "en": "GERMAN"
+      },
+      "shortName": null,
+      "timetableAlias": "ALLEMAND",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ESP",
+      "name": {
+        "fr": "ESPAGNOL",
+        "en": "SPANISH"
+      },
+      "shortName": null,
+      "timetableAlias": "ESP",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "LCN",
+      "name": {
+        "fr": "LANGUES ET CULTURES NATIONALES",
+        "en": "NATIONAL LANGUAGE AND CULTURE"
+      },
+      "shortName": null,
+      "timetableAlias": "LCN",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Imprimé « LANGUE ET CULTURE NATIONAL » sur le bulletin 4IEME ESP ; « NATIONAL LANGUAGE AND CULTURE » en Form 2 (tronqué « NATIONAL LANGUAGE AND » en Form 1)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "PHILO",
+      "name": {
+        "fr": "PHILOSOPHIE",
+        "en": "PHILOSOPHY"
+      },
+      "shortName": null,
+      "timetableAlias": "PHILOSOPHIE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ECM",
+      "name": {
+        "fr": "ÉDUCATION À LA CITOYENNETÉ ET À LA MORALE",
+        "en": "CITIZENSHIP EDUCATION"
+      },
+      "shortName": null,
+      "timetableAlias": "ECM",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Libellé imprimé tronqué : « EDUCATION A LA CITOYENNE ET A LA » ; forme complète déduite (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "GEO",
+      "name": {
+        "fr": "GÉOGRAPHIE",
+        "en": "GEOGRAPHY"
+      },
+      "shortName": null,
+      "timetableAlias": "GÉOGRAPHIE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "HIST",
+      "name": {
+        "fr": "HISTOIRE",
+        "en": "HISTORY"
+      },
+      "shortName": null,
+      "timetableAlias": "HISTOIRE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "INFO",
+      "name": {
+        "fr": "INFORMATIQUE",
+        "en": "COMPUTER SCIENCE"
+      },
+      "shortName": null,
+      "timetableAlias": "INFORMATIQUE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "MATH",
+      "name": {
+        "fr": "MATHÉMATIQUES",
+        "en": "MATHEMATICS"
+      },
+      "shortName": null,
+      "timetableAlias": "MATHS",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "PCT",
+      "name": {
+        "fr": "PHYSIQUE-CHIMIE-TECHNOLOGIE",
+        "en": "PHYSICS-CHEMISTRY-TECHNOLOGY"
+      },
+      "shortName": null,
+      "timetableAlias": "PCT",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "PHYS",
+      "name": {
+        "fr": "PHYSIQUE",
+        "en": "PHYSICS"
+      },
+      "shortName": null,
+      "timetableAlias": "PHYSIQUE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "CHIM",
+      "name": {
+        "fr": "CHIMIE",
+        "en": "CHEMISTRY"
+      },
+      "shortName": null,
+      "timetableAlias": "CHIMIE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "SCIENCES",
+      "name": {
+        "fr": "SCIENCES",
+        "en": "SCIENCES"
+      },
+      "shortName": null,
+      "timetableAlias": "SCIENCES",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED",
+      "_confirm": "Matière « SCIENCES » imprimée sans précision (SVT ? sciences intégrées ?) : Q-44."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "SVTEEHB",
+      "name": {
+        "fr": "SVTEEHB",
+        "en": "SVTEEHB"
+      },
+      "shortName": null,
+      "timetableAlias": "SVTEEHB",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED",
+      "_confirm": "Sigle seul sur les bulletins ; développement probable : Sciences de la Vie et de la Terre, Éducation à l'Environnement, à l'Hygiène et à la Biotechnologie (Q-30, Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ESF",
+      "name": {
+        "fr": "ÉCONOMIE SOCIALE ET FAMILIALE",
+        "en": "HOME ECONOMICS"
+      },
+      "shortName": null,
+      "timetableAlias": "ESF",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "EPS",
+      "name": {
+        "fr": "ÉDUCATION PHYSIQUE ET SPORTIVE",
+        "en": "SPORTS AND PHYSICAL EDUCATION"
+      },
+      "shortName": null,
+      "timetableAlias": "EPS",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "AV",
+      "name": {
+        "fr": "APTITUDE DE VIE",
+        "en": "LIFE APTITUDE"
+      },
+      "shortName": null,
+      "timetableAlias": "APT. DE VIE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "TM",
+      "name": {
+        "fr": "TRAVAIL MANUEL",
+        "en": "MANUAL LABOUR"
+      },
+      "shortName": null,
+      "timetableAlias": "TM",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "EDU_ART",
+      "name": {
+        "fr": "ÉDUCATION ARTISTIQUE",
+        "en": "ARTS EDUCATION"
+      },
+      "shortName": null,
+      "timetableAlias": "ÉDUC. ART",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PROPOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ENG_LANG",
+      "name": {
+        "fr": "LANGUE ANGLAISE",
+        "en": "ENGLISH LANGUAGE"
+      },
+      "shortName": null,
+      "timetableAlias": "ENGLISH",
+      "kind": "ACADEMIC",
+      "teachingLanguage": "EN",
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "« ENGLISH LANGUAGE » des classes anglophones : distincte de ANG (« ANGLAIS » francophone). Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ENG_LIT",
+      "name": {
+        "fr": "LITTÉRATURE ANGLAISE",
+        "en": "LITERATURE IN ENGLISH"
+      },
+      "shortName": null,
+      "timetableAlias": "LITERATURE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": "EN",
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FRENCH",
+      "name": {
+        "fr": "FRANÇAIS (LANGUE SECONDE)",
+        "en": "FRENCH"
+      },
+      "shortName": null,
+      "timetableAlias": "FRENCH",
+      "kind": "ACADEMIC",
+      "teachingLanguage": "FR",
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Matière « FRENCH » des classes anglophones (français langue seconde) : distincte de LANG_FR (francophone). Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ECON",
+      "name": {
+        "fr": "ÉCONOMIE",
+        "en": "ECONOMICS"
+      },
+      "shortName": null,
+      "timetableAlias": "ECONOMICS",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "COMMERCE",
+      "name": {
+        "fr": "COMMERCE",
+        "en": "COMMERCE"
+      },
+      "shortName": null,
+      "timetableAlias": "COMMERCE",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "LOGIC",
+      "name": {
+        "fr": "LOGIQUE",
+        "en": "LOGIC"
+      },
+      "shortName": null,
+      "timetableAlias": "LOGIC",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FOOD_NUTR",
+      "name": {
+        "fr": "ALIMENTATION ET NUTRITION",
+        "en": "FOOD AND NUTRITION"
+      },
+      "shortName": null,
+      "timetableAlias": "FOOD & NUTRITION",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé ; matière de Form 3 uniquement (HOME ECONOMICS dans les autres classes : même matière ? Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "BIO",
+      "name": {
+        "fr": "BIOLOGIE",
+        "en": "BIOLOGY"
+      },
+      "shortName": null,
+      "timetableAlias": "BIOLOGY",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ADD_MATH",
+      "name": {
+        "fr": "MATHÉMATIQUES COMPLÉMENTAIRES",
+        "en": "ADDITIONAL MATHS"
+      },
+      "shortName": null,
+      "timetableAlias": "ADD. MATHS",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "HUM_BIO",
+      "name": {
+        "fr": "BIOLOGIE HUMAINE",
+        "en": "HUMAN BIOLOGY"
+      },
+      "shortName": null,
+      "timetableAlias": "HUMAN BIOLOGY",
+      "kind": "ACADEMIC",
+      "teachingLanguage": null,
+      "active": true,
+      "_enNameSource": "PRINTED",
+      "_confirm": "Nom français proposé (Q-44)."
+    }
+  ],
+  "grading_schemes": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "FR_SECONDARY",
+      "name": {
+        "fr": "Barème secondaire francophone",
+        "en": "Francophone secondary grading scheme"
+      },
+      "cycles": [
+        "SECONDAIRE_1ER_CYCLE",
+        "SECONDAIRE_2ND_CYCLE"
+      ],
+      "sections": [
+        "FRANCOPHONE"
+      ],
+      "maxScore": "20",
+      "passMark": "10",
+      "classSuccessThreshold": "12",
+      "decimals": 2,
+      "roundingPolicy": "HALF_UP",
+      "roundTermSubjectAverages": true,
+      "missingMarkPolicy": "IGNORE",
+      "absencePolicy": "EXCLUDE",
+      "rankingPolicy": "COMPETITION",
+      "rankingEligibility": "HAS_AVERAGE",
+      "annualAveragePolicy": "WEIGHTED_TOTAL",
+      "subjectYearAveragePolicy": "MEAN_OF_TERM_AVERAGES",
+      "appreciationScales": [
+        {
+          "code": "LETTER",
+          "bands": [
+            {
+              "code": "C",
+              "label": null,
+              "minInclusive": "0",
+              "maxExclusive": "12"
+            },
+            {
+              "code": "B",
+              "label": null,
+              "minInclusive": "12",
+              "maxExclusive": "14"
+            },
+            {
+              "code": "B+",
+              "label": null,
+              "minInclusive": "14",
+              "maxExclusive": "16"
+            },
+            {
+              "code": "A",
+              "label": null,
+              "minInclusive": "16",
+              "maxExclusive": null
+            }
+          ]
+        },
+        {
+          "code": "COMPETENCY",
+          "bands": [
+            {
+              "code": "NA",
+              "label": {
+                "fr": "Non acquis",
+                "en": "Not acquired"
+              },
+              "minInclusive": "0",
+              "maxExclusive": "10"
+            },
+            {
+              "code": "ECA",
+              "label": {
+                "fr": "En cours d'acquisition",
+                "en": "In course of acquisition"
+              },
+              "minInclusive": "10",
+              "maxExclusive": "14"
+            },
+            {
+              "code": "A",
+              "label": {
+                "fr": "Acquis",
+                "en": "Acquired"
+              },
+              "minInclusive": "14",
+              "maxExclusive": null
+            }
+          ]
+        }
+      ],
+      "overallMentionBands": [
+        {
+          "code": "TRAVAIL_INSUFFISANT",
+          "label": {
+            "fr": "TRAVAIL INSUFFISANT",
+            "en": "WEAK WORK"
+          },
+          "minInclusive": "0",
+          "maxExclusive": "9"
+        },
+        {
+          "code": "TRAVAIL_MEDIOCRE",
+          "label": {
+            "fr": "TRAVAIL MÉDIOCRE",
+            "en": "VERY WEAK WORK"
+          },
+          "minInclusive": "9",
+          "maxExclusive": "10"
+        },
+        {
+          "code": "TRAVAIL_PASSABLE",
+          "label": {
+            "fr": "TRAVAIL PASSABLE",
+            "en": "FAIR"
+          },
+          "minInclusive": "10",
+          "maxExclusive": "12"
+        },
+        {
+          "code": "ASSEZ_BON_TRAVAIL",
+          "label": {
+            "fr": "ASSEZ BON TRAVAIL",
+            "en": "FAIRLY GOOD WORK"
+          },
+          "minInclusive": "12",
+          "maxExclusive": "14"
+        },
+        {
+          "code": "BON_TRAVAIL",
+          "label": {
+            "fr": "BON TRAVAIL",
+            "en": "GOOD WORK"
+          },
+          "minInclusive": "14",
+          "maxExclusive": "16"
+        },
+        {
+          "code": "TRES_BON_TRAVAIL",
+          "label": {
+            "fr": "TRÈS BON TRAVAIL",
+            "en": "VERY GOOD WORK"
+          },
+          "minInclusive": "16",
+          "maxExclusive": "18"
+        },
+        {
+          "code": "EXCELLENT_TRAVAIL",
+          "label": {
+            "fr": "EXCELLENT TRAVAIL",
+            "en": "EXCELLENT WORK"
+          },
+          "minInclusive": "18",
+          "maxExclusive": null
+        }
+      ],
+      "honourRollMinAverage": "12",
+      "honourRollBlockedBySanction": true,
+      "effortSubjectThreshold": "8",
+      "distinctionRules": [],
+      "active": true,
+      "_confirm": "Confirmé par les 8 bulletins : A >= 16, B+ >= 14, B >= 12, C en dessous ; validation 10 ; profil de classe 12. Mentions : 8,39 et 8,81 = INSUFFISANT, 9,54 et 9,62 = MÉDIOCRE, 10,70 / 10,87 / 11,97 = PASSABLE, 12,30 = ASSEZ BON → bornes 9, 10 et 12 cohérentes ; libellés anglais et mentions >= 14 = propositions (Q-09). Les libellés anglais PASSABLE = FAIR, MÉDIOCRE = VERY WEAK WORK (9,65) et INSUFFISANT = WEAK WORK (7,42) sont désormais observés sur les bulletins anglophones, mais l'ordre est surprenant (Q-50)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "EN_SECONDARY",
+      "name": {
+        "fr": "Barème secondaire anglophone",
+        "en": "Anglophone secondary grading scheme"
+      },
+      "cycles": [
+        "SECONDAIRE_1ER_CYCLE",
+        "SECONDAIRE_2ND_CYCLE"
+      ],
+      "sections": [
+        "ANGLOPHONE"
+      ],
+      "maxScore": "20",
+      "passMark": "10",
+      "classSuccessThreshold": "12",
+      "decimals": 2,
+      "roundingPolicy": "HALF_UP",
+      "roundTermSubjectAverages": true,
+      "missingMarkPolicy": "IGNORE",
+      "absencePolicy": "EXCLUDE",
+      "rankingPolicy": "COMPETITION",
+      "rankingEligibility": "HAS_AVERAGE",
+      "annualAveragePolicy": "WEIGHTED_TOTAL",
+      "subjectYearAveragePolicy": "MEAN_OF_TERM_AVERAGES",
+      "appreciationScales": [
+        {
+          "code": "LETTER",
+          "bands": [
+            {
+              "code": "C",
+              "label": null,
+              "minInclusive": "0",
+              "maxExclusive": "12"
+            },
+            {
+              "code": "B",
+              "label": null,
+              "minInclusive": "12",
+              "maxExclusive": "14"
+            },
+            {
+              "code": "B+",
+              "label": null,
+              "minInclusive": "14",
+              "maxExclusive": "16"
+            },
+            {
+              "code": "A",
+              "label": null,
+              "minInclusive": "16",
+              "maxExclusive": null
+            }
+          ]
+        },
+        {
+          "code": "COMPETENCY",
+          "bands": [
+            {
+              "code": "NA",
+              "label": {
+                "fr": "Non acquis",
+                "en": "Not acquired"
+              },
+              "minInclusive": "0",
+              "maxExclusive": "10"
+            },
+            {
+              "code": "ECA",
+              "label": {
+                "fr": "En cours d'acquisition",
+                "en": "In course of acquisition"
+              },
+              "minInclusive": "10",
+              "maxExclusive": "14"
+            },
+            {
+              "code": "A",
+              "label": {
+                "fr": "Acquis",
+                "en": "Acquired"
+              },
+              "minInclusive": "14",
+              "maxExclusive": null
+            }
+          ]
+        }
+      ],
+      "overallMentionBands": [
+        {
+          "code": "TRAVAIL_INSUFFISANT",
+          "label": {
+            "fr": "TRAVAIL INSUFFISANT",
+            "en": "WEAK WORK"
+          },
+          "minInclusive": "0",
+          "maxExclusive": "9"
+        },
+        {
+          "code": "TRAVAIL_MEDIOCRE",
+          "label": {
+            "fr": "TRAVAIL MÉDIOCRE",
+            "en": "VERY WEAK WORK"
+          },
+          "minInclusive": "9",
+          "maxExclusive": "10"
+        },
+        {
+          "code": "TRAVAIL_PASSABLE",
+          "label": {
+            "fr": "TRAVAIL PASSABLE",
+            "en": "FAIR"
+          },
+          "minInclusive": "10",
+          "maxExclusive": "12"
+        },
+        {
+          "code": "ASSEZ_BON_TRAVAIL",
+          "label": {
+            "fr": "ASSEZ BON TRAVAIL",
+            "en": "FAIRLY GOOD WORK"
+          },
+          "minInclusive": "12",
+          "maxExclusive": "14"
+        },
+        {
+          "code": "BON_TRAVAIL",
+          "label": {
+            "fr": "BON TRAVAIL",
+            "en": "GOOD WORK"
+          },
+          "minInclusive": "14",
+          "maxExclusive": "16"
+        },
+        {
+          "code": "TRES_BON_TRAVAIL",
+          "label": {
+            "fr": "TRÈS BON TRAVAIL",
+            "en": "VERY GOOD WORK"
+          },
+          "minInclusive": "16",
+          "maxExclusive": "18"
+        },
+        {
+          "code": "EXCELLENT_TRAVAIL",
+          "label": {
+            "fr": "EXCELLENT TRAVAIL",
+            "en": "EXCELLENT WORK"
+          },
+          "minInclusive": "18",
+          "maxExclusive": null
+        }
+      ],
+      "honourRollMinAverage": "12",
+      "honourRollBlockedBySanction": true,
+      "effortSubjectThreshold": "8",
+      "distinctionRules": [],
+      "active": true,
+      "_confirm": "Mêmes valeurs que FR_SECONDARY (échelle de lettres confirmée par les annuels Form 2, 3, 4 : 13,08 = B ; 15,00 = B+ ; 16,00 = A ; compétences : 17,25 = A, 16,5 = A, 8,5 = N.A) ; fusionnables si l'école confirme que les deux sections suivent le même barème (Q-51). Mentions anglaises observées : 7,42 = WEAK WORK ; 9,65 = VERY WEAK WORK ; 11,65 et 11,67 = FAIR (Q-50)."
+    }
+  ],
+  "reporting_templates": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "ANNUAL_STANDARD",
+      "name": {
+        "fr": "Bulletin annuel de notes",
+        "en": "Annual report card"
+      },
+      "periodType": "ANNUAL",
+      "cycles": [
+        "SECONDAIRE_1ER_CYCLE",
+        "SECONDAIRE_2ND_CYCLE"
+      ],
+      "sections": [
+        "FRANCOPHONE",
+        "ANGLOPHONE"
+      ],
+      "levelCodes": [
+        "6EME",
+        "5EME",
+        "4EME",
+        "3EME",
+        "2NDE",
+        "1ERE",
+        "FORM1",
+        "FORM2",
+        "FORM3",
+        "FORM4"
+      ],
+      "languages": [
+        "FR",
+        "EN"
+      ],
+      "page": "A4_PORTRAIT",
+      "sequenceColumns": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "appreciationScaleCode": "LETTER",
+      "showCompetency": false,
+      "showSubjectRank": false,
+      "showSubjectClassAverage": false,
+      "showSubjectPassedCount": false,
+      "showGroupTotals": true,
+      "showTermRecap": true,
+      "showClassProfile": true,
+      "showEffortSubjects": false,
+      "showTotalPointsOverMax": false,
+      "classProfileThreshold": "12",
+      "legend": null,
+      "minFontSizePt": 5.2,
+      "maxFontSizePt": 7.4,
+      "active": true,
+      "_confirm": "Gabarit annuel observé sur 12 bulletins (francophones et anglophones) ; l'annuel anglophone ajoute « PASSED IN n SUBJECTS » (le modèle n'a pas encore d'interrupteur pour cette ligne : Q-52)."
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "code": "TERM_COMPETENCY",
+      "name": {
+        "fr": "Bulletin de trimestre par compétences",
+        "en": "Term report card (competency-based)"
+      },
+      "periodType": "TERM",
+      "cycles": [
+        "SECONDAIRE_1ER_CYCLE"
+      ],
+      "sections": [
+        "ANGLOPHONE"
+      ],
+      "levelCodes": [
+        "FORM1"
+      ],
+      "languages": [
+        "EN",
+        "FR"
+      ],
+      "page": "A4_PORTRAIT",
+      "sequenceColumns": [
+        1,
+        2
+      ],
+      "appreciationScaleCode": "COMPETENCY",
+      "showCompetency": true,
+      "showSubjectRank": true,
+      "showSubjectClassAverage": true,
+      "showSubjectPassedCount": true,
+      "showGroupTotals": true,
+      "showTermRecap": true,
+      "showClassProfile": true,
+      "showEffortSubjects": true,
+      "showTotalPointsOverMax": true,
+      "classProfileThreshold": "10",
+      "legend": {
+        "fr": "Légende : NA = non acquis, ECA = en cours d'acquisition, A = acquis, A+ = parfaitement acquis",
+        "en": "Legend: NA = not acquired, ECA = in course of acquisition, A = acquired, A+ = perfectly acquired"
+      },
+      "minFontSizePt": 5.2,
+      "maxFontSizePt": 7.4,
+      "active": true,
+      "_confirm": "Observé uniquement en Form 1, trimestre 1 : on ne sait pas si les autres niveaux ni les trimestres 2 et 3 utilisent ce gabarit (Q-26, Q-53). Seuil du profil de classe = 10 ; seuil « à améliorer » = 8 (Q-28)."
+    }
+  ],
+  "grading_sessions": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "number": 1,
+      "termNumber": 1,
+      "shortLabel": "DEV1",
+      "name": {
+        "fr": "Séquence 1",
+        "en": "Sequence 1"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "CLOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "number": 2,
+      "termNumber": 1,
+      "shortLabel": "DEV2",
+      "name": {
+        "fr": "Séquence 2",
+        "en": "Sequence 2"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "CLOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "number": 3,
+      "termNumber": 2,
+      "shortLabel": "DEV3",
+      "name": {
+        "fr": "Séquence 3",
+        "en": "Sequence 3"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "CLOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "number": 4,
+      "termNumber": 2,
+      "shortLabel": "DEV4",
+      "name": {
+        "fr": "Séquence 4",
+        "en": "Sequence 4"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "CLOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "number": 5,
+      "termNumber": 3,
+      "shortLabel": "DEV5",
+      "name": {
+        "fr": "Séquence 5",
+        "en": "Sequence 5"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "CLOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "number": 6,
+      "termNumber": 3,
+      "shortLabel": "DEV6",
+      "name": {
+        "fr": "Séquence 6",
+        "en": "Sequence 6"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "CLOSED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2026-2027",
+      "number": 1,
+      "termNumber": 1,
+      "shortLabel": "DEV1",
+      "name": {
+        "fr": "Séquence 1",
+        "en": "Sequence 1"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "PLANNED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2026-2027",
+      "number": 2,
+      "termNumber": 1,
+      "shortLabel": "DEV2",
+      "name": {
+        "fr": "Séquence 2",
+        "en": "Sequence 2"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "PLANNED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2026-2027",
+      "number": 3,
+      "termNumber": 2,
+      "shortLabel": "DEV3",
+      "name": {
+        "fr": "Séquence 3",
+        "en": "Sequence 3"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "PLANNED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2026-2027",
+      "number": 4,
+      "termNumber": 2,
+      "shortLabel": "DEV4",
+      "name": {
+        "fr": "Séquence 4",
+        "en": "Sequence 4"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "PLANNED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2026-2027",
+      "number": 5,
+      "termNumber": 3,
+      "shortLabel": "DEV5",
+      "name": {
+        "fr": "Séquence 5",
+        "en": "Sequence 5"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "PLANNED"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2026-2027",
+      "number": 6,
+      "termNumber": 3,
+      "shortLabel": "DEV6",
+      "name": {
+        "fr": "Séquence 6",
+        "en": "Sequence 6"
+      },
+      "startDate": null,
+      "endDate": null,
+      "entryDeadline": null,
+      "status": "PLANNED"
+    }
+  ],
+  "academic_classes": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "6EME",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "6ème",
+      "printedName": "6IEME",
+      "trackCode": null,
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 6IEME"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "5EME",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "5ème",
+      "printedName": "5IEME",
+      "trackCode": null,
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 5IEME"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "4EME",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "4ème ALL",
+      "printedName": "4IEME ALL",
+      "trackCode": "ALL",
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 4IEME ALL"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "4EME",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "4ème ESP",
+      "printedName": "4IEME ESP",
+      "trackCode": "ESP",
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 4IEME ESP (aucune note d'espagnol ni de LCN sur l'exemplaire)"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "3EME",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "3ème ALL",
+      "printedName": "3IEME ALL",
+      "trackCode": "ALL",
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 3IEME ALL"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "2NDE",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "name": "2nde ALL",
+      "printedName": "2NDE ALL",
+      "trackCode": "ALL",
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 2NDE ALL"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "2NDE",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "name": "2nde ESP",
+      "printedName": "2NDE ESP",
+      "trackCode": "ESP",
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 2NDE ESP"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "2NDE",
+      "section": "FRANCOPHONE",
+      "cycle": "SECONDAIRE_2ND_CYCLE",
+      "name": "2nde C",
+      "printedName": "2NDE C",
+      "trackCode": "C",
+      "defaultLanguage": "FR",
+      "availableLanguages": [
+        "FR",
+        "EN"
+      ],
+      "gradingSchemeCode": "FR_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin 2NDE C"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "FORM1",
+      "section": "ANGLOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "Form 1",
+      "printedName": "FORM 1",
+      "trackCode": null,
+      "defaultLanguage": "EN",
+      "availableLanguages": [
+        "EN",
+        "FR"
+      ],
+      "gradingSchemeCode": "EN_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin de TRIMESTRE FORM 1 (T1 2025-2026)"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "FORM2",
+      "section": "ANGLOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "Form 2",
+      "printedName": "FORM 2",
+      "trackCode": null,
+      "defaultLanguage": "EN",
+      "availableLanguages": [
+        "EN",
+        "FR"
+      ],
+      "gradingSchemeCode": "EN_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin annuel FORM 2"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "FORM3",
+      "section": "ANGLOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "Form 3",
+      "printedName": "FORM 3",
+      "trackCode": null,
+      "defaultLanguage": "EN",
+      "availableLanguages": [
+        "EN",
+        "FR"
+      ],
+      "gradingSchemeCode": "EN_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin annuel FORM 3"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "FORM4",
+      "section": "ANGLOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "Form 4 ARTS",
+      "printedName": "FORM 4 ARTS",
+      "trackCode": "ARTS",
+      "defaultLanguage": "EN",
+      "availableLanguages": [
+        "EN",
+        "FR"
+      ],
+      "gradingSchemeCode": "EN_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin annuel FORM 4 ARTS"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "levelCode": "FORM4",
+      "section": "ANGLOPHONE",
+      "cycle": "SECONDAIRE_1ER_CYCLE",
+      "name": "Form 4 SC",
+      "printedName": "FORM 4 SC",
+      "trackCode": "SC",
+      "defaultLanguage": "EN",
+      "availableLanguages": [
+        "EN",
+        "FR"
+      ],
+      "gradingSchemeCode": "EN_SECONDARY",
+      "capacity": null,
+      "active": true,
+      "_source": "bulletin annuel FORM 4 SC"
+    }
+  ],
+  "academic_class_subjects": [
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "EXP_ECR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "EXP_ORA",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "CORR_ORTH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "ETUDE_TXT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "ALL",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "EDU_ART",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "LCN",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "ECM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "GEO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "HIST",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "PCT",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "SCIENCES",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "ESF",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 17,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "AV",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 18,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "6ème",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 19,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "EXP_ECR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "EXP_ORA",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "CORR_ORTH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "ETUDE_TXT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "ALL",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "EDU_ART",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "LCN",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "ECM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "GEO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "HIST",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "PCT",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "SCIENCES",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "ESF",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 17,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "AV",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 18,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "5ème",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 19,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "EXP_ECR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "EXP_ORA",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "CORR_ORTH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "ETUDE_TXT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "ALL",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "ECM",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "GEO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "HIST",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "PCT",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "SVTEEHB",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "EDU_ART",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "LCN",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "ESF",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 17,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ALL",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 18,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "EXP_ECR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "EXP_ORA",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "CORR_ORTH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "ETUDE_TXT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "ESP",
+      "groupCode": "LANG_LIT",
+      "coefficient": null,
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true,
+      "_confirm": "Coefficient inconnu : matière sans note sur l'exemplaire 4IEME ESP. Hypothèse : 2 (comme l'allemand en 4ème) (Q-42).",
+      "coefficientHypothesis": "2"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "ECM",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "GEO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "HIST",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "PCT",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "SVTEEHB",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "EDU_ART",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "ESF",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 17,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "4ème ESP",
+      "subjectCode": "LCN",
+      "groupCode": "ARTS_NC",
+      "coefficient": null,
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 18,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true,
+      "_confirm": "Coefficient inconnu : matière sans note sur l'exemplaire 4IEME ESP. Hypothèse : 1 (comme en 4ème ALL), dans DEV_PERS (Q-42).",
+      "coefficientHypothesis": "1"
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "EXP_ECR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "EXP_ORA",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "CORR_ORTH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "ETUDE_TXT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "ALL",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "ECM",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "GEO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "HIST",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "PCT",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "SVTEEHB",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "EDU_ART",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "LCN",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "3ème ALL",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 17,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "LITT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "LANG_FR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "ALL",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "PHILO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "ECM",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "GEO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "HIST",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "SCIENCES",
+      "groupCode": "SCI_TECH",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "AV",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "EDU_ART",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ALL",
+      "subjectCode": "ESF",
+      "groupCode": "ARTS_NC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "LITT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "LANG_FR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "ESP",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "PHILO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "ECM",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "GEO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "HIST",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "SCIENCES",
+      "groupCode": "SCI_TECH",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "AV",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "TM",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "EDU_ART",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde ESP",
+      "subjectCode": "ESF",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "LITT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "LANG_FR",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "ANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "HIST",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "GEO",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "ECM",
+      "groupCode": "LANG_LIT",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "PHYS",
+      "groupCode": "SCI_TECH",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "CHIM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "3",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "SVTEEHB",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "EPS",
+      "groupCode": "DEV_PERS",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "ESF",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "AV",
+      "groupCode": "DEV_PERS",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "EDU_ART",
+      "groupCode": "ARTS_NC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "2nde C",
+      "subjectCode": "TM",
+      "groupCode": "ARTS_NC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "ENG_LANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "ENG_LIT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "FRENCH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "FR",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "ECM",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "GEO",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "HIST",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "ESF",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "BIO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "CHIM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "PHYS",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "EPS",
+      "groupCode": "VOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "AV",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "TM",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 1",
+      "subjectCode": "LCN",
+      "groupCode": "ARTS_NC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "ENG_LANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "ENG_LIT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "FRENCH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "FR",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "ECM",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "GEO",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "HIST",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "ESF",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "BIO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "CHIM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "PHYS",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "EPS",
+      "groupCode": "VOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "AV",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "TM",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 2",
+      "subjectCode": "LCN",
+      "groupCode": "ARTS_NC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "ENG_LANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "ENG_LIT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "FRENCH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": "FR",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "ECM",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "GEO",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "HIST",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "ECON",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "COMMERCE",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "LOGIC",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "FOOD_NUTR",
+      "groupCode": "HUM_SOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "BIO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "CHIM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "4",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "PHYS",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "EPS",
+      "groupCode": "VOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 16,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "AV",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 17,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 3",
+      "subjectCode": "TM",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 18,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "ENG_LANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "ENG_LIT",
+      "groupCode": "LANG_LIT",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "FRENCH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": "FR",
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "ECM",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "GEO",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "HIST",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "ECON",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "COMMERCE",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "LOGIC",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "BIO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "EPS",
+      "groupCode": "VOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "AV",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 ARTS",
+      "subjectCode": "TM",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 15,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "ENG_LANG",
+      "groupCode": "LANG_LIT",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": "EN",
+      "displayOrder": 1,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "FRENCH",
+      "groupCode": "LANG_LIT",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": "FR",
+      "displayOrder": 2,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "ECON",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 3,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "GEO",
+      "groupCode": "HUM_SOC",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 4,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "ADD_MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 5,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "BIO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 6,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "CHIM",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 7,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "INFO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 8,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "HUM_BIO",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 9,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "MATH",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 10,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "PHYS",
+      "groupCode": "SCI_TECH",
+      "coefficient": "5",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 11,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "TM",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 12,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "EPS",
+      "groupCode": "VOC",
+      "coefficient": "2",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 13,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    },
+    {
+      "schoolCode": "ELSHAMMAH",
+      "academicYearLabel": "2025-2026",
+      "className": "Form 4 SC",
+      "subjectCode": "AV",
+      "groupCode": "VOC",
+      "coefficient": "1",
+      "weeklyHours": null,
+      "teachingLanguage": null,
+      "displayOrder": 14,
+      "maxScore": "20",
+      "countsInAverage": true,
+      "optional": false,
+      "active": true
+    }
+  ],
+  "_observations": [
+    "Le LV2 est une OPTION : 4IEME et 2NDE (et sans doute 3IEME) existent en deux versions, ALL (allemand) et ESP (espagnol), et l'emploi du temps 2026-2027 place « ALL / ESP » sur le même créneau en 4ème : un seul groupe d'élèves, deux options (Q-41).",
+    "Le groupe d'une matière et son coefficient changent selon le niveau : ECM/GEO/HIST sont dans SCIENCES ET TECHNOLOGIE en 6ème et 5ème mais dans LANGUES ET LITTÉRATURES dès la 4ème ; ÉDUC. ARTISTIQUE et LCN sont dans LANGUES ET LITTÉRATURES en 6ème-5ème mais dans DÉVELOPPEMENT PERSONNEL en 4ème ALL / 3ème ; EPS vaut 2 en 6ème, 5ème et 2nde, 1 en 4ème et 3ème ; ALLEMAND vaut 1 (6ème-5ème), 2 (4ème-3ème), 3 (2nde) ; MATHS vaut 4 (6ème à 3ème), 2 (2nde ALL / ESP), 5 (2nde C). Tout cela est porté par ClassSubject, jamais par Subject.",
+    "Le groupe « ARTS AND NATIONAL CULTURE » ne contient pas la même chose partout : ESF seule en 2NDE ALL, ÉDUC. ARTISTIQUE + TRAVAIL MANUEL en 2NDE C, LCN en 4IEME ESP (mêmes matières rangées dans DÉVELOPPEMENT PERSONNEL ailleurs, ex. ESF en 2NDE ESP). Le seed reproduit l'impression telle quelle (Q-43).",
+    "Moyenne annuelle : les 8 totaux de groupe imprimés sont retrouvés par la somme des coefficients (contrôle automatique à la génération de ce fichier : 48 groupes vérifiés : 26 francophones et 22 anglophones).",
+    "Matières vues dans l'emploi du temps 2026-2027 mais absentes de tous les bulletins : CHINOIS (imprimé « CNINOIS »), MUSIQUE, CLUB, BIBLIOTHÈQUE, FRANÇAIS (global). Non chargées : sont-elles notées ? Q-47.",
+    "Classes de la section francophone en 2026-2027 d'après l'emploi du temps : 6ème, 5ème, 4ème, 3ème, 2nde C, 1ère A, 1ère C/D. Les classes de 2025-2026 sont celles des bulletins reçus ; les classes 2026-2027 sont à créer (copie de la structure 2025-2026 + ajustements).",
+    "Anglophone : Form 1 et Form 2 ont la même structure (16 matières, Σ coef 36) ; Form 3 remplace HOME ECONOMICS par ECONOMICS, COMMERCE, LOGIC et FOOD AND NUTRITION (Σ 40) ; Form 4 ARTS et SC ont des coefficients de 5 sur presque toutes les matières (Σ 61 et 59) et des matières propres à la série (ADDITIONAL MATHS, HUMAN BIOLOGY en SC ; ECONOMICS, COMMERCE, LOGIC en ARTS). Les 5 classes anglophones : 22 groupes vérifiés contre les totaux imprimés.",
+    "Form 4 ARTS : BIOLOGY a le coefficient 2 alors que toutes les autres matières académiques ont 5, et il n'y a ni CHEMISTRY ni PHYSICS ; Form 4 SC n'a ni LITERATURE IN ENGLISH, ni CITIZENSHIP, ni HISTORY. Reproduit tel quel (Q-54).",
+    "Le groupe « VOCATIONAL STUDIES » (anglophone) contient EPS, LIFE APTITUDE, MANUAL LABOUR comme « DÉVELOPPEMENT PERSONNEL » en francophone : mêmes matières, noms de groupe différents selon la section. Le seed garde deux groupes (VOC, DEV_PERS) pour reproduire l'impression (Q-43).",
+    "Mentions anglaises : 7,42 = WEAK WORK, 9,65 = VERY WEAK WORK, 11,65 / 11,67 = FAIR ; le bulletin de trimestre Form 1 imprime « TRAVAIL PASSABLE » en français (libellés de mention à rendre bilingues).",
+    "Les bulletins anglophones annuels ne portent que le nom de l'établissement « COLLEGE BILINGUE EL SHAMMAH » ; seul le bulletin de trimestre Form 1 ajoute « INTERNATIONAL »."
+  ],
+  "_openQuestions": [
+    {
+      "id": "Q-41",
+      "question": "LV2 allemand / espagnol : classes séparées (ALL, ESP) comme en 2025-2026, ou une seule classe où chaque élève choisit sa LV2 ? Le modèle actuel (ClassSubject.optional) ne dit pas « un choix parmi ALL/ESP »."
+    },
+    {
+      "id": "Q-42",
+      "question": "4IEME ESP : coefficient de l'espagnol (2 ?) et groupe de la LCN (DÉVELOPPEMENT PERSONNEL comme en 4IEME ALL, ou ARTS ET CULTURE NATIONALE comme imprimé) ?"
+    },
+    {
+      "id": "Q-43",
+      "question": "Les différences de regroupement d'un niveau à l'autre sont-elles voulues (programme officiel) ou un héritage de l'ancien logiciel ? Faut-il les conserver à l'identique ?"
+    },
+    {
+      "id": "Q-44",
+      "question": "Libellés complets et traductions anglaises : ECM, SVTEEHB, SCIENCES (SVT ?), PCT, TM, APTITUDE DE VIE."
+    },
+    {
+      "id": "Q-45",
+      "question": "Identité de l'école : numéro d'immatriculation, numéros de téléphone à imprimer (3 jeux différents selon les documents), e-mail, B.P. complète."
+    },
+    {
+      "id": "Q-46",
+      "question": "Calendrier : dates de début et de fin de l'année et des trimestres 2025-2026 et 2026-2027, dates de séquence."
+    },
+    {
+      "id": "Q-47",
+      "question": "CHINOIS, MUSIQUE, CLUB, BIBLIOTHÈQUE : matières notées (avec coefficient) ou activités sans note ?"
+    },
+    {
+      "id": "Q-48",
+      "question": "Bulletins manquants : 3ème ESP, 1ère A, 1ère C/D, Terminale éventuelle, bulletins de trimestre francophones."
+    },
+    {
+      "id": "Q-49",
+      "question": "Nom officiel de l'établissement : « COLLÈGE BILINGUE EL SHAMMAH » (bulletins annuels) ou « COLLÈGE BILINGUE INTERNATIONAL EL SHAMMAH » (bulletin de trimestre Form 1) ? Une seule entité ou deux ?"
+    },
+    {
+      "id": "Q-50",
+      "question": "Mentions anglaises : « WEAK WORK » à 7,42 et « VERY WEAK WORK » à 9,65 (ordre inversé par rapport à la logique) ; quelle table de mentions l'école veut-elle réellement, en anglais et en français ?"
+    },
+    {
+      "id": "Q-51",
+      "question": "Les sections francophone et anglophone suivent-elles exactement le même barème (lettres, compétences, validation 10, profil de classe 12) ?"
+    },
+    {
+      "id": "Q-52",
+      "question": "« PASSED IN n SUBJECTS » : ligne imprimée seulement sur les bulletins anglophones ? À ajouter au gabarit (interrupteur) ou à réserver à la langue anglaise ?"
+    },
+    {
+      "id": "Q-53",
+      "question": "Quels niveaux et quels trimestres utilisent le bulletin de trimestre par compétences (Form 1 T1 vu seulement) ? Les francophones ont-ils un bulletin de trimestre ?"
+    },
+    {
+      "id": "Q-54",
+      "question": "Form 4 ARTS : coefficient 2 pour BIOLOGY et absence de CHEMISTRY / PHYSICS ; Form 4 SC sans LITERATURE, CITIZENSHIP, HISTORY : voulu ou saisie à corriger ?"
+    }
+  ]
+}

@@ -4,12 +4,27 @@
 > (défaut local). Désactivés en prod (`application-prod.properties`).  
 > Aucune donnée réelle d’élève / enseignant (BR-43).
 
+## Tenant El Shammah
+
+La **structure académique** (école, années, niveaux, matières, classes, barèmes, sessions…)  
+provient du seed JSON `docs/el-shammah-data/seed-el-shammah.json`  
+(`ElShammahAcademicSeedRunner`, insert-if-absent).  
+Ce fichier mock **ne crée plus** d’années / classes / notes fictives.
+
+| | |
+|---|---|
+| `schoolId` canonique | `school-elshammah` |
+| `schoolCode` | `ELSHAMMAH` |
+| Front | `NEXT_PUBLIC_DEFAULT_SCHOOL_ID=school-elshammah` |
+
+> Base locale encore sur `school-demo-elshammah` : le seed se rattache en douceur,  
+> mais le plus propre est de **vider Mongo** puis redémarrer.
+
 ## Paramètres communs
 
 | | |
 |---|---|
 | Mot de passe (tous) | `DemoPass123!` |
-| `schoolId` (comptes établissement) | `school-demo-elshammah` |
 | API login | `POST /api/v1/auth/login` avec **email** + password |
 | `mustChangePassword` | `false` (prêts à l’emploi) |
 
@@ -18,12 +33,12 @@
 | Rôle | E-mail | schoolId dans le body* | Profil lié |
 |---|---|---|---|
 | SUPER_ADMIN | `superadmin@smels.local` | auto (repli plateforme) | — |
-| DIRECTOR (Principal) | `directeur@elshammah.demo` | `school-demo-elshammah` | `staff-demo-director` |
-| ADMINISTRATION | `admin@elshammah.demo` | `school-demo-elshammah` | `staff-demo-admin` |
-| SURVEILLANT_GENERAL | `surveillant@elshammah.demo` | `school-demo-elshammah` | `staff-demo-sg` |
-| TEACHER | `enseignant@elshammah.demo` | `school-demo-elshammah` | `staff-demo-teacher` |
-| PARENT | `parent.demo@elshammah.demo` | `school-demo-elshammah` | `guardian-demo-parent` |
-| STUDENT | `eleve.demo@elshammah.demo` | `school-demo-elshammah` | `student-demo-01` |
+| DIRECTOR (Principal) | `directeur@elshammah.demo` | `school-elshammah` | `staff-demo-director` |
+| ADMINISTRATION | `admin@elshammah.demo` | `school-elshammah` | `staff-demo-admin` |
+| SURVEILLANT_GENERAL | `surveillant@elshammah.demo` | `school-elshammah` | `staff-demo-sg` |
+| TEACHER | `enseignant@elshammah.demo` | `school-elshammah` | `staff-demo-teacher` |
+| PARENT | `parent.demo@elshammah.demo` | `school-elshammah` | `guardian-demo-parent` |
+| STUDENT | `eleve.demo@elshammah.demo` | `school-elshammah` | `student-demo-01` |
 
 \* Le front envoie le `schoolId` résolu depuis `.env` / domaine ; le SUPER_ADMIN est détecté automatiquement.
 
@@ -36,7 +51,7 @@ Content-Type: application/json
 {
   "email": "directeur@elshammah.demo",
   "password": "DemoPass123!",
-  "schoolId": "school-demo-elshammah"
+  "schoolId": "school-elshammah"
 }
 ```
 
@@ -45,51 +60,25 @@ Content-Type: application/json
 ```properties
 smels.security.mock-users.enabled=true
 smels.security.mock-users.password=DemoPass123!
-smels.security.mock-users.school-id=school-demo-elshammah
+smels.security.mock-users.school-id=school-elshammah
+smels.security.mock-users.school-code=ELSHAMMAH
+smels.seed.el-shammah.enabled=true
+smels.seed.el-shammah.school-id=school-elshammah
 smels.security.bootstrap.username=superadmin@smels.local
 ```
 
 ## Notes
 
-- Le seed est **idempotent** et migre les anciens usernames courts (`directeur`, …) vers l’e-mail.
-- Les fiches `Staff` démo reçoivent le **même e-mail** que le compte lié (`contact.email`), pour l’affichage RH.
-- Seed académique minimal : année `2026-2027` (+ 6 sessions DEV1–DEV6), matières Maths/PC, classes 6ème A / 5ème A, affectées à `enseignant@elshammah.demo`.
+- Le seed comptes est **idempotent** et migre les anciens usernames courts (`directeur`, …) vers l’e-mail.
+- Les fiches `Staff` démo reçoivent le **même e-mail** que le compte lié (`contact.email`).
+- Pas d’inscription ni de notes auto pour l’élève démo tant que le rattachement aux vraies classes El Shammah n’est pas fait (passe suivante).
+- Sessions DEV1…DEV6 : celles du JSON El Shammah (par année) ; les gérer via l’UI hub Notes / Séquences.
 - Ne jamais committer de vrais mots de passe ni de données nominatives réelles.
 
-## Sessions d’évaluation (DEV1…DEV6)
-
-Cycle de vie (docs/02 § 5.3) :
-
-| Statut | Signification | UI / droits |
-|---|---|---|
-| `PLANNED` | Pas encore ouverte | Admin peut **ouvrir** |
-| `OPEN` | Saisie enseignants active | Admin peut **clôturer** |
-| `CLOSED` | Saisie bloquée | Directeur peut **rouvrir** (motif) |
-
-Jeu de test réaligné **à chaque démarrage** du back (`mock-users.enabled=true`) :
-
-| Séquences | Statut seed |
-|---|---|
-| DEV1, DEV2 | `CLOSED` |
-| DEV3, DEV4 | `OPEN` |
-| DEV5, DEV6 | `PLANNED` |
-
-### Réinitialiser manuellement (sans redémarrer)
-
-1. **Via l’UI** (hub Notes / Séquences) : cliquer une ligne → ouvrir / clôturer / rouvrir.
-2. **Via l’API** (compte admin ou directeur) :
-   - `POST /api/v1/evaluation-sessions/{id}/open`
-   - `POST /api/v1/evaluation-sessions/{id}/close`
-   - `POST /api/v1/evaluation-sessions/{id}/reopen` + `{ "reason": "…" }` (directeur)
-   - IDs démo : `session-demo-1` … `session-demo-6`
-
-### Réinitialiser automatiquement
-
-- **Redémarrer le back** avec `smels.security.mock-users.enabled=true` : le seed **réécrit** les statuts DEV1…6 (et les fiches associées) vers le tableau ci-dessus.
-- Remise à zéro Mongo plus large (DEV local uniquement), puis redémarrage :
+### Remise à zéro locale
 
 ```bash
-mongosh --eval 'db.getSiblingDB("smels").grading_sessions.deleteMany({ schoolId: "school-demo-elshammah" })'
+# Vider la base puis relancer le back (recrée le tenant propre)
+mongosh --eval 'db.getSiblingDB("smels-db").dropDatabase()'
+./gradlew bootRun
 ```
-
-(ou vider la base démo entière si besoin, puis relancer `./gradlew bootRun`).

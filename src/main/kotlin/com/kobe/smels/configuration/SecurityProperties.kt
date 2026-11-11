@@ -39,8 +39,8 @@ data class SecurityProperties(
         val enabled: Boolean = false,
         /** Mot de passe commun des comptes mock (min. 8 caractères). */
         val password: String = "DemoPass123!",
-        val schoolId: String = "school-demo-elshammah",
-        val schoolCode: String = "ELSHAMMAH-DEMO"
+        val schoolId: String = "school-elshammah",
+        val schoolCode: String = "ELSHAMMAH"
     )
 
     data class Provisioning(
