@@ -66,28 +66,44 @@ object SampleReportCardFactory {
                 levelCode = if (language == Language.FR) "6EME" else "FORM1",
                 section = if (language == Language.FR) Section.FRANCOPHONE else Section.ANGLOPHONE,
                 mainTeacherName = "Mme T1",
-                effectif = 21,
-                rankedCount = 21,
-                rollNumber = 4
+                effectif = if (term) 14 else 21,
+                rankedCount = if (term) 14 else 21,
+                rollNumber = if (term) 6 else 4
             ),
             groups = groups,
-            overall = OverallResult(
-                average = BigDecimal("10.80"),
-                rank = 4,
-                rankedCount = 21,
-                totalCoefficient = groups.fold(BigDecimal.ZERO) { a, g -> a + g.totalCoefficient },
-                totalPoints = groups.mapNotNull { it.totalPoints }.fold(BigDecimal.ZERO) { a, b -> a + b },
-                mentionCode = "PASSABLE",
-                mentionLabel = if (language == Language.FR) "PASSABLE" else "FAIR",
-                subjectsPassed = if (term) 12 else null,
-                subjectsCounted = groups.sumOf { it.lines.size },
-                rankStatus = RankStatus.RANKED,
-                effortSubjectNames = if (template.showEffortSubjects) {
-                    listOf(if (language == Language.FR) "MATHEMATIQUES" else "MATHEMATICS")
-                } else {
-                    emptyList()
-                }
-            ),
+            overall = if (term) {
+                OverallResult(
+                    average = BigDecimal("11.34"),
+                    rank = 6,
+                    rankedCount = 14,
+                    totalCoefficient = BigDecimal("28"),
+                    totalPoints = BigDecimal("317.50"),
+                    mentionCode = "FAIR",
+                    mentionLabel = if (language == Language.FR) "PASSABLE" else "FAIR",
+                    subjectsPassed = 10,
+                    subjectsCounted = 11,
+                    rankStatus = RankStatus.RANKED,
+                    effortSubjectNames = if (template.showEffortSubjects) {
+                        listOf(if (language == Language.FR) "FRANÇAIS" else "FRENCH")
+                    } else {
+                        emptyList()
+                    }
+                )
+            } else {
+                OverallResult(
+                    average = BigDecimal("10.80"),
+                    rank = 4,
+                    rankedCount = 21,
+                    totalCoefficient = groups.fold(BigDecimal.ZERO) { a, g -> a + g.totalCoefficient },
+                    totalPoints = groups.mapNotNull { it.totalPoints }.fold(BigDecimal.ZERO) { a, b -> a + b },
+                    mentionCode = "PASSABLE",
+                    mentionLabel = if (language == Language.FR) "PASSABLE" else "FAIR",
+                    subjectsPassed = null,
+                    subjectsCounted = groups.sumOf { it.lines.size },
+                    rankStatus = RankStatus.RANKED,
+                    effortSubjectNames = emptyList()
+                )
+            },
             termRecaps = if (template.showTermRecap) {
                 listOf(
                     TermRecap(1, BigDecimal("10.64"), 5, 21),
@@ -98,14 +114,25 @@ object SampleReportCardFactory {
                 emptyList()
             },
             classProfile = if (template.showClassProfile) {
-                ClassProfile(
-                    threshold = template.classProfileThreshold ?: BigDecimal("12"),
-                    countAtOrAboveThreshold = 6,
-                    classAverage = BigDecimal("10.84"),
-                    successRate = BigDecimal("28.57"),
-                    highestAverage = BigDecimal("14.62"),
-                    lowestAverage = BigDecimal("6.38")
-                )
+                if (term) {
+                    ClassProfile(
+                        threshold = template.classProfileThreshold ?: BigDecimal("10"),
+                        countAtOrAboveThreshold = 10,
+                        classAverage = BigDecimal("11.92"),
+                        successRate = BigDecimal("71.43"),
+                        highestAverage = BigDecimal("15.10"),
+                        lowestAverage = BigDecimal("7.21")
+                    )
+                } else {
+                    ClassProfile(
+                        threshold = template.classProfileThreshold ?: BigDecimal("12"),
+                        countAtOrAboveThreshold = 6,
+                        classAverage = BigDecimal("10.84"),
+                        successRate = BigDecimal("28.57"),
+                        highestAverage = BigDecimal("14.62"),
+                        lowestAverage = BigDecimal("6.38")
+                    )
+                }
             } else {
                 null
             },
