@@ -282,8 +282,8 @@ class ReportCardPdfService {
         val cell = if (studentPhotoBytes != null && studentPhotoBytes.isNotEmpty()) {
             try {
                 val img = Image.getInstance(studentPhotoBytes)
-                img.scaleToFit(58f, 72f)
-                PdfPCell(img, false).apply {
+                // Remplit la cellule avec un padding très léger
+                PdfPCell(img, true).apply {
                     horizontalAlignment = Element.ALIGN_CENTER
                     verticalAlignment = Element.ALIGN_MIDDLE
                 }
@@ -295,7 +295,7 @@ class ReportCardPdfService {
         }
         cell.rowspan = 3
         cell.borderColor = LINE
-        cell.setPadding(3f)
+        cell.setPadding(1.5f)
         cell.fixedHeight = 74f
         return cell
     }
@@ -1078,14 +1078,7 @@ class ReportCardPdfService {
             alignment = Element.ALIGN_RIGHT
             leading = muted.size + 1.1f
             add(Chunk(img, 0f, 0f))
-            add(Chunk("\n${formatVerificationCode(card.verificationCode)}\n", muted))
-            add(
-                Chunk(
-                    if (lang == Language.FR) "Vérification : exemple.cm/verif"
-                    else "Check : example.cm/verify",
-                    FontFactory.getFont(FontFactory.HELVETICA, muted.size - 0.3f, MUTED),
-                )
-            )
+            add(Chunk("\n${formatVerificationCode(card.verificationCode)}", muted))
         }
         val rightCell = PdfPCell()
         rightCell.border = Rectangle.NO_BORDER
