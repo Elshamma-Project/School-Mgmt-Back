@@ -253,14 +253,14 @@ class ReportCardPdfService {
         table.widthPercentage = 100f
         cells.forEach { (label, value) ->
             val p = Paragraph()
-            p.leading = muted.size + 1.5f
+            p.leading = muted.size + 0.6f
             p.add(Chunk("$label\n", muted))
             p.add(Chunk(value, bold))
             val c = PdfPCell(p)
             c.borderColor = LINE
-            c.setPadding(4f)
-            c.setPaddingTop(3f)
-            c.setPaddingBottom(3f)
+            c.setPadding(2f)
+            c.setPaddingTop(1.5f)
+            c.setPaddingBottom(1.5f)
             table.addCell(c)
         }
         return table

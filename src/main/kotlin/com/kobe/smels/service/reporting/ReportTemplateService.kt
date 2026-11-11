@@ -8,6 +8,7 @@ import com.kobe.smels.model.reporting.ReportTemplate
 import com.kobe.smels.model.shared.Language
 import com.kobe.smels.model.shared.LocalizedText
 import com.kobe.smels.repository.reporting.ReportTemplateRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.SchoolBrandApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.springframework.stereotype.Service
@@ -20,6 +21,7 @@ class ReportTemplateService(
     private val reportTemplateRepository: ReportTemplateRepository,
     private val reportCardPdfService: ReportCardPdfService,
     private val schoolBrandApi: SchoolBrandApi,
+    private val academicYearApi: AcademicYearApi,
 ) {
     fun ensureDefaults(schoolId: String): Mono<Void> =
         ensureCode(
@@ -134,14 +136,19 @@ class ReportTemplateService(
         return ensureDefaults(schoolId)
             .then(getByCode(schoolId, code.trim().uppercase()))
             .flatMap { template ->
-                schoolBrandApi.getBulletinBrand(schoolId)
-                    .map { BulletinPdfContext.fromBrand(it) }
-                    .onErrorReturn(BulletinPdfContext())
-                    .defaultIfEmpty(BulletinPdfContext())
-                    .map { ctx ->
-                        val card = SampleReportCardFactory.build(schoolId, template, language)
-                        reportCardPdfService.render(card, template, "2026-2027", context = ctx)
-                    }
+                Mono.zip(
+                    schoolBrandApi.getBulletinBrand(schoolId)
+                        .map { BulletinPdfContext.fromBrand(it) }
+                        .onErrorReturn(BulletinPdfContext())
+                        .defaultIfEmpty(BulletinPdfContext()),
+                    academicYearApi.findCurrent(schoolId)
+                        .map { it.label }
+                        .onErrorReturn("—")
+                        .defaultIfEmpty("—"),
+                ).map { tuple ->
+                    val card = SampleReportCardFactory.build(schoolId, template, language)
+                    reportCardPdfService.render(card, template, tuple.t2, context = tuple.t1)
+                }
             }
     }
 
