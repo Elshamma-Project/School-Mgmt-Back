@@ -9,6 +9,7 @@ import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.academic.ClassSubjectRepository
 import com.kobe.smels.repository.academic.TermCompetencyRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -18,7 +19,8 @@ import reactor.core.publisher.Mono
 @Service
 class TermCompetencyService(
     private val termCompetencyRepository: TermCompetencyRepository,
-    private val classSubjectRepository: ClassSubjectRepository
+    private val classSubjectRepository: ClassSubjectRepository,
+    private val academicYearApi: AcademicYearApi
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -34,34 +36,37 @@ class TermCompetencyService(
             .switchIfEmpty(Mono.error(NotFoundException("CLASS_SUBJECT_NOT_FOUND", "Class subject not found")))
             .flatMap { classSubject ->
                 assertCanWriteCompetency(currentUser, classSubject.teacherId)
-                termCompetencyRepository.findBySchoolIdAndClassSubjectIdAndTermNumber(
-                    schoolId,
-                    request.classSubjectId,
-                    request.termNumber
-                )
-                    .flatMap { existing ->
-                        existing.text = AcademicMapper.toLocalizedRequired(request.text)
-                        existing.authorStaffId = currentUser.profileId.takeIf {
-                            currentUser.profileType == ProfileType.STAFF
-                        }
-                        termCompetencyRepository.save(existing)
-                    }
-                    .switchIfEmpty(
-                        Mono.defer {
-                            termCompetencyRepository.save(
-                                TermCompetency(
-                                    schoolId = schoolId,
-                                    academicYearId = classSubject.academicYearId,
-                                    classId = classSubject.classId,
-                                    classSubjectId = classSubject.id!!,
-                                    termNumber = request.termNumber,
-                                    text = AcademicMapper.toLocalizedRequired(request.text),
-                                    authorStaffId = currentUser.profileId.takeIf {
-                                        currentUser.profileType == ProfileType.STAFF
-                                    }
-                                )
+                academicYearApi.assertWritable(schoolId, classSubject.academicYearId)
+                    .then(
+                        termCompetencyRepository.findBySchoolIdAndClassSubjectIdAndTermNumber(
+                            schoolId,
+                            request.classSubjectId,
+                            request.termNumber
+                        )
+                            .flatMap { existing ->
+                                existing.text = AcademicMapper.toLocalizedRequired(request.text)
+                                existing.authorStaffId = currentUser.profileId.takeIf {
+                                    currentUser.profileType == ProfileType.STAFF
+                                }
+                                termCompetencyRepository.save(existing)
+                            }
+                            .switchIfEmpty(
+                                Mono.defer {
+                                    termCompetencyRepository.save(
+                                        TermCompetency(
+                                            schoolId = schoolId,
+                                            academicYearId = classSubject.academicYearId,
+                                            classId = classSubject.classId,
+                                            classSubjectId = classSubject.id!!,
+                                            termNumber = request.termNumber,
+                                            text = AcademicMapper.toLocalizedRequired(request.text),
+                                            authorStaffId = currentUser.profileId.takeIf {
+                                                currentUser.profileType == ProfileType.STAFF
+                                            }
+                                        )
+                                    )
+                                }
                             )
-                        }
                     )
             }
             .map { AcademicMapper.toTermCompetencyResponse(it) }

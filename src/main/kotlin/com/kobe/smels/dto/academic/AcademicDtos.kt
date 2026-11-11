@@ -158,6 +158,8 @@ data class AcademicYearResponse(
     val endDate: LocalDate,
     val current: Boolean,
     val status: AcademicYearStatus,
+    /** true si l’année est CLOSE/ARCHIVED ou si today >= endDate (plus aucune écriture). */
+    val locked: Boolean,
     val terms: List<TermDto>
 )
 
@@ -166,7 +168,8 @@ data class AcademicYearSummaryDto(
     val schoolId: String,
     val label: String,
     val current: Boolean,
-    val status: AcademicYearStatus
+    val status: AcademicYearStatus,
+    val locked: Boolean
 )
 
 data class CreateLevelRequest(

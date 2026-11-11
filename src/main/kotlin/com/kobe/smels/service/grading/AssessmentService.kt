@@ -10,6 +10,7 @@ import com.kobe.smels.model.grading.SessionStatus
 import com.kobe.smels.repository.grading.AssessmentRepository
 import com.kobe.smels.repository.grading.EvaluationSessionRepository
 import com.kobe.smels.repository.grading.GradeSheetRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -19,7 +20,8 @@ import reactor.core.publisher.Mono
 class AssessmentService(
     private val assessmentRepository: AssessmentRepository,
     private val gradeSheetRepository: GradeSheetRepository,
-    private val evaluationSessionRepository: EvaluationSessionRepository
+    private val evaluationSessionRepository: EvaluationSessionRepository,
+    private val academicYearApi: AcademicYearApi
 ) {
     fun create(currentUser: CurrentUser, request: CreateAssessmentRequest): Mono<AssessmentResponse> {
         val schoolId = GradingAccess.resolveSchoolId(currentUser, request.schoolId)
@@ -27,7 +29,8 @@ class AssessmentService(
             .switchIfEmpty(Mono.error(NotFoundException("SHEET_NOT_FOUND", "Grade sheet not found")))
             .flatMap { sheet ->
                 GradingAccess.assertCanManageSheet(currentUser, sheet.teacherId)
-                evaluationSessionRepository.findByIdAndSchoolId(sheet.sessionId, schoolId)
+                academicYearApi.assertWritable(schoolId, sheet.academicYearId)
+                    .then(evaluationSessionRepository.findByIdAndSchoolId(sheet.sessionId, schoolId))
                     .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Session not found")))
                     .flatMap { session ->
                         if (session.status == SessionStatus.CLOSED &&
@@ -79,7 +82,8 @@ class AssessmentService(
                     .switchIfEmpty(Mono.error(NotFoundException("SHEET_NOT_FOUND", "Grade sheet not found")))
                     .flatMap { sheet ->
                         GradingAccess.assertCanManageSheet(currentUser, sheet.teacherId)
-                        evaluationSessionRepository.findByIdAndSchoolId(sheet.sessionId, schoolId)
+                        academicYearApi.assertWritable(schoolId, sheet.academicYearId)
+                            .then(evaluationSessionRepository.findByIdAndSchoolId(sheet.sessionId, schoolId))
                             .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Session not found")))
                             .flatMap { session ->
                                 if (session.status == SessionStatus.CLOSED &&

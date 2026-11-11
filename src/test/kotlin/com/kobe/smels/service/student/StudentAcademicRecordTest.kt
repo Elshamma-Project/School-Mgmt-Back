@@ -93,7 +93,8 @@ class StudentAcademicRecordTest {
                     schoolId = "school-1",
                     label = "2020-2021",
                     current = false,
-                    status = AcademicYearStatus.CLOSED
+                    status = AcademicYearStatus.CLOSED,
+                    locked = true
                 )
             )
         )
@@ -104,7 +105,8 @@ class StudentAcademicRecordTest {
                     schoolId = "school-1",
                     label = "2025-2026",
                     current = true,
-                    status = AcademicYearStatus.ACTIVE
+                    status = AcademicYearStatus.ACTIVE,
+                    locked = false
                 )
             )
         )

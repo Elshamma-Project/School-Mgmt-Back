@@ -191,7 +191,8 @@ class StudentServiceTest {
                     schoolId = "school-1",
                     label = "2025-2026",
                     current = true,
-                    status = AcademicYearStatus.ACTIVE
+                    status = AcademicYearStatus.ACTIVE,
+                    locked = false
                 )
             )
         )

@@ -32,6 +32,7 @@ import com.kobe.smels.model.academic.Term
 import com.kobe.smels.model.academic.TermCompetency
 import com.kobe.smels.model.shared.ContactInfo
 import com.kobe.smels.model.shared.LocalizedText
+import java.time.LocalDate
 
 object AcademicMapper {
     fun toLocalized(dto: LocalizedTextDto?): LocalizedText? =
@@ -110,7 +111,7 @@ object AcademicMapper {
             endDate = term.endDate
         )
 
-    fun toYearResponse(year: AcademicYear): AcademicYearResponse =
+    fun toYearResponse(year: AcademicYear, today: LocalDate): AcademicYearResponse =
         AcademicYearResponse(
             id = year.id!!,
             schoolId = year.schoolId,
@@ -119,11 +120,28 @@ object AcademicMapper {
             endDate = year.endDate,
             current = year.current,
             status = year.status,
+            locked = yearIsLocked(year, today),
             terms = year.terms.map { toTermDto(it) }
         )
 
-    fun toYearSummary(year: AcademicYear): AcademicYearSummaryDto =
-        AcademicYearSummaryDto(year.id!!, year.schoolId, year.label, year.current, year.status)
+    fun toYearSummary(year: AcademicYear, today: LocalDate): AcademicYearSummaryDto =
+        AcademicYearSummaryDto(
+            year.id!!,
+            year.schoolId,
+            year.label,
+            year.current,
+            year.status,
+            yearIsLocked(year, today)
+        )
+
+    /**
+     * Verrouillage métier : statut terminal OU dernier jour de l’année atteint
+     * (`today >= endDate` → plus aucune écriture, y compris pour le directeur).
+     */
+    fun yearIsLocked(year: AcademicYear, today: LocalDate): Boolean =
+        year.status == AcademicYearStatus.CLOSED ||
+            year.status == AcademicYearStatus.ARCHIVED ||
+            !today.isBefore(year.endDate)
 
     fun toLevelResponse(level: Level): LevelResponse =
         LevelResponse(

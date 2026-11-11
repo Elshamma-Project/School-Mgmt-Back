@@ -20,6 +20,7 @@ import com.kobe.smels.repository.grading.GradeAuditEntryRepository
 import com.kobe.smels.repository.grading.GradeRepository
 import com.kobe.smels.repository.grading.GradeSheetRepository
 import com.kobe.smels.model.student.EnrollmentStatus
+import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
@@ -41,6 +42,7 @@ class GradeService(
     private val evaluationSessionRepository: EvaluationSessionRepository,
     private val gradeAuditEntryRepository: GradeAuditEntryRepository,
     private val enrollmentApi: EnrollmentApi,
+    private val academicYearApi: AcademicYearApi,
     private val sequenceMarkService: SequenceMarkService,
     private val outboxWriter: OutboxWriter
 ) {
@@ -53,23 +55,28 @@ class GradeService(
         return loadContext(schoolId, request.assessmentId)
             .flatMap { ctx ->
                 GradingAccess.assertCanManageSheet(currentUser, ctx.sheet.teacherId)
-                assertWritable(currentUser, ctx.session, request.reason)
-                validatePayload(request.status, request.value, ctx.assessment.maxScore)
-                enrollmentApi.findByStudentAndYear(schoolId, request.studentId, ctx.sheet.academicYearId)
-                    .flatMap { enrollment ->
-                        if (enrollment.classId != ctx.sheet.classId ||
-                            enrollment.status != EnrollmentStatus.ENROLLED
-                        ) {
-                            Mono.error(
-                                BusinessRuleException(
-                                    "NOT_ENROLLED",
-                                    "Student is not ENROLLED in the sheet class for this year"
-                                )
-                            )
-                        } else {
-                            writeGrade(currentUser, ctx, request.studentId, enrollment.id, request)
+                academicYearApi.assertWritable(schoolId, ctx.session.academicYearId)
+                    .then(
+                        Mono.defer {
+                            assertSessionWritable(currentUser, ctx.session, request.reason)
+                            validatePayload(request.status, request.value, ctx.assessment.maxScore)
+                            enrollmentApi.findByStudentAndYear(schoolId, request.studentId, ctx.sheet.academicYearId)
+                                .flatMap { enrollment ->
+                                    if (enrollment.classId != ctx.sheet.classId ||
+                                        enrollment.status != EnrollmentStatus.ENROLLED
+                                    ) {
+                                        Mono.error(
+                                            BusinessRuleException(
+                                                "NOT_ENROLLED",
+                                                "Student is not ENROLLED in the sheet class for this year"
+                                            )
+                                        )
+                                    } else {
+                                        writeGrade(currentUser, ctx, request.studentId, enrollment.id, request)
+                                    }
+                                }
                         }
-                    }
+                    )
             }
             .map { GradingMapper.toGradeResponse(it) }
             .doOnError { error ->
@@ -120,47 +127,52 @@ class GradeService(
         return loadContext(schoolId, assessmentId)
             .flatMap { ctx ->
                 GradingAccess.assertCanManageSheet(currentUser, ctx.sheet.teacherId)
-                assertWritable(currentUser, ctx.session, reason)
-                gradeRepository.findBySchoolIdAndAssessmentIdAndStudentId(schoolId, assessmentId, studentId)
-                    .switchIfEmpty(Mono.error(NotFoundException("GRADE_NOT_FOUND", "Grade not found")))
-                    .flatMap { grade ->
-                        val previousValue = grade.value
-                        val previousStatus = grade.status
-                        gradeRepository.delete(grade)
-                            .then(
-                                gradeAuditEntryRepository.save(
-                                    GradeAuditEntry(
-                                        schoolId = schoolId,
-                                        target = AuditTarget.GRADE,
-                                        gradeId = grade.id,
-                                        assessmentId = assessmentId,
-                                        classSubjectId = ctx.sheet.classSubjectId,
-                                        sessionId = ctx.session.id!!,
-                                        studentId = studentId,
-                                        action = AuditAction.DELETED,
-                                        previousValue = previousValue,
-                                        newValue = null,
-                                        previousStatus = previousStatus,
-                                        newStatus = null,
-                                        changedBy = currentUser.accountId,
-                                        changedByRole = currentUser.roles.firstOrNull(),
-                                        changedAt = Instant.now(),
-                                        reason = reason,
-                                        afterSessionClosed = ctx.session.status == SessionStatus.CLOSED
-                                    )
-                                )
-                            )
-                            .then(
-                                sequenceMarkService.recalculateForStudent(
-                                    currentUser,
-                                    ctx.sheet,
-                                    ctx.session,
-                                    studentId,
-                                    grade.enrollmentId
-                                )
-                            )
-                            .then(emitMarkChanged(ctx, studentId))
-                    }
+                academicYearApi.assertWritable(schoolId, ctx.session.academicYearId)
+                    .then(
+                        Mono.defer {
+                            assertSessionWritable(currentUser, ctx.session, reason)
+                            gradeRepository.findBySchoolIdAndAssessmentIdAndStudentId(schoolId, assessmentId, studentId)
+                                .switchIfEmpty(Mono.error(NotFoundException("GRADE_NOT_FOUND", "Grade not found")))
+                                .flatMap { grade ->
+                                    val previousValue = grade.value
+                                    val previousStatus = grade.status
+                                    gradeRepository.delete(grade)
+                                        .then(
+                                            gradeAuditEntryRepository.save(
+                                                GradeAuditEntry(
+                                                    schoolId = schoolId,
+                                                    target = AuditTarget.GRADE,
+                                                    gradeId = grade.id,
+                                                    assessmentId = assessmentId,
+                                                    classSubjectId = ctx.sheet.classSubjectId,
+                                                    sessionId = ctx.session.id!!,
+                                                    studentId = studentId,
+                                                    action = AuditAction.DELETED,
+                                                    previousValue = previousValue,
+                                                    newValue = null,
+                                                    previousStatus = previousStatus,
+                                                    newStatus = null,
+                                                    changedBy = currentUser.accountId,
+                                                    changedByRole = currentUser.roles.firstOrNull(),
+                                                    changedAt = Instant.now(),
+                                                    reason = reason,
+                                                    afterSessionClosed = ctx.session.status == SessionStatus.CLOSED
+                                                )
+                                            )
+                                        )
+                                        .then(
+                                            sequenceMarkService.recalculateForStudent(
+                                                currentUser,
+                                                ctx.sheet,
+                                                ctx.session,
+                                                studentId,
+                                                grade.enrollmentId
+                                            )
+                                        )
+                                        .then(emitMarkChanged(ctx, studentId))
+                                }
+                        }
+                    )
             }
     }
 
@@ -287,8 +299,8 @@ class GradeService(
                     }
             }
 
-    /** BR-21 / BR-22 */
-    private fun assertWritable(currentUser: CurrentUser, session: EvaluationSession, reason: String?) {
+    /** BR-21 / BR-22 (après contrôle YEAR_LOCKED). */
+    private fun assertSessionWritable(currentUser: CurrentUser, session: EvaluationSession, reason: String?) {
         when (session.status) {
             SessionStatus.PLANNED ->
                 throw BusinessRuleException("SESSION_NOT_OPEN", "Session is not open for entry")

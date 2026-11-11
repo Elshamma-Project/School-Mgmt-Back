@@ -42,6 +42,7 @@ class ClassSubjectServiceTest {
     private val schoolClassRepository: SchoolClassRepository = mock()
     private val subjectRepository: SubjectRepository = mock()
     private val subjectGroupRepository: SubjectGroupRepository = mock()
+    private val academicYearApi: com.kobe.smels.service.academic.api.AcademicYearApi = mock()
     private val staffApi: StaffApi = mock()
     private val outboxWriter: OutboxWriter = mock()
     private val service = ClassSubjectService(
@@ -49,6 +50,7 @@ class ClassSubjectServiceTest {
         schoolClassRepository,
         subjectRepository,
         subjectGroupRepository,
+        academicYearApi,
         staffApi,
         outboxWriter
     )
@@ -184,6 +186,19 @@ class ClassSubjectServiceTest {
     }
 
     private fun stubRefs() {
+        whenever(academicYearApi.assertWritable("school-1", "year-1"))
+            .thenReturn(
+                Mono.just(
+                    com.kobe.smels.dto.academic.AcademicYearSummaryDto(
+                        id = "year-1",
+                        schoolId = "school-1",
+                        label = "2025-2026",
+                        current = true,
+                        status = com.kobe.smels.model.academic.AcademicYearStatus.ACTIVE,
+                        locked = false
+                    )
+                )
+            )
         whenever(schoolClassRepository.findByIdAndSchoolId("class-1", "school-1"))
             .thenReturn(
                 Mono.just(

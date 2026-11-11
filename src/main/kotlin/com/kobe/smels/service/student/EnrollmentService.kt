@@ -57,7 +57,7 @@ class EnrollmentService(
                 if (!student.active) {
                     Mono.error(ConflictException("STUDENT_INACTIVE", "Cannot enroll an inactive student"))
                 } else {
-                    academicYearApi.getSummary(schoolId, request.academicYearId)
+                    academicYearApi.assertWritable(schoolId, request.academicYearId)
                         .then(schoolClassApi.getSummary(schoolId, request.classId))
                         .flatMap { schoolClass ->
                             if (schoolClass.academicYearId != request.academicYearId) {
@@ -132,16 +132,21 @@ class EnrollmentService(
         return enrollmentRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("ENROLLMENT_NOT_FOUND", "Enrollment not found")))
             .flatMap { enrollment ->
-                enrollment.classId = request.classId.trim()
-                enrollment.levelId = request.levelId.trim()
-                enrollment.rollNumber = request.rollNumber
-                enrollment.repeater = request.repeater
-                enrollment.newStudent = request.newStudent
-                enrollment.status = request.status
-                enrollment.enrolledOn = request.enrolledOn
-                enrollment.leftOn = request.leftOn
-                enrollment.previousSchool = request.previousSchool?.trim()?.ifBlank { null }
-                enrollmentRepository.save(enrollment)
+                academicYearApi.assertWritable(schoolId, enrollment.academicYearId)
+                    .then(
+                        Mono.defer {
+                            enrollment.classId = request.classId.trim()
+                            enrollment.levelId = request.levelId.trim()
+                            enrollment.rollNumber = request.rollNumber
+                            enrollment.repeater = request.repeater
+                            enrollment.newStudent = request.newStudent
+                            enrollment.status = request.status
+                            enrollment.enrolledOn = request.enrolledOn
+                            enrollment.leftOn = request.leftOn
+                            enrollment.previousSchool = request.previousSchool?.trim()?.ifBlank { null }
+                            enrollmentRepository.save(enrollment)
+                        }
+                    )
             }
             .flatMap { saved ->
                 emitEnrollmentEvent(saved, "student.enrollment.changed")

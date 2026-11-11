@@ -187,7 +187,7 @@ class EnrollmentServiceTest {
     }
 
     private fun stubAcademicRefs() {
-        whenever(academicYearApi.getSummary("school-1", "year-1"))
+        whenever(academicYearApi.assertWritable("school-1", "year-1"))
             .thenReturn(
                 Mono.just(
                     AcademicYearSummaryDto(
@@ -195,7 +195,8 @@ class EnrollmentServiceTest {
                         schoolId = "school-1",
                         label = "2025-2026",
                         current = true,
-                        status = AcademicYearStatus.ACTIVE
+                        status = AcademicYearStatus.ACTIVE,
+                        locked = false
                     )
                 )
             )

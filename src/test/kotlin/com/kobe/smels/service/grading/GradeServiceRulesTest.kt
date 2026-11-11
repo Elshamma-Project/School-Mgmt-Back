@@ -56,6 +56,7 @@ class GradeServiceRulesTest {
         mock()
     )
 
+    private val academicYearApi: com.kobe.smels.service.academic.api.AcademicYearApi = mock()
     private val gradeService = GradeService(
         gradeRepository,
         assessmentRepository,
@@ -63,6 +64,7 @@ class GradeServiceRulesTest {
         evaluationSessionRepository,
         gradeAuditEntryRepository,
         enrollmentApi,
+        academicYearApi,
         sequenceMarkService,
         outboxWriter
     )
@@ -220,6 +222,19 @@ class GradeServiceRulesTest {
                         shortLabel = "DEV1",
                         name = LocalizedText(fr = "S1", en = "S1"),
                         status = status
+                    )
+                )
+            )
+        whenever(academicYearApi.assertWritable("school-1", "year-1"))
+            .thenReturn(
+                Mono.just(
+                    com.kobe.smels.dto.academic.AcademicYearSummaryDto(
+                        id = "year-1",
+                        schoolId = "school-1",
+                        label = "2025-2026",
+                        current = true,
+                        status = com.kobe.smels.model.academic.AcademicYearStatus.ACTIVE,
+                        locked = false
                     )
                 )
             )

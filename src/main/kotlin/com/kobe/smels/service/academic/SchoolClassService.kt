@@ -8,9 +8,9 @@ import com.kobe.smels.dto.academic.UpdateSchoolClassRequest
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.academic.SchoolClass
-import com.kobe.smels.repository.academic.AcademicYearRepository
 import com.kobe.smels.repository.academic.LevelRepository
 import com.kobe.smels.repository.academic.SchoolClassRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
@@ -25,7 +25,7 @@ import kotlin.math.ceil
 @Service
 class SchoolClassService(
     private val schoolClassRepository: SchoolClassRepository,
-    private val academicYearRepository: AcademicYearRepository,
+    private val academicYearApi: AcademicYearApi,
     private val levelRepository: LevelRepository,
     private val outboxWriter: OutboxWriter
 ) : SchoolClassApi {
@@ -39,8 +39,7 @@ class SchoolClassService(
         val name = request.name.trim()
         log.info("class.create start by={} schoolId={} yearId={}", currentUser.username, schoolId, request.academicYearId)
 
-        return academicYearRepository.findByIdAndSchoolId(request.academicYearId, schoolId)
-            .switchIfEmpty(Mono.error(NotFoundException("ACADEMIC_YEAR_NOT_FOUND", "Academic year not found")))
+        return academicYearApi.assertWritable(schoolId, request.academicYearId)
             .then(levelRepository.findByIdAndSchoolId(request.levelId, schoolId))
             .switchIfEmpty(Mono.error(NotFoundException("LEVEL_NOT_FOUND", "Level not found")))
             .flatMap { level ->
@@ -87,7 +86,8 @@ class SchoolClassService(
         return schoolClassRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("CLASS_NOT_FOUND", "Class not found")))
             .flatMap { schoolClass ->
-                ensureNameAvailable(schoolId, schoolClass.academicYearId, name, excludeId = id)
+                academicYearApi.assertWritable(schoolId, schoolClass.academicYearId)
+                    .then(ensureNameAvailable(schoolId, schoolClass.academicYearId, name, excludeId = id))
                     .then(Mono.fromCallable {
                         schoolClass.name = name
                         schoolClass.trackCode = request.trackCode?.trim()?.ifBlank { null }

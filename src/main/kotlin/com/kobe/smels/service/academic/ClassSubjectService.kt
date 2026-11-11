@@ -15,6 +15,7 @@ import com.kobe.smels.repository.academic.ClassSubjectRepository
 import com.kobe.smels.repository.academic.SchoolClassRepository
 import com.kobe.smels.repository.academic.SubjectGroupRepository
 import com.kobe.smels.repository.academic.SubjectRepository
+import com.kobe.smels.service.academic.api.AcademicYearApi
 import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.staff.api.StaffApi
 import com.kobe.smels.shared.outbox.OutboxWriter
@@ -34,6 +35,7 @@ class ClassSubjectService(
     private val schoolClassRepository: SchoolClassRepository,
     private val subjectRepository: SubjectRepository,
     private val subjectGroupRepository: SubjectGroupRepository,
+    private val academicYearApi: AcademicYearApi,
     private val staffApi: StaffApi,
     private val outboxWriter: OutboxWriter
 ) : ClassSubjectApi {
@@ -53,7 +55,8 @@ class ClassSubjectService(
             request.subjectId
         )
 
-        return schoolClassRepository.findByIdAndSchoolId(request.classId, schoolId)
+        return academicYearApi.assertWritable(schoolId, request.academicYearId)
+            .then(schoolClassRepository.findByIdAndSchoolId(request.classId, schoolId))
             .switchIfEmpty(Mono.error(NotFoundException("CLASS_NOT_FOUND", "Class not found")))
             .flatMap { schoolClass ->
                 if (schoolClass.academicYearId != request.academicYearId) {
@@ -110,7 +113,8 @@ class ClassSubjectService(
         return classSubjectRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("CLASS_SUBJECT_NOT_FOUND", "Class subject not found")))
             .flatMap { cs ->
-                subjectGroupRepository.findByIdAndSchoolId(request.groupId, schoolId)
+                academicYearApi.assertWritable(schoolId, cs.academicYearId)
+                    .then(subjectGroupRepository.findByIdAndSchoolId(request.groupId, schoolId))
                     .switchIfEmpty(Mono.error(NotFoundException("SUBJECT_GROUP_NOT_FOUND", "Subject group not found")))
                     .then(validateTeacher(schoolId, request.teacherId))
                     .then(Mono.fromCallable {

@@ -5,7 +5,10 @@ import com.kobe.smels.dto.academic.LocalizedTextDto
 import com.kobe.smels.dto.academic.TermDto
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.model.academic.AcademicYear
+import com.kobe.smels.model.academic.AcademicYearStatus
+import com.kobe.smels.model.academic.School
 import com.kobe.smels.model.shared.OutboxEvent
+import com.kobe.smels.model.shared.LocalizedText
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.academic.AcademicYearRepository
@@ -15,11 +18,14 @@ import com.kobe.smels.shared.security.CurrentUser
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class AcademicYearServiceTest {
@@ -27,6 +33,19 @@ class AcademicYearServiceTest {
     private val schoolRepository: SchoolRepository = mock()
     private val outboxWriter: OutboxWriter = mock()
     private val service = AcademicYearService(academicYearRepository, schoolRepository, outboxWriter)
+
+    private fun stubSchoolTz() {
+        whenever(schoolRepository.findById("school-1")).thenReturn(
+            Mono.just(
+                School(
+                    id = "school-1",
+                    code = "TEST",
+                    name = LocalizedText(fr = "Ecole", en = "School"),
+                    timezone = "Africa/Douala"
+                )
+            )
+        )
+    }
 
     @Test
     fun `rejects academic year without three terms`() {
@@ -45,6 +64,7 @@ class AcademicYearServiceTest {
 
     @Test
     fun `creates academic year and emits academic year created`() {
+        stubSchoolTz()
         whenever(academicYearRepository.findBySchoolIdAndLabel("school-1", "2025-2026")).thenReturn(Mono.empty())
         whenever(academicYearRepository.findBySchoolIdAndCurrentTrue("school-1")).thenReturn(Mono.empty())
         whenever(academicYearRepository.save(any<AcademicYear>())).thenAnswer {
@@ -84,6 +104,46 @@ class AcademicYearServiceTest {
                 assertTrue(response.terms.map { it.number }.toSet() == setOf(1, 2, 3))
             }
             .verifyComplete()
+    }
+
+    @Test
+    fun `assertWritable rejects year on or after endDate`() {
+        stubSchoolTz()
+        val today = LocalDate.now(ZoneId.of("Africa/Douala"))
+        val year = AcademicYear(
+            id = "year-old",
+            schoolId = "school-1",
+            label = "past",
+            startDate = today.minusYears(1),
+            endDate = today,
+            current = true,
+            status = AcademicYearStatus.ACTIVE
+        )
+        whenever(academicYearRepository.findBySchoolIdOrderByStartDateDesc("school-1"))
+            .thenReturn(Flux.just(year))
+        whenever(academicYearRepository.save(any<AcademicYear>())).thenAnswer {
+            Mono.just(it.getArgument(0))
+        }
+        whenever(outboxWriter.append(any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(
+                Mono.just(
+                    OutboxEvent(
+                        schoolId = "school-1",
+                        module = "academic",
+                        aggregateType = "AcademicYear",
+                        aggregateId = "year-old",
+                        eventType = "academic.year.closed",
+                        occurredAt = Instant.parse("2026-01-01T00:00:00Z")
+                    )
+                )
+            )
+        whenever(academicYearRepository.findByIdAndSchoolId("year-old", "school-1"))
+            .thenReturn(Mono.just(year))
+
+        StepVerifier.create(service.assertWritable("school-1", "year-old"))
+            .expectErrorMatches { it is BusinessRuleException && it.code == "YEAR_LOCKED" }
+            .verify()
+        assertEquals(AcademicYearStatus.CLOSED, year.status)
     }
 
     private fun adminUser() = CurrentUser(

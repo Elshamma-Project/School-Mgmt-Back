@@ -40,7 +40,7 @@ class EvaluationSessionService(
     ): Flux<EvaluationSessionResponse> {
         GradingAccess.assertAdmin(currentUser)
         val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
-        return academicYearApi.getSummary(schoolId, academicYearId)
+        return academicYearApi.assertWritable(schoolId, academicYearId)
             .thenMany(Flux.range(1, 6))
             .concatMap { number ->
                 evaluationSessionRepository.findBySchoolIdAndAcademicYearIdAndNumber(schoolId, academicYearId, number)
@@ -111,31 +111,36 @@ class EvaluationSessionService(
         return evaluationSessionRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Evaluation session not found")))
             .flatMap { session ->
-                when (session.status) {
-                    SessionStatus.OPEN -> Mono.just(session)
-                    SessionStatus.CLOSED ->
-                        Mono.error(BusinessRuleException("SESSION_CLOSED", "Reopen the session before opening again"))
-                    SessionStatus.PLANNED -> {
-                        session.status = SessionStatus.OPEN
-                        session.openedAt = Instant.now()
-                        evaluationSessionRepository.save(session)
-                            .flatMap { opened -> createMissingSheets(opened).thenReturn(opened) }
-                            .flatMap { opened ->
-                                outboxWriter.append(
-                                    schoolId = opened.schoolId,
-                                    module = "grading",
-                                    aggregateType = "EvaluationSession",
-                                    aggregateId = opened.id!!,
-                                    eventType = "grading.session.opened",
-                                    payload = mapOf(
-                                        "sessionId" to opened.id,
-                                        "number" to opened.number,
-                                        "termNumber" to opened.termNumber
-                                    )
-                                ).thenReturn(opened)
+                academicYearApi.assertWritable(schoolId, session.academicYearId)
+                    .then(
+                        Mono.defer {
+                            when (session.status) {
+                                SessionStatus.OPEN -> Mono.just(session)
+                                SessionStatus.CLOSED ->
+                                    Mono.error(BusinessRuleException("SESSION_CLOSED", "Reopen the session before opening again"))
+                                SessionStatus.PLANNED -> {
+                                    session.status = SessionStatus.OPEN
+                                    session.openedAt = Instant.now()
+                                    evaluationSessionRepository.save(session)
+                                        .flatMap { opened -> createMissingSheets(opened).thenReturn(opened) }
+                                        .flatMap { opened ->
+                                            outboxWriter.append(
+                                                schoolId = opened.schoolId,
+                                                module = "grading",
+                                                aggregateType = "EvaluationSession",
+                                                aggregateId = opened.id!!,
+                                                eventType = "grading.session.opened",
+                                                payload = mapOf(
+                                                    "sessionId" to opened.id,
+                                                    "number" to opened.number,
+                                                    "termNumber" to opened.termNumber
+                                                )
+                                            ).thenReturn(opened)
+                                        }
+                                }
                             }
-                    }
-                }
+                        }
+                    )
             }
             .map { GradingMapper.toSessionResponse(it) }
             .doOnNext { log.info("session.open ok by={} schoolId={} number={}", currentUser.username, schoolId, it.number) }
@@ -154,31 +159,36 @@ class EvaluationSessionService(
         return evaluationSessionRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Evaluation session not found")))
             .flatMap { session ->
-                if (session.status != SessionStatus.OPEN) {
-                    Mono.error(BusinessRuleException("SESSION_NOT_OPEN", "Only an OPEN session can be closed"))
-                } else {
-                    session.status = SessionStatus.CLOSED
-                    session.closedAt = Instant.now()
-                    session.closedBy = currentUser.accountId
-                    session.closeNote = closeNote?.trim()?.ifBlank { null }
-                    evaluationSessionRepository.save(session)
-                        .flatMap { closed ->
-                            lockSheets(closed).then(
-                                outboxWriter.append(
-                                    schoolId = closed.schoolId,
-                                    module = "grading",
-                                    aggregateType = "EvaluationSession",
-                                    aggregateId = closed.id!!,
-                                    eventType = "grading.session.closed",
-                                    payload = mapOf(
-                                        "sessionId" to closed.id,
-                                        "number" to closed.number,
-                                        "termNumber" to closed.termNumber
-                                    )
-                                )
-                            ).thenReturn(closed)
+                academicYearApi.assertWritable(schoolId, session.academicYearId)
+                    .then(
+                        Mono.defer {
+                            if (session.status != SessionStatus.OPEN) {
+                                Mono.error(BusinessRuleException("SESSION_NOT_OPEN", "Only an OPEN session can be closed"))
+                            } else {
+                                session.status = SessionStatus.CLOSED
+                                session.closedAt = Instant.now()
+                                session.closedBy = currentUser.accountId
+                                session.closeNote = closeNote?.trim()?.ifBlank { null }
+                                evaluationSessionRepository.save(session)
+                                    .flatMap { closed ->
+                                        lockSheets(closed).then(
+                                            outboxWriter.append(
+                                                schoolId = closed.schoolId,
+                                                module = "grading",
+                                                aggregateType = "EvaluationSession",
+                                                aggregateId = closed.id!!,
+                                                eventType = "grading.session.closed",
+                                                payload = mapOf(
+                                                    "sessionId" to closed.id,
+                                                    "number" to closed.number,
+                                                    "termNumber" to closed.termNumber
+                                                )
+                                            )
+                                        ).thenReturn(closed)
+                                    }
+                            }
                         }
-                }
+                    )
             }
             .map { GradingMapper.toSessionResponse(it) }
     }
@@ -198,17 +208,22 @@ class EvaluationSessionService(
         return evaluationSessionRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("SESSION_NOT_FOUND", "Evaluation session not found")))
             .flatMap { session ->
-                if (session.status != SessionStatus.CLOSED) {
-                    Mono.error(BusinessRuleException("SESSION_NOT_CLOSED", "Only a CLOSED session can be reopened"))
-                } else {
-                    session.status = SessionStatus.OPEN
-                    session.reopenedAt = Instant.now()
-                    session.reopenedBy = currentUser.accountId
-                    session.closedAt = null
-                    session.closedBy = null
-                    evaluationSessionRepository.save(session)
-                        .flatMap { opened -> unlockSheets(opened).thenReturn(opened) }
-                }
+                academicYearApi.assertWritable(schoolId, session.academicYearId)
+                    .then(
+                        Mono.defer {
+                            if (session.status != SessionStatus.CLOSED) {
+                                Mono.error(BusinessRuleException("SESSION_NOT_CLOSED", "Only a CLOSED session can be reopened"))
+                            } else {
+                                session.status = SessionStatus.OPEN
+                                session.reopenedAt = Instant.now()
+                                session.reopenedBy = currentUser.accountId
+                                session.closedAt = null
+                                session.closedBy = null
+                                evaluationSessionRepository.save(session)
+                                    .flatMap { opened -> unlockSheets(opened).thenReturn(opened) }
+                            }
+                        }
+                    )
             }
             .map { GradingMapper.toSessionResponse(it) }
     }
