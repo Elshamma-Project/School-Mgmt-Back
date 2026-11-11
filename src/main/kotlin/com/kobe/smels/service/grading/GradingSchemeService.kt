@@ -36,14 +36,53 @@ class GradingSchemeService(
             }
             .switchIfEmpty(
                 Mono.defer {
-                    gradingSchemeRepository.save(
-                        GradingScheme(
-                            schoolId = schoolId,
-                            code = code,
-                            name = GradingMapper.toLocalized(request.name),
-                            active = true
-                        )
+                    val scheme = GradingScheme(
+                        schoolId = schoolId,
+                        code = code,
+                        name = GradingMapper.toLocalized(request.name),
+                        active = request.active ?: true
                     )
+                    request.maxScore?.let { scheme.maxScore = requirePositive(it, "maxScore") }
+                    request.passMark?.let { scheme.passMark = requireNonNegative(it, "passMark") }
+                    request.classSuccessThreshold?.let {
+                        scheme.classSuccessThreshold = requireNonNegative(it, "classSuccessThreshold")
+                    }
+                    request.decimals?.let { scheme.decimals = it }
+                    request.honourRollMinAverage?.let {
+                        scheme.honourRollMinAverage = requireNonNegative(it, "honourRollMinAverage")
+                    }
+                    request.honourRollBlockedBySanction?.let { scheme.honourRollBlockedBySanction = it }
+                    request.effortSubjectThreshold?.let {
+                        scheme.effortSubjectThreshold = requireNonNegative(it, "effortSubjectThreshold")
+                    }
+                    request.reportSheetDeadlineHours?.let { scheme.reportSheetDeadlineHours = it }
+                    request.reportSheetDeadlineBlocking?.let { scheme.reportSheetDeadlineBlocking = it }
+                    request.reportSheetMaxRowsPerPage?.let { scheme.reportSheetMaxRowsPerPage = it }
+                    request.appreciationScales?.let { scales ->
+                        scheme.appreciationScales = scales.map { toAppreciationScale(it) }
+                    }
+                    request.overallMentionBands?.let { bands ->
+                        scheme.overallMentionBands = bands.map { toScoreBand(it) }
+                    }
+                    request.reportSheetAppreciationScaleCode?.trim()?.takeIf { it.isNotEmpty() }?.let { scaleCode ->
+                        if (scheme.appreciationScales.isNotEmpty() &&
+                            scheme.appreciationScales.none { it.code.equals(scaleCode, ignoreCase = true) }
+                        ) {
+                            return@defer Mono.error(
+                                BusinessRuleException(
+                                    "SCALE_CODE_UNKNOWN",
+                                    "Appreciation scale code is not defined on this scheme"
+                                )
+                            )
+                        }
+                        scheme.reportSheetAppreciationScaleCode = scaleCode.uppercase()
+                    }
+                    if (scheme.passMark > scheme.maxScore) {
+                        return@defer Mono.error(
+                            BusinessRuleException("PASS_MARK_INVALID", "passMark cannot exceed maxScore")
+                        )
+                    }
+                    gradingSchemeRepository.save(scheme)
                 }
             )
             .map { GradingMapper.toSchemeResponse(it) }

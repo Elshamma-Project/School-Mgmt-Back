@@ -220,12 +220,6 @@ data class EvaluationSessionSummaryDto(
     val status: SessionStatus
 )
 
-data class CreateGradingSchemeRequest(
-    @field:NotBlank val code: String,
-    @field:NotNull val name: LocalizedTextDto,
-    val schoolId: String? = null
-)
-
 data class ScoreBandWriteDto(
     @field:NotBlank val code: String,
     val label: LocalizedTextDto? = null,
@@ -236,6 +230,26 @@ data class ScoreBandWriteDto(
 data class AppreciationScaleWriteDto(
     @field:NotBlank val code: String,
     @field:Valid val bands: List<ScoreBandWriteDto> = emptyList()
+)
+
+data class CreateGradingSchemeRequest(
+    @field:NotBlank val code: String,
+    @field:NotNull val name: LocalizedTextDto,
+    val maxScore: BigDecimal? = null,
+    val passMark: BigDecimal? = null,
+    val classSuccessThreshold: BigDecimal? = null,
+    @field:Min(0) @field:Max(4) val decimals: Int? = null,
+    val honourRollMinAverage: BigDecimal? = null,
+    val honourRollBlockedBySanction: Boolean? = null,
+    val effortSubjectThreshold: BigDecimal? = null,
+    @field:Min(1) val reportSheetDeadlineHours: Int? = null,
+    val reportSheetDeadlineBlocking: Boolean? = null,
+    @field:Min(1) @field:Max(80) val reportSheetMaxRowsPerPage: Int? = null,
+    val reportSheetAppreciationScaleCode: String? = null,
+    @field:Valid val appreciationScales: List<AppreciationScaleWriteDto>? = null,
+    @field:Valid val overallMentionBands: List<ScoreBandWriteDto>? = null,
+    val active: Boolean? = null,
+    val schoolId: String? = null
 )
 
 data class UpdateGradingSchemeRequest(
