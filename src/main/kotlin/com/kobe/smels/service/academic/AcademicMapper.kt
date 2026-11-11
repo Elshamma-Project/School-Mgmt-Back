@@ -87,6 +87,7 @@ object AcademicMapper {
             headTitle = toLocalizedDto(school.headTitle),
             headOfSchoolStaffId = school.headOfSchoolStaffId,
             logoFileId = school.logoFileId,
+            hasLogo = !school.logoFileId.isNullOrBlank(),
             reportCardNotice = toLocalizedDto(school.reportCardNotice),
             reportCardDisclaimer = toLocalizedDto(school.reportCardDisclaimer),
             timezone = school.timezone,

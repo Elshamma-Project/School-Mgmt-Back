@@ -28,7 +28,12 @@ import com.kobe.smels.service.academic.SubjectService
 import com.kobe.smels.service.academic.TermCompetencyService
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.http.codec.multipart.FilePart
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -36,8 +41,10 @@ import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/v1/schools")
@@ -57,6 +64,27 @@ class SchoolController(private val schoolService: SchoolService) {
     @PutMapping("/{id}")
     fun update(@PathVariable id: String, @Valid @RequestBody request: UpdateSchoolRequest) =
         SecuritySupport.currentUser().flatMap { schoolService.update(it, id, request) }
+
+    @PutMapping("/{id}/logo", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadLogo(
+        @PathVariable id: String,
+        @RequestPart("file") file: FilePart
+    ) = SecuritySupport.currentUser().flatMap { schoolService.uploadLogo(it, id, file) }
+
+    @GetMapping("/{id}/logo")
+    fun getLogo(@PathVariable id: String): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser()
+            .flatMap { schoolService.getLogo(it, id) }
+            .map { logo ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(logo.contentType))
+                    .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                    .body(logo.data.data)
+            }
+
+    @DeleteMapping("/{id}/logo")
+    fun deleteLogo(@PathVariable id: String) =
+        SecuritySupport.currentUser().flatMap { schoolService.deleteLogo(it, id) }
 }
 
 @RestController
@@ -84,6 +112,12 @@ class AcademicYearController(private val academicYearService: AcademicYearServic
         @Valid @RequestBody request: UpdateAcademicYearRequest,
         @RequestParam(required = false) schoolId: String?
     ) = SecuritySupport.currentUser().flatMap { academicYearService.update(it, id, request, schoolId) }
+
+    @PostMapping("/{id}/set-current")
+    fun setCurrent(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { academicYearService.setCurrent(it, id, schoolId) }
 }
 
 @RestController

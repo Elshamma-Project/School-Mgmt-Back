@@ -6,6 +6,7 @@ import com.kobe.smels.model.academic.Level
 import com.kobe.smels.model.academic.Room
 import com.kobe.smels.model.academic.School
 import com.kobe.smels.model.academic.SchoolClass
+import com.kobe.smels.model.academic.SchoolLogo
 import com.kobe.smels.model.academic.Subject
 import com.kobe.smels.model.academic.SubjectGroup
 import com.kobe.smels.model.academic.TermCompetency
@@ -17,6 +18,11 @@ import reactor.core.publisher.Mono
 interface SchoolRepository : ReactiveMongoRepository<School, String> {
     fun findByCode(code: String): Mono<School>
     fun findByActiveTrue(): Flux<School>
+}
+
+interface SchoolLogoRepository : ReactiveMongoRepository<SchoolLogo, String> {
+    fun findBySchoolId(schoolId: String): Mono<SchoolLogo>
+    fun deleteBySchoolId(schoolId: String): Mono<Void>
 }
 
 interface AcademicYearRepository : ReactiveMongoRepository<AcademicYear, String> {

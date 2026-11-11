@@ -102,6 +102,7 @@ data class SchoolResponse(
     val headTitle: LocalizedTextDto?,
     val headOfSchoolStaffId: String?,
     val logoFileId: String?,
+    val hasLogo: Boolean,
     val reportCardNotice: LocalizedTextDto?,
     val reportCardDisclaimer: LocalizedTextDto?,
     val timezone: String,

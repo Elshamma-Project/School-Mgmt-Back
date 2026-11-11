@@ -29,8 +29,9 @@
 | user | `user_accounts` | `UserAccount` | Comptes de connexion (auth, rôles, verrouillage) ; `username` = **e-mail** de login ; `avatarFileId` = photo UI (pas bulletin) |
 | user | `user_avatars` | `UserAvatar` | Binaire photo de profil compte (UI) — distinct de `Student.photoFileId` |
 | user | `user_sessions` | `UserSession` | Sessions de connexion (max 2 actives / compte ; refresh hashé). API `GET /auth/sessions` → `SessionResponse` (deviceLabel, userAgent, ip, created/lastSeen/expires, `current`, `status`, `deviceKind` dérivé du UA — non persisté). `POST /auth/logout-all` révoque les autres sessions, garde la courante. |
-| academic | `academic_schools` | `School` | Établissement, en-têtes officiels par cycle, textes du bulletin |
-| academic | `academic_years` | `AcademicYear` (+ `Term`) | Années et trimestres |
+| academic | `academic_schools` | `School` | Établissement, en-têtes officiels par cycle, textes du bulletin ; `logoFileId` → logo documents/UI |
+| academic | `academic_school_logos` | `SchoolLogo` | Binaire logo établissement (UI, bulletins, EDT) — référencé par `School.logoFileId` |
+| academic | `academic_years` | `AcademicYear` (+ `Term`) | Années et trimestres ; une seule `current = true` (auto si aucune, sinon manuel directeur) |
 | academic | `academic_levels` | `Level` | 6ème, Form 3, Tle... |
 | academic | `academic_classes` | `SchoolClass` | Classes d'une année (`2NDE C`, `FORM 4 ARTS`), langues, série |
 | academic | `academic_rooms` | `Room` | Salles |

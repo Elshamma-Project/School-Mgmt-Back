@@ -32,6 +32,13 @@ internal object AcademicAccess {
         }
     }
 
+    /** Identité, logo, en-têtes documents — directeur uniquement (+ SUPER_ADMIN). */
+    fun assertCanManageSchoolSettings(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            throw ForbiddenException("FORBIDDEN", "Only the director can manage school settings")
+        }
+    }
+
     fun resolveSchoolId(currentUser: CurrentUser, overrideSchoolId: String?): String =
         currentUser.requireSchoolId(overrideSchoolId)
 

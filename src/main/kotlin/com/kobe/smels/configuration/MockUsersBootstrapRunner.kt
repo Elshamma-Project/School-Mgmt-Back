@@ -6,6 +6,7 @@ import com.kobe.smels.model.academic.ClassSubject
 import com.kobe.smels.model.academic.Level
 import com.kobe.smels.model.academic.Room
 import com.kobe.smels.model.academic.RoomType
+import com.kobe.smels.model.academic.OfficialHeader
 import com.kobe.smels.model.academic.School
 import com.kobe.smels.model.academic.SchoolClass
 import com.kobe.smels.model.academic.Subject
@@ -143,23 +144,117 @@ class MockUsersBootstrapRunner(
                 schoolRepository.findByCode(code)
                     .switchIfEmpty(
                         Mono.defer {
-                            schoolRepository.save(
-                                School(
-                                    id = schoolId,
-                                    code = code,
-                                    name = LocalizedText(
-                                        fr = "Collège bilingue démo El Shammah",
-                                        en = "El Shammah Bilingual Demo College"
-                                    ),
-                                    shortName = "El Shammah Demo",
-                                    signaturePlace = "YAOUNDE",
-                                    headTitle = LocalizedText(fr = "LE PRINCIPAL", en = "THE PRINCIPAL"),
-                                    active = true
-                                )
-                            )
+                            schoolRepository.save(demoSchool(schoolId, code))
                         }
                     )
             )
+            .flatMap { school ->
+                var dirty = false
+                if (school.officialHeaders.isEmpty()) {
+                    school.officialHeaders = demoOfficialHeaders()
+                    dirty = true
+                }
+                if (school.reportCardNotice == null) {
+                    school.reportCardNotice = LocalizedText(
+                        fr = "Bulletin consultable par les parents via l’espace famille.",
+                        en = "Report card available to parents in the family portal."
+                    )
+                    dirty = true
+                }
+                if (school.reportCardDisclaimer == null) {
+                    school.reportCardDisclaimer = LocalizedText(
+                        fr = "Le bulletin est délivré sans rature ni surcharge.",
+                        en = "This report card is issued without erasure or alteration."
+                    )
+                    dirty = true
+                }
+                if (school.contact.city.isNullOrBlank()) {
+                    school.contact = school.contact.copy(
+                        city = school.contact.city ?: "Yaoundé",
+                        address = school.contact.address ?: "Quartier démo",
+                        phones = school.contact.phones.ifEmpty { listOf("+237 600 000 000") }
+                    )
+                    dirty = true
+                }
+                if (dirty) schoolRepository.save(school) else Mono.just(school)
+            }
+
+    private fun demoSchool(schoolId: String, code: String): School =
+        School(
+            id = schoolId,
+            code = code,
+            name = LocalizedText(
+                fr = "Collège bilingue démo El Shammah",
+                en = "El Shammah Bilingual Demo College"
+            ),
+            shortName = "El Shammah Demo",
+            officialHeaders = demoOfficialHeaders(),
+            contact = ContactInfo(
+                phones = listOf("+237 600 000 000"),
+                email = "contact@elshammah.demo",
+                address = "Quartier démo",
+                city = "Yaoundé"
+            ),
+            postalBox = "BP 0000",
+            signaturePlace = "YAOUNDE",
+            headTitle = LocalizedText(fr = "LE PRINCIPAL", en = "THE PRINCIPAL"),
+            reportCardNotice = LocalizedText(
+                fr = "Bulletin consultable par les parents via l’espace famille.",
+                en = "Report card available to parents in the family portal."
+            ),
+            reportCardDisclaimer = LocalizedText(
+                fr = "Le bulletin est délivré sans rature ni surcharge.",
+                en = "This report card is issued without erasure or alteration."
+            ),
+            active = true
+        )
+
+    private fun demoOfficialHeaders(): List<OfficialHeader> =
+        listOf(
+            OfficialHeader(
+                cycles = setOf(Cycle.SECONDAIRE_1ER_CYCLE, Cycle.SECONDAIRE_2ND_CYCLE),
+                republic = LocalizedText(
+                    fr = "RÉPUBLIQUE DU CAMEROUN",
+                    en = "REPUBLIC OF CAMEROON"
+                ),
+                motto = LocalizedText(
+                    fr = "Paix – Travail – Patrie",
+                    en = "Peace – Work – Fatherland"
+                ),
+                ministry = LocalizedText(
+                    fr = "MINISTÈRE DES ENSEIGNEMENTS SECONDAIRES",
+                    en = "MINISTRY OF SECONDARY EDUCATION"
+                ),
+                regionalDelegation = LocalizedText(
+                    fr = "Délégation Régionale du Centre",
+                    en = "Centre Regional Delegation"
+                ),
+                divisionalDelegation = LocalizedText(
+                    fr = "Délégation Départementale du Mfoundi",
+                    en = "Mfoundi Divisional Delegation"
+                )
+            ),
+            OfficialHeader(
+                cycles = setOf(Cycle.PRIMAIRE, Cycle.MATERNELLE),
+                republic = LocalizedText(
+                    fr = "RÉPUBLIQUE DU CAMEROUN",
+                    en = "REPUBLIC OF CAMEROON"
+                ),
+                motto = LocalizedText(
+                    fr = "Paix – Travail – Patrie",
+                    en = "Peace – Work – Fatherland"
+                ),
+                ministry = LocalizedText(
+                    fr = "MINISTÈRE DE L’ÉDUCATION DE BASE",
+                    en = "MINISTRY OF BASIC EDUCATION"
+                ),
+                regionalDelegation = LocalizedText(
+                    fr = "Délégation Régionale du Centre",
+                    en = "Centre Regional Delegation"
+                ),
+                divisionalDelegation = null
+            )
+        )
 
     private fun ensureStaff(schoolId: String): Mono<Void> =
         Mono.`when`(

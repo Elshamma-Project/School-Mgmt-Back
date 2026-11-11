@@ -9,6 +9,7 @@ import com.kobe.smels.model.shared.OutboxEvent
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
 import com.kobe.smels.repository.academic.AcademicYearRepository
+import com.kobe.smels.repository.academic.SchoolRepository
 import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
 import org.mockito.kotlin.any
@@ -23,8 +24,9 @@ import kotlin.test.assertTrue
 
 class AcademicYearServiceTest {
     private val academicYearRepository: AcademicYearRepository = mock()
+    private val schoolRepository: SchoolRepository = mock()
     private val outboxWriter: OutboxWriter = mock()
-    private val service = AcademicYearService(academicYearRepository, outboxWriter)
+    private val service = AcademicYearService(academicYearRepository, schoolRepository, outboxWriter)
 
     @Test
     fun `rejects academic year without three terms`() {
