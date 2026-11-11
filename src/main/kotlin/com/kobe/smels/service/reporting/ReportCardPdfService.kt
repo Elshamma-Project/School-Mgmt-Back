@@ -250,8 +250,8 @@ class ReportCardPdfService {
             L("EFFECTIF DE LA CLASSE", "N° ON ROLL") to card.classInfo.effectif.toString(),
             L("LANGUE DU BULLETIN", "REPORT LANGUAGE") to if (lang == Language.FR) "Français" else "English",
         )
-        // 3 colonnes champs + 1 colonne photo (rowspan 3)
-        val table = PdfPTable(floatArrayOf(1f, 1f, 1f, 0.55f))
+        // 3 colonnes champs + 1 colonne photo (rowspan 3) — portrait ~4:5
+        val table = PdfPTable(floatArrayOf(1f, 1f, 1f, 0.72f))
         table.widthPercentage = 100f
         cells.forEachIndexed { index, (label, value) ->
             val p = Paragraph()
@@ -282,7 +282,7 @@ class ReportCardPdfService {
         val cell = if (studentPhotoBytes != null && studentPhotoBytes.isNotEmpty()) {
             try {
                 val img = Image.getInstance(studentPhotoBytes)
-                img.scaleToFit(48f, 58f)
+                img.scaleToFit(58f, 72f)
                 PdfPCell(img, false).apply {
                     horizontalAlignment = Element.ALIGN_CENTER
                     verticalAlignment = Element.ALIGN_MIDDLE
@@ -295,8 +295,8 @@ class ReportCardPdfService {
         }
         cell.rowspan = 3
         cell.borderColor = LINE
-        cell.setPadding(2f)
-        cell.fixedHeight = 58f
+        cell.setPadding(3f)
+        cell.fixedHeight = 74f
         return cell
     }
 
@@ -1020,10 +1020,18 @@ class ReportCardPdfService {
         table.widthPercentage = 100f
 
         val kobeFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, muted.size + 0.3f, AMBER)
+        val kobeUrl =
+            if (lang == Language.FR) "https://www.kobecorporation.com/fr"
+            else "https://www.kobecorporation.com/en"
         val leftPara = Paragraph().apply {
             leading = muted.size + 1.4f
             add(Chunk(if (lang == Language.FR) "Développé par " else "Developed by ", muted))
-            add(Chunk("KOBE Corporation\n", kobeFont))
+            add(
+                Chunk("KOBE Corporation", kobeFont).apply {
+                    setAnchor(kobeUrl)
+                }
+            )
+            add(Chunk("\n", muted))
             val stamped = card.generatedAt.atZone(ZoneId.of("Africa/Douala"))
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"))
             val stampedEn = card.generatedAt.atZone(ZoneId.of("Africa/Douala"))
