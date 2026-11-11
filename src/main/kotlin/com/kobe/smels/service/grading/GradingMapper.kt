@@ -1,6 +1,7 @@
 package com.kobe.smels.service.grading
 
 import com.kobe.smels.dto.grading.AppreciationScaleCalcDto
+import com.kobe.smels.dto.grading.AppreciationScaleDto
 import com.kobe.smels.dto.grading.AssessmentResponse
 import com.kobe.smels.dto.grading.EvaluationSessionResponse
 import com.kobe.smels.dto.grading.EvaluationSessionSummaryDto
@@ -14,6 +15,7 @@ import com.kobe.smels.dto.grading.LocalizedTextDto
 import com.kobe.smels.dto.grading.ReportSheetSequenceCellDto
 import com.kobe.smels.dto.grading.ReportSheetVisaDto
 import com.kobe.smels.dto.grading.ScoreBandCalcDto
+import com.kobe.smels.dto.grading.ScoreBandDto
 import com.kobe.smels.dto.grading.SequenceMarkResponse
 import com.kobe.smels.dto.grading.SequenceMarkSummaryDto
 import com.kobe.smels.dto.grading.TotalizationRuleDto
@@ -25,6 +27,7 @@ import com.kobe.smels.model.grading.GradeSheet
 import com.kobe.smels.model.grading.GradingScheme
 import com.kobe.smels.model.grading.ReportSheetSequenceCell
 import com.kobe.smels.model.grading.ReportSheetVisa
+import com.kobe.smels.model.grading.ScoreBand
 import com.kobe.smels.model.grading.SequenceMark
 import com.kobe.smels.model.grading.TotalizationRule
 import com.kobe.smels.model.shared.LocalizedText
@@ -135,12 +138,32 @@ object GradingMapper {
         name = toLocalizedDto(s.name),
         maxScore = s.maxScore,
         passMark = s.passMark,
+        classSuccessThreshold = s.classSuccessThreshold,
         decimals = s.decimals,
+        roundingPolicy = s.roundingPolicy.name,
+        roundTermSubjectAverages = s.roundTermSubjectAverages,
+        honourRollMinAverage = s.honourRollMinAverage,
+        honourRollBlockedBySanction = s.honourRollBlockedBySanction,
+        effortSubjectThreshold = s.effortSubjectThreshold,
         reportSheetDeadlineHours = s.reportSheetDeadlineHours,
         reportSheetDeadlineBlocking = s.reportSheetDeadlineBlocking,
         reportSheetMaxRowsPerPage = s.reportSheetMaxRowsPerPage,
         reportSheetAppreciationScaleCode = s.reportSheetAppreciationScaleCode,
+        appreciationScales = s.appreciationScales.map { scale ->
+            AppreciationScaleDto(
+                code = scale.code,
+                bands = scale.bands.map { toScoreBandDto(it) }
+            )
+        },
+        overallMentionBands = s.overallMentionBands.map { toScoreBandDto(it) },
         active = s.active
+    )
+
+    private fun toScoreBandDto(band: ScoreBand) = ScoreBandDto(
+        code = band.code,
+        label = band.label?.let { toLocalizedDto(it) },
+        minInclusive = band.minInclusive,
+        maxExclusive = band.maxExclusive
     )
 
     fun toSchemeCalc(s: GradingScheme) = GradingSchemeCalcDto(

@@ -476,31 +476,37 @@ class MockUsersBootstrapRunner(
                 }
             )
 
+        // Jeu de test volontairement hétérogène (docs/mock-logins.md) :
+        // DEV1-2 CLOSED, DEV3-4 OPEN, DEV5-6 PLANNED (pas encore ouvertes).
         val sessionsMono = Flux.range(1, 6)
             .concatMap { number ->
                 val term = ((number - 1) / 2) + 1
                 val id = "$SESSION_PREFIX$number"
+                val desired = demoSessionStatus(number)
+                val examDate = LocalDate.of(2025, 9, 10).plusWeeks((number - 1).toLong() * 6)
                 evaluationSessionRepository.findById(id)
+                    .flatMap { existing ->
+                        applyDemoSessionState(existing, desired)
+                        existing.examDate = existing.examDate ?: examDate
+                        evaluationSessionRepository.save(existing)
+                    }
                     .switchIfEmpty(
                         Mono.defer {
-                            evaluationSessionRepository.save(
-                                EvaluationSession(
-                                    id = id,
-                                    schoolId = schoolId,
-                                    academicYearId = YEAR_DEMO,
-                                    number = number,
-                                    termNumber = term,
-                                    shortLabel = "DEV$number",
-                                    name = LocalizedText(
-                                        fr = "Séquence $number",
-                                        en = "Sequence $number"
-                                    ),
-                                    status = if (number <= 4) SessionStatus.CLOSED else SessionStatus.OPEN,
-                                    openedAt = Instant.parse("2025-09-15T08:00:00Z"),
-                                    closedAt = if (number <= 4) Instant.parse("2025-12-20T17:00:00Z") else null,
-                                    examDate = LocalDate.of(2025, 9, 10).plusWeeks((number - 1).toLong() * 6)
-                                )
+                            val session = EvaluationSession(
+                                id = id,
+                                schoolId = schoolId,
+                                academicYearId = YEAR_DEMO,
+                                number = number,
+                                termNumber = term,
+                                shortLabel = "DEV$number",
+                                name = LocalizedText(
+                                    fr = "Séquence $number",
+                                    en = "Sequence $number"
+                                ),
+                                examDate = examDate
                             )
+                            applyDemoSessionState(session, desired)
+                            evaluationSessionRepository.save(session)
                         }
                     )
             }
@@ -534,12 +540,26 @@ class MockUsersBootstrapRunner(
                                     sessionId = sessionId,
                                     sessionNumber = number,
                                     teacherId = STAFF_TEACHER,
-                                    status = if (number <= 4) SheetStatus.LOCKED else SheetStatus.SUBMITTED,
+                                    status = demoSheetStatus(number),
                                     lastTotalizedAt = Instant.now()
                                 )
                             )
                         }
                     )
+                    .flatMap { sheet ->
+                        val desired = demoSheetStatus(number)
+                        if (sheet.status == desired) {
+                            Mono.just(sheet)
+                        } else {
+                            sheet.status = desired
+                            if (desired == SheetStatus.LOCKED) {
+                                sheet.lockedAt = sheet.lockedAt ?: Instant.parse("2025-12-20T17:00:00Z")
+                            } else {
+                                sheet.lockedAt = null
+                            }
+                            gradeSheetRepository.save(sheet)
+                        }
+                    }
                     .then(
                         sequenceMarkRepository.findById(markId)
                             .flatMap { existing ->
@@ -584,6 +604,49 @@ class MockUsersBootstrapRunner(
         val classSubjectId: String,
         val values: List<String>
     )
+
+    /** DEV1-2 clôturées, DEV3-4 ouvertes, DEV5-6 pas encore ouvertes. */
+    private fun demoSessionStatus(number: Int): SessionStatus =
+        when (number) {
+            1, 2 -> SessionStatus.CLOSED
+            3, 4 -> SessionStatus.OPEN
+            else -> SessionStatus.PLANNED
+        }
+
+    private fun demoSheetStatus(number: Int): SheetStatus =
+        when (demoSessionStatus(number)) {
+            SessionStatus.CLOSED -> SheetStatus.LOCKED
+            SessionStatus.OPEN -> SheetStatus.DRAFT
+            SessionStatus.PLANNED -> SheetStatus.DRAFT
+        }
+
+    private fun applyDemoSessionState(session: EvaluationSession, status: SessionStatus) {
+        session.status = status
+        when (status) {
+            SessionStatus.PLANNED -> {
+                session.openedAt = null
+                session.closedAt = null
+                session.closedBy = null
+                session.reopenedAt = null
+                session.reopenedBy = null
+                session.closeNote = null
+            }
+            SessionStatus.OPEN -> {
+                session.openedAt = session.openedAt ?: Instant.parse("2025-09-15T08:00:00Z")
+                session.closedAt = null
+                session.closedBy = null
+                session.reopenedAt = null
+                session.reopenedBy = null
+                session.closeNote = null
+            }
+            SessionStatus.CLOSED -> {
+                session.openedAt = session.openedAt ?: Instant.parse("2025-09-15T08:00:00Z")
+                session.closedAt = session.closedAt ?: Instant.parse("2025-12-20T17:00:00Z")
+                session.reopenedAt = null
+                session.reopenedBy = null
+            }
+        }
+    }
 
     private fun upsertLevel(
         id: String,

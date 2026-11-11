@@ -9,6 +9,7 @@ import com.kobe.smels.dto.grading.GenerateReportSheetRequest
 import com.kobe.smels.dto.grading.RejectReportSheetRequest
 import com.kobe.smels.dto.grading.ReopenSessionRequest
 import com.kobe.smels.dto.grading.UpdateAssessmentRequest
+import com.kobe.smels.dto.grading.UpdateGradingSchemeRequest
 import com.kobe.smels.dto.grading.UpdateSessionExamDateRequest
 import com.kobe.smels.dto.grading.UpsertGradeRequest
 import com.kobe.smels.model.shared.Language
@@ -29,6 +30,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -206,6 +208,12 @@ class GradingSchemeController(private val gradingSchemeService: GradingSchemeSer
     @GetMapping("/{id}")
     fun get(@PathVariable id: String, @RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMap { gradingSchemeService.getById(it, id, schoolId) }
+
+    @PatchMapping("/{id}")
+    fun update(
+        @PathVariable id: String,
+        @Valid @RequestBody request: UpdateGradingSchemeRequest
+    ) = SecuritySupport.currentUser().flatMap { gradingSchemeService.update(it, id, request) }
 }
 
 @RestController

@@ -55,3 +55,41 @@ smels.security.bootstrap.username=superadmin@smels.local
 - Les fiches `Staff` démo reçoivent le **même e-mail** que le compte lié (`contact.email`), pour l’affichage RH.
 - Seed académique minimal : année `2025-2026`, matières Maths/PC, classes 6ème A / 5ème A, affectées à `enseignant@elshammah.demo`.
 - Ne jamais committer de vrais mots de passe ni de données nominatives réelles.
+
+## Sessions d’évaluation (DEV1…DEV6)
+
+Cycle de vie (docs/02 § 5.3) :
+
+| Statut | Signification | UI / droits |
+|---|---|---|
+| `PLANNED` | Pas encore ouverte | Admin peut **ouvrir** |
+| `OPEN` | Saisie enseignants active | Admin peut **clôturer** |
+| `CLOSED` | Saisie bloquée | Directeur peut **rouvrir** (motif) |
+
+Jeu de test réaligné **à chaque démarrage** du back (`mock-users.enabled=true`) :
+
+| Séquences | Statut seed |
+|---|---|
+| DEV1, DEV2 | `CLOSED` |
+| DEV3, DEV4 | `OPEN` |
+| DEV5, DEV6 | `PLANNED` |
+
+### Réinitialiser manuellement (sans redémarrer)
+
+1. **Via l’UI** (hub Notes / Séquences) : cliquer une ligne → ouvrir / clôturer / rouvrir.
+2. **Via l’API** (compte admin ou directeur) :
+   - `POST /api/v1/evaluation-sessions/{id}/open`
+   - `POST /api/v1/evaluation-sessions/{id}/close`
+   - `POST /api/v1/evaluation-sessions/{id}/reopen` + `{ "reason": "…" }` (directeur)
+   - IDs démo : `session-demo-1` … `session-demo-6`
+
+### Réinitialiser automatiquement
+
+- **Redémarrer le back** avec `smels.security.mock-users.enabled=true` : le seed **réécrit** les statuts DEV1…6 (et les fiches associées) vers le tableau ci-dessus.
+- Remise à zéro Mongo plus large (DEV local uniquement), puis redémarrage :
+
+```bash
+mongosh --eval 'db.getSiblingDB("smels").grading_sessions.deleteMany({ schoolId: "school-demo-elshammah" })'
+```
+
+(ou vider la base démo entière si besoin, puis relancer `./gradlew bootRun`).

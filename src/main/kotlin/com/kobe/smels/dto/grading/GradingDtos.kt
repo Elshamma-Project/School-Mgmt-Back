@@ -226,6 +226,53 @@ data class CreateGradingSchemeRequest(
     val schoolId: String? = null
 )
 
+data class ScoreBandWriteDto(
+    @field:NotBlank val code: String,
+    val label: LocalizedTextDto? = null,
+    @field:NotNull val minInclusive: BigDecimal,
+    val maxExclusive: BigDecimal? = null
+)
+
+data class AppreciationScaleWriteDto(
+    @field:NotBlank val code: String,
+    @field:Valid val bands: List<ScoreBandWriteDto> = emptyList()
+)
+
+data class UpdateGradingSchemeRequest(
+    val name: LocalizedTextDto? = null,
+    val maxScore: BigDecimal? = null,
+    val passMark: BigDecimal? = null,
+    val classSuccessThreshold: BigDecimal? = null,
+    @field:Min(0) @field:Max(4) val decimals: Int? = null,
+    val honourRollMinAverage: BigDecimal? = null,
+    val honourRollBlockedBySanction: Boolean? = null,
+    /** Passer une valeur pour définir ; omettre pour ne pas toucher. Null JSON explicite non supporté ici. */
+    val effortSubjectThreshold: BigDecimal? = null,
+    val clearEffortSubjectThreshold: Boolean = false,
+    @field:Min(1) val reportSheetDeadlineHours: Int? = null,
+    val reportSheetDeadlineBlocking: Boolean? = null,
+    @field:Min(1) @field:Max(80) val reportSheetMaxRowsPerPage: Int? = null,
+    val reportSheetAppreciationScaleCode: String? = null,
+    /** Remplace entièrement les échelles si fourni. */
+    @field:Valid val appreciationScales: List<AppreciationScaleWriteDto>? = null,
+    /** Remplace entièrement les mentions générales si fourni. */
+    @field:Valid val overallMentionBands: List<ScoreBandWriteDto>? = null,
+    val active: Boolean? = null,
+    val schoolId: String? = null
+)
+
+data class ScoreBandDto(
+    val code: String,
+    val label: LocalizedTextDto?,
+    val minInclusive: BigDecimal,
+    val maxExclusive: BigDecimal?
+)
+
+data class AppreciationScaleDto(
+    val code: String,
+    val bands: List<ScoreBandDto>
+)
+
 data class GradingSchemeResponse(
     val id: String,
     val schoolId: String,
@@ -233,11 +280,19 @@ data class GradingSchemeResponse(
     val name: LocalizedTextDto,
     val maxScore: BigDecimal,
     val passMark: BigDecimal,
+    val classSuccessThreshold: BigDecimal,
     val decimals: Int,
+    val roundingPolicy: String,
+    val roundTermSubjectAverages: Boolean,
+    val honourRollMinAverage: BigDecimal,
+    val honourRollBlockedBySanction: Boolean,
+    val effortSubjectThreshold: BigDecimal?,
     val reportSheetDeadlineHours: Int,
     val reportSheetDeadlineBlocking: Boolean,
     val reportSheetMaxRowsPerPage: Int,
     val reportSheetAppreciationScaleCode: String,
+    val appreciationScales: List<AppreciationScaleDto>,
+    val overallMentionBands: List<ScoreBandDto>,
     val active: Boolean
 )
 
