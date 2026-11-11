@@ -126,29 +126,26 @@ class ReportCardPdfService {
 
         val top = PdfPTable(floatArrayOf(1f, 0.28f, 1f))
         top.widthPercentage = 100f
-        val fr = Paragraph().apply {
+        fun columnParagraph(lines: List<String>): Paragraph = Paragraph().apply {
             leading = small.size + 1.2f
-            add(Chunk("${context.republicFr}\n", bold))
-            add(Chunk("${context.mottoFr}\n", muted))
-            add(Chunk("${context.ministryFr}\n", small))
-            add(Chunk("${context.regionalFr}\n", small))
-            add(Chunk("${context.divisionalFr}\n", small))
-            add(Chunk("${context.schoolNameFr}\n", bold))
-            add(Chunk("B.P. : ${context.postalBox}  ·  Tél. : ${context.phoneLine}", muted))
             alignment = Element.ALIGN_CENTER
+            lines.forEachIndexed { index, line ->
+                val isLast = index == lines.lastIndex
+                val isName = index == lines.lastIndex - if (lines.lastOrNull()?.contains("B.P.") == true ||
+                    lines.lastOrNull()?.contains("P.O.") == true ||
+                    lines.lastOrNull()?.contains("Tél.") == true ||
+                    lines.lastOrNull()?.contains("Tel.") == true
+                ) 1 else 0
+                val font = when {
+                    index == 0 || isName -> bold
+                    isLast && (line.startsWith("B.P.") || line.startsWith("P.O.") || line.startsWith("Tél.") || line.startsWith("Tel.")) -> muted
+                    index == 1 -> muted
+                    else -> small
+                }
+                add(Chunk(if (index < lines.lastIndex) "$line\n" else line, font))
+            }
         }
-        val en = Paragraph().apply {
-            leading = small.size + 1.2f
-            add(Chunk("${context.republicEn}\n", bold))
-            add(Chunk("${context.mottoEn}\n", muted))
-            add(Chunk("${context.ministryEn}\n", small))
-            add(Chunk("${context.regionalEn}\n", small))
-            add(Chunk("${context.divisionalEn}\n", small))
-            add(Chunk("${context.schoolNameEn}\n", bold))
-            add(Chunk("P.O. Box : ${context.postalBox}  ·  Tel. : ${context.phoneLine}", muted))
-            alignment = Element.ALIGN_CENTER
-        }
-        addBorderless(top, fr, Element.ALIGN_CENTER)
+        addBorderless(top, columnParagraph(context.headerLinesFr()), Element.ALIGN_CENTER)
         val logoCell = PdfPCell()
         logoCell.border = Rectangle.NO_BORDER
         logoCell.horizontalAlignment = Element.ALIGN_CENTER
@@ -167,30 +164,43 @@ class ReportCardPdfService {
             logoCell.addElement(Paragraph(" "))
         }
         top.addCell(logoCell)
-        addBorderless(top, en, Element.ALIGN_CENTER)
+        addBorderless(top, columnParagraph(context.headerLinesEn()), Element.ALIGN_CENTER)
         wrap.addCell(borderlessCell(top))
 
-        val titleFr = when {
-            card.period.type == ReportPeriodType.TERM ->
-                "BULLETIN DE TRIMESTRE ${card.period.number ?: 1}"
-            else -> "BULLETIN ANNUEL DE NOTES"
+        val isTerm = card.period.type == ReportPeriodType.TERM
+        val bannerTitle = when {
+            isTerm && lang == Language.FR -> "BULLETIN DE TRIMESTRE · REPORT CARD"
+            isTerm -> "REPORT CARD · BULLETIN DE TRIMESTRE"
+            lang == Language.FR -> "BULLETIN ANNUEL DE NOTES · ANNUAL REPORT CARD"
+            else -> "ANNUAL REPORT CARD · BULLETIN ANNUEL DE NOTES"
         }
-        val titleEn = when {
-            card.period.type == ReportPeriodType.TERM ->
-                "TERM ${card.period.number ?: 1} REPORT CARD"
-            else -> "ANNUAL REPORT CARD"
+        val termNo = card.period.number ?: 1
+        val bannerRight = when {
+            isTerm && lang == Language.FR ->
+                when (termNo) {
+                    1 -> "1er TRIMESTRE · $yearLabel"
+                    2 -> "2e TRIMESTRE · $yearLabel"
+                    else -> "${termNo}e TRIMESTRE · $yearLabel"
+                }
+            isTerm ->
+                when (termNo) {
+                    1 -> "FIRST TERM · $yearLabel"
+                    2 -> "SECOND TERM · $yearLabel"
+                    else -> "THIRD TERM · $yearLabel"
+                }
+            lang == Language.FR -> "Année scolaire $yearLabel"
+            else -> "School year $yearLabel"
         }
-        val yearPrefix = if (lang == Language.FR) "Année scolaire" else "School year"
-        val banner = PdfPTable(floatArrayOf(3.2f, 1f))
+        val banner = PdfPTable(floatArrayOf(3.2f, 1.15f))
         banner.widthPercentage = 100f
-        val titleCell = PdfPCell(Phrase("$titleFr  ·  $titleEn", titleWhite))
+        val titleCell = PdfPCell(Phrase(bannerTitle, titleWhite))
         titleCell.backgroundColor = INK
         titleCell.border = Rectangle.NO_BORDER
         titleCell.setPadding(6f)
         titleCell.verticalAlignment = Element.ALIGN_MIDDLE
         banner.addCell(titleCell)
         val yearFont = FontFactory.getFont(FontFactory.HELVETICA, small.size, Color(215, 230, 234))
-        val yearCell = PdfPCell(Phrase("$yearPrefix $yearLabel", yearFont))
+        val yearCell = PdfPCell(Phrase(bannerRight, yearFont))
         yearCell.backgroundColor = INK
         yearCell.border = Rectangle.NO_BORDER
         yearCell.horizontalAlignment = Element.ALIGN_RIGHT
@@ -231,11 +241,11 @@ class ReportCardPdfService {
         val cells = listOf(
             L("NOMS ET PRÉNOMS", "FULL NAMES") to fullName,
             L("CLASSE", "CLASS") to card.classInfo.className,
-            L("MATRICULE", "MATRICULE") to s.matricule,
+            L("MATRICULE", "REGISTRATION NUMBER") to s.matricule,
             L("NÉ(E) LE / À", "DATE / PLACE OF BIRTH") to birth.ifBlank { "—" },
             L("SEXE", "SEX") to sex,
             L("REDOUBLANT(E)", "REPEATER") to if (s.repeater) L("Oui", "Yes") else L("Non", "No"),
-            L("PROFESSEUR PRINCIPAL", "CLASS MASTER") to (card.classInfo.mainTeacherName ?: "—"),
+            L("PROFESSEUR PRINCIPAL", "CLASS MASTER / MISTRESS") to (card.classInfo.mainTeacherName ?: "—"),
             L("EFFECTIF DE LA CLASSE", "N° ON ROLL") to card.classInfo.effectif.toString(),
             L("LANGUE DU BULLETIN", "REPORT LANGUAGE") to if (lang == Language.FR) "Français" else "English",
         )
@@ -269,22 +279,41 @@ class ReportCardPdfService {
         passMark: BigDecimal,
     ): PdfPTable {
         val seqCols = template.sequenceColumns
+        val isTermTpl = template.periodType == ReportPeriodType.TERM
         val extras = listOfNotNull(
-            if (template.showSubjectRank) "POS" else null,
-            if (template.showSubjectClassAverage) "CL." else null,
-            if (template.showSubjectPassedCount) "≥10" else null,
+            if (template.showSubjectRank) "POS." else null,
+            if (template.showSubjectClassAverage) {
+                if (lang == Language.FR) "MOY. CL." else "CLASS AV."
+            } else null,
+            if (template.showSubjectPassedCount) {
+                if (lang == Language.FR) "MOY ≥ 10" else "AV ≥ 10"
+            } else null,
         )
         val headers = mutableListOf(
-            if (lang == Language.FR) "DISCIPLINES / ENS." else "SUBJECTS / TCH."
+            when {
+                isTermTpl && lang == Language.FR -> "DISCIPLINES / ENS. / COMPÉTENCE"
+                isTermTpl -> "SUBJECTS / TEACHER / COMPETENCY"
+                lang == Language.FR -> "DISCIPLINES / ENS."
+                else -> "SUBJECTS / TCH."
+            }
         )
         seqCols.forEachIndexed { i, n ->
-            headers += if (template.periodType == ReportPeriodType.TERM) "E${i + 1}" else "D$n"
+            headers += if (isTermTpl) "EVAL ${i + 1}" else "D$n"
         }
-        headers += if (lang == Language.FR) "MOY" else "AV"
+        headers += if (lang == Language.FR) "MOY/20" else "AV/20"
         headers += "COEF"
-        headers += if (template.periodType == ReportPeriodType.TERM) "×CF" else "TOT"
+        headers += when {
+            isTermTpl && lang == Language.FR -> "MOY×COEF"
+            isTermTpl -> "AV×COEF"
+            else -> "TOT"
+        }
         headers += extras
-        headers += if (lang == Language.FR) "APP." else "REM."
+        headers += when {
+            isTermTpl && lang == Language.FR -> "APPRÉC."
+            isTermTpl -> "REMARK"
+            lang == Language.FR -> "APP."
+            else -> "REM."
+        }
 
         // Largeurs relatives : matière + colonnes numériques serrées (A4, sans débordement).
         val widths = FloatArray(headers.size)
@@ -807,7 +836,7 @@ class ReportCardPdfService {
             add(
                 dot(
                     if (lang == Language.FR) "T.H. + encouragements — félicitations"
-                    else "H.R. + encouragement — congratulations",
+                    else "H.R. + encouragement — congratulation",
                     "—",
                     muted,
                     bold,
@@ -815,7 +844,7 @@ class ReportCardPdfService {
             )
             add(
                 dot(
-                    if (lang == Language.FR) "Avertissement — blâme travail" else "Warning — blame (work)",
+                    if (lang == Language.FR) "Avertissement — blâme travail" else "Academic warning",
                     sanctionLabel(rev?.workSanction, lang),
                     muted,
                     bold,
@@ -824,11 +853,26 @@ class ReportCardPdfService {
         }
         val conduct = Paragraph().apply {
             leading = small.size + 2f
-            add(dot(if (lang == Language.FR) "Absences (h)" else "Absences (h)", "${rev?.absenceHoursTotal ?: 0}", muted, bold))
-            add(dot(if (lang == Language.FR) "Retards" else "Lates", "${rev?.lateCount ?: 0}", muted, bold))
+            val abs = "${rev?.absenceHoursTotal ?: 0} · ${rev?.absenceHoursUnjustified ?: 0}"
             add(
                 dot(
-                    if (lang == Language.FR) "Avertissement — blâme conduite" else "Warning — blame (conduct)",
+                    if (lang == Language.FR) "Absences (h) — non justifiées" else "Absences (h) — unjustified",
+                    abs,
+                    muted,
+                    bold,
+                )
+            )
+            add(
+                dot(
+                    if (lang == Language.FR) "Retards / Absentéisme" else "Absenteeism",
+                    "${rev?.lateCount ?: 0}",
+                    muted,
+                    bold,
+                )
+            )
+            add(
+                dot(
+                    if (lang == Language.FR) "Avertissement — blâme conduite" else "Warning — blame",
                     sanctionLabel(rev?.conductSanction, lang),
                     muted,
                     bold,
@@ -837,7 +881,7 @@ class ReportCardPdfService {
         }
         table.addCell(
             framed(
-                if (lang == Language.FR) "TRAVAIL DE L'ÉLÈVE" else "STUDENT'S WORK",
+                if (lang == Language.FR) "TRAVAIL DE L'ÉLÈVE" else "WORK",
                 work,
                 bold,
                 muted,
@@ -845,7 +889,7 @@ class ReportCardPdfService {
         )
         table.addCell(
             framed(
-                if (lang == Language.FR) "CONDUITE DE L'ÉLÈVE" else "STUDENT'S CONDUCT",
+                if (lang == Language.FR) "CONDUITE DE L'ÉLÈVE" else "CONDUCT",
                 conduct,
                 bold,
                 muted,
@@ -893,7 +937,7 @@ class ReportCardPdfService {
             c.setPadding(5f)
             return c
         }
-        table.addCell(visa(if (lang == Language.FR) "VISA DU PARENT" else "PARENT VISA"))
+        table.addCell(visa(if (lang == Language.FR) "VISA DU PARENT" else "PARENT'S SIGNATURE"))
         table.addCell(visa(if (lang == Language.FR) "DÉCISION DU CONSEIL DE CLASSE" else "CLASS COUNCIL DECISION"))
         val sig = card.signature
         val placeDate = buildString {
@@ -939,10 +983,14 @@ class ReportCardPdfService {
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"))
             val stampedEn = card.generatedAt.atZone(ZoneId.of("Africa/Douala"))
                 .format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'at' HH:mm"))
-            val meta = if (lang == Language.FR) {
-                "Bulletin délivré sans rature ni surcharge · Imprimé le $stamped"
-            } else {
-                "Report card issued without alteration · Printed on $stampedEn"
+            val isTerm = card.period.type == ReportPeriodType.TERM
+            val meta = when {
+                lang == Language.FR ->
+                    "Bulletin délivré sans rature ni surcharge · Imprimé le $stamped"
+                isTerm ->
+                    "Issued without erasure or alteration · Printed on $stampedEn"
+                else ->
+                    "Report card issued without alteration · Printed on $stampedEn"
             }
             add(Chunk(meta, FontFactory.getFont(FontFactory.HELVETICA, muted.size - 0.3f, MUTED)))
         }
@@ -981,7 +1029,7 @@ class ReportCardPdfService {
             add(
                 Chunk(
                     if (lang == Language.FR) "Vérification : exemple.cm/verif"
-                    else "Verification : exemple.cm/verif",
+                    else "Check : example.cm/verify",
                     FontFactory.getFont(FontFactory.HELVETICA, muted.size - 0.3f, MUTED),
                 )
             )

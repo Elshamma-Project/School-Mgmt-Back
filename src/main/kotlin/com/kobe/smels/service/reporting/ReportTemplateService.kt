@@ -74,8 +74,8 @@ class ReportTemplateService(
                     showTotalPointsOverMax = true,
                     classProfileThreshold = BigDecimal("10"),
                     legend = LocalizedText(
-                        fr = "NA = non acquis ; ECA = en cours d'acquisition ; A = acquis ; A+ = parfaitement acquis",
-                        en = "NA = not acquired ; ECA = being acquired ; A = acquired ; A+ = fully acquired"
+                        fr = "A+ parfaitement acquis · A acquis ≥ 14 · ECA en cours 10–14 · NA non acquis < 10",
+                        en = "A+ perfectly acquired · A acquired ≥ 14 · ECA in progress 10–14 · NA not acquired < 10"
                     ),
                     minFontSizePt = 6.5,
                     maxFontSizePt = 9.0,
@@ -166,8 +166,8 @@ class ReportTemplateService(
                     existing.name = template.name
                     dirty = true
                 }
-                // Légende pied de page annuelle (maquette).
-                if (code == CODE_ANNUAL && existing.legend == null && template.legend != null) {
+                // Légende pied de page (maquette annuel / trimestre).
+                if (existing.legend == null && template.legend != null) {
                     existing.legend = template.legend
                     dirty = true
                 }

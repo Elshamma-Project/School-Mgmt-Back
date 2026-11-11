@@ -152,7 +152,11 @@ object SampleReportCardFactory {
             ),
             templateCode = template.code,
             calculationVersion = ReportTemplateService.CALCULATION_VERSION,
-            generatedAt = Instant.parse("2027-07-01T09:15:00Z")
+            generatedAt = if (term) {
+                Instant.parse("2026-12-17T08:40:00Z")
+            } else {
+                Instant.parse("2027-07-01T09:15:00Z")
+            }
         )
     }
 
