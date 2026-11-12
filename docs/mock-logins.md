@@ -83,7 +83,8 @@ Actif si `smels.security.mock-users.enabled=true` (insert-if-absent, ne réécri
 - Classe : **6ème** francophone de l’année courante (copie de structure depuis la 6ème d’une autre année si elle n’existe pas encore pour l’année courante).
 - Affectation de `staff-demo-teacher` sur 1–2 matières (Maths, puis langue française) **uniquement si `teacherId` est vide**.
 - **Roster fictif** (aucun nom réel) : `stu-demo-01` … `stu-demo-10`, nom `DEMO …`, matricules `DEMO-2026-01` … `DEMO-2026-10`, inscriptions `enr-demo-01` … `enr-demo-10` (rollNumber 1…10).
-- Séquence 1 ouverte (via `EvaluationSessionService`), une colonne `SEQUENCE_MARK` par fiche, quelques notes (certaines **PENDING**), puis fiche de report du trimestre 1 générée.
+- Séquences 1 et 2 ouvertes (via `EvaluationSessionService`) ; par fiche : colonnes `SEQUENCE_MARK` (/20), `BONUS` et `MALUS` (max 5 pts, Q-25), quelques notes (la plupart des bonus/malus et certaines notes restent **PENDING**), puis fiche de report du trimestre 1 générée, ou **régénérée** si elle est encore en brouillon / rejetée (une fiche déjà soumise ou visée n'est pas touchée, pour garder les visas de test).
+- Visas de test : l'enseignant soumet la fiche, puis `surveillant@elshammah.demo` (Visa SG), `directeur@elshammah.demo` (Visa Principal / rejet) via l'onglet « Fiches de report » du hub Notes.
 
 ### Remise à zéro locale
 

@@ -141,7 +141,7 @@ class EvaluationSessionService(
             .map { GradingMapper.toSessionResponse(it) }
     }
 
-    /** BR-21 : ouvre la séquence et crée une GradeSheet par ClassSubject actif (BR-11). */
+    /** BR-21 / BR-25 : ouvre la séquence et crée une GradeSheet par ClassSubject actif (BR-11). */
     fun open(currentUser: CurrentUser, id: String, schoolIdOverride: String? = null): Mono<EvaluationSessionResponse> {
         GradingAccess.assertAdmin(currentUser)
         val schoolId = GradingAccess.resolveSchoolId(currentUser, schoolIdOverride)
@@ -158,26 +158,30 @@ class EvaluationSessionService(
                                 SessionStatus.OPEN -> Mono.just(session)
                                 SessionStatus.CLOSED ->
                                     Mono.error(BusinessRuleException("SESSION_CLOSED", "Reopen the session before opening again"))
-                                SessionStatus.PLANNED -> {
-                                    session.status = SessionStatus.OPEN
-                                    session.openedAt = Instant.now()
-                                    evaluationSessionRepository.save(session)
-                                        .flatMap { opened -> createMissingSheets(opened).thenReturn(opened) }
-                                        .flatMap { opened ->
-                                            outboxWriter.append(
-                                                schoolId = opened.schoolId,
-                                                module = "grading",
-                                                aggregateType = "EvaluationSession",
-                                                aggregateId = opened.id!!,
-                                                eventType = "grading.session.opened",
-                                                payload = mapOf(
-                                                    "sessionId" to opened.id,
-                                                    "number" to opened.number,
-                                                    "termNumber" to opened.termNumber
-                                                )
-                                            ).thenReturn(opened)
-                                        }
-                                }
+                                SessionStatus.PLANNED ->
+                                    assertOpenConcurrency(schoolId, session)
+                                        .then(
+                                            Mono.defer {
+                                                session.status = SessionStatus.OPEN
+                                                session.openedAt = Instant.now()
+                                                evaluationSessionRepository.save(session)
+                                                    .flatMap { opened -> createMissingSheets(opened).thenReturn(opened) }
+                                                    .flatMap { opened ->
+                                                        outboxWriter.append(
+                                                            schoolId = opened.schoolId,
+                                                            module = "grading",
+                                                            aggregateType = "EvaluationSession",
+                                                            aggregateId = opened.id!!,
+                                                            eventType = "grading.session.opened",
+                                                            payload = mapOf(
+                                                                "sessionId" to opened.id,
+                                                                "number" to opened.number,
+                                                                "termNumber" to opened.termNumber
+                                                            )
+                                                        ).thenReturn(opened)
+                                                    }
+                                            }
+                                        )
                             }
                         }
                     )
@@ -254,19 +258,57 @@ class EvaluationSessionService(
                             if (session.status != SessionStatus.CLOSED) {
                                 Mono.error(BusinessRuleException("SESSION_NOT_CLOSED", "Only a CLOSED session can be reopened"))
                             } else {
-                                session.status = SessionStatus.OPEN
-                                session.reopenedAt = Instant.now()
-                                session.reopenedBy = currentUser.accountId
-                                session.closedAt = null
-                                session.closedBy = null
-                                evaluationSessionRepository.save(session)
-                                    .flatMap { opened -> unlockSheets(opened).thenReturn(opened) }
+                                assertOpenConcurrency(schoolId, session)
+                                    .then(
+                                        Mono.defer {
+                                            session.status = SessionStatus.OPEN
+                                            session.reopenedAt = Instant.now()
+                                            session.reopenedBy = currentUser.accountId
+                                            session.closedAt = null
+                                            session.closedBy = null
+                                            evaluationSessionRepository.save(session)
+                                                .flatMap { opened -> unlockSheets(opened).thenReturn(opened) }
+                                        }
+                                    )
                             }
                         }
                     )
             }
             .map { GradingMapper.toSessionResponse(it) }
     }
+
+    /**
+     * BR-25 : au plus 2 séquences OPEN, toutes du même trimestre
+     * (un seul trimestre actif à la fois, paramétré par l’administration).
+     */
+    private fun assertOpenConcurrency(schoolId: String, candidate: EvaluationSession): Mono<Void> =
+        evaluationSessionRepository
+            .findBySchoolIdAndAcademicYearIdAndStatus(
+                schoolId,
+                candidate.academicYearId,
+                SessionStatus.OPEN
+            )
+            .filter { it.id != candidate.id }
+            .collectList()
+            .flatMap { others ->
+                when {
+                    others.size >= 2 ->
+                        Mono.error(
+                            BusinessRuleException(
+                                "TOO_MANY_OPEN_SESSIONS",
+                                "At most 2 evaluation sessions can be OPEN at the same time"
+                            )
+                        )
+                    others.any { it.termNumber != candidate.termNumber } ->
+                        Mono.error(
+                            BusinessRuleException(
+                                "OPEN_TERM_CONFLICT",
+                                "Open sessions must belong to the same term (only one active term at a time)"
+                            )
+                        )
+                    else -> Mono.empty()
+                }
+            }
 
     private fun createMissingSheets(session: EvaluationSession): Mono<Void> =
         classSubjectApi.findActiveByYear(session.schoolId, session.academicYearId)

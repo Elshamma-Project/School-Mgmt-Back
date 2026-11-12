@@ -134,11 +134,12 @@ Lecture clé : **`ClassSubject` est le pivot** (qui enseigne quoi, à quelle cla
 - **BR-78** Élève et parent : **aucun accès** à la fiche de report. Correction sur fiche déjà soumise/visée : motif + approbation Principal (`GradeAuditEntry.approvedBy`).
 
 ### 5.3 Séquences et clôture
-- **BR-20** Une année compte 6 séquences ; 1-2, 3-4, 5-6 forment les trimestres 1, 2, 3.
+- **BR-20** Une année compte 6 séquences ; 1-2, 3-4, 5-6 forment les trimestres 1, 2, 3. Chaque séquence = une `EvaluationSession`.
 - **BR-21** Séquence `OPEN` : l'enseignant a le CRUD complet sur les notes de ses fiches.
 - **BR-22** Séquence `CLOSED` : plus aucune saisie d'enseignant. L'administration (et le directeur) peut corriger avec **motif obligatoire** ; trace `afterSessionClosed = true`.
-- **BR-23** Clôturer : administration ; rouvrir : directeur (provisoire, Q-04).
+- **BR-23** Clôturer : administration ou directeur ; rouvrir : directeur seul (Q-04).
 - **BR-24** Le bulletin d'une période ne se génère définitivement que lorsque ses séquences sont clôturées (brouillon possible avant).
+- **BR-25** Au plus **2** séquences `OPEN` en même temps pour une année ; elles appartiennent forcément au **même trimestre** (donc un seul trimestre « actif » à la fois). L’ouverture / clôture est un paramètre d’administration (pas un choix libre enseignant).
 
 ```mermaid
 stateDiagram-v2

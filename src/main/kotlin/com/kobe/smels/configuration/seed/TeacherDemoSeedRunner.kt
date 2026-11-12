@@ -12,6 +12,7 @@ import com.kobe.smels.model.grading.AssessmentType
 import com.kobe.smels.model.grading.EvaluationSession
 import com.kobe.smels.model.grading.GradeSheet
 import com.kobe.smels.model.grading.GradeStatus
+import com.kobe.smels.model.grading.ReportSheetStatus
 import com.kobe.smels.model.grading.SessionStatus
 import com.kobe.smels.model.grading.SheetStatus
 import com.kobe.smels.model.shared.Cycle
@@ -53,8 +54,10 @@ import java.text.Normalizer
 
 /**
  * Seed DEV « première tranche enseignant » : une 6ème francophone avec une dizaine d'élèves
- * **fictifs**, deux matières affectées à `staff-demo-teacher`, séquence 1 ouverte, une colonne
- * SEQUENCE_MARK avec quelques notes (certaines PENDING) et une fiche de report du trimestre 1.
+ * **fictifs**, deux matières affectées à `staff-demo-teacher`, séquences 1 et 2 ouvertes, par fiche une
+ * colonne SEQUENCE_MARK (/20) + une colonne BONUS + une colonne MALUS (max 5 pts, Q-25) avec quelques notes
+ * (certaines PENDING), puis la fiche de report du trimestre 1 (générée, ou régénérée si elle est encore
+ * en brouillon / rejetée).
  *
  * - `@Order(25)` : après [MockUsersBootstrapRunner] (20) qui crée le compte et la fiche Staff enseignant.
  * - Activé par `smels.security.mock-users.enabled` (DEV uniquement).
@@ -157,26 +160,29 @@ class TeacherDemoSeedRunner(
             return
         }
 
-        // 6. Séquence 1.
+        // 6. Séquences 1 puis 2 (la 2 s'ouvre après la 1).
         val directorUser = syntheticUser(schoolId, "seed-demo-director", Role.DIRECTOR, ProfileType.NONE, null)
-        val session = ensureSessionOne(directorUser, schoolId, yearId, report)
-
-        // 7. Fiches / colonne SEQUENCE_MARK / notes.
-        if (session != null && session.status == SessionStatus.OPEN) {
-            val teacherUser = teacherUser(schoolId)
-            assigned.forEachIndexed { index, cs ->
-                seedSheetAndGrades(teacherUser, schoolId, session, cs, demoStudentIds, index, report)
-            }
-        } else if (session != null) {
-            log.warn(
-                "Teacher demo seed: session 1 is {} — sheets/grades not seeded (reopen as DIRECTOR if needed)",
-                session.status
-            )
+        val sessions = SEEDED_SESSION_NUMBERS.mapNotNull { number ->
+            ensureSession(directorUser, schoolId, yearId, number, report)
         }
 
-        // 8. Fiche de report du trimestre 1 (remplie).
-        if (session != null && session.status != SessionStatus.PLANNED) {
-            val teacherUser = teacherUser(schoolId)
+        // 7. Fiches / colonnes SEQUENCE_MARK + BONUS + MALUS / notes, pour chaque séquence OPEN.
+        val teacherUser = teacherUser(schoolId)
+        for (session in sessions) {
+            if (session.status == SessionStatus.OPEN) {
+                assigned.forEachIndexed { index, cs ->
+                    seedSheetAndGrades(teacherUser, schoolId, session, cs, demoStudentIds, index, report)
+                }
+            } else {
+                log.warn(
+                    "Teacher demo seed: session {} is {} — sheets/grades not seeded (reopen as DIRECTOR if needed)",
+                    session.number, session.status
+                )
+            }
+        }
+
+        // 8. Fiche de report du trimestre 1 : générée, ou régénérée après les notes des deux séquences.
+        if (sessions.any { it.status != SessionStatus.PLANNED }) {
             assigned.forEach { cs -> seedReportSheet(teacherUser, schoolId, cs, report) }
         }
 
@@ -382,30 +388,31 @@ class TeacherDemoSeedRunner(
         return enrolled
     }
 
-    // ── Séquence 1 ──────────────────────────────────────────────────────────
+    // ── Séquences (1 et 2) ──────────────────────────────────────────────────
 
-    private fun ensureSessionOne(
+    private fun ensureSession(
         directorUser: CurrentUser,
         schoolId: String,
         yearId: String,
+        number: Int,
         report: SeedReport
     ): EvaluationSession? {
         var session = evaluationSessionRepository
-            .findBySchoolIdAndAcademicYearIdAndNumber(schoolId, yearId, 1).block()
+            .findBySchoolIdAndAcademicYearIdAndNumber(schoolId, yearId, number).block()
         if (session == null) {
             evaluationSessionService.ensureYearSessions(directorUser, yearId, schoolId).collectList().block()
             session = evaluationSessionRepository
-                .findBySchoolIdAndAcademicYearIdAndNumber(schoolId, yearId, 1).block()
-            report.sessionsEnsured = session != null
+                .findBySchoolIdAndAcademicYearIdAndNumber(schoolId, yearId, number).block()
+            if (session != null) report.sessionsEnsured = true
         }
         if (session == null) return null
 
         if (session.status == SessionStatus.PLANNED) {
             // Passe par le service : crée aussi les GradeSheets des ClassSubjects actifs (BR-11, BR-21).
             evaluationSessionService.open(directorUser, requireNotNull(session.id), schoolId).block()
-            report.sessionOpened = true
+            report.sessionsOpened++
             session = evaluationSessionRepository
-                .findBySchoolIdAndAcademicYearIdAndNumber(schoolId, yearId, 1).block()
+                .findBySchoolIdAndAcademicYearIdAndNumber(schoolId, yearId, number).block()
         }
         return session
     }
@@ -447,29 +454,76 @@ class TeacherDemoSeedRunner(
         if (sheet.teacherId != TEACHER_ID) return // fiche d'un autre enseignant : ne pas toucher
 
         val sheetId = requireNotNull(sheet.id)
-        val assessment = assessmentRepository.findBySchoolIdAndSheetId(schoolId, sheetId)
-            .filter { it.type == AssessmentType.SEQUENCE_MARK }
-            .next().block()
-            ?: assessmentService.create(
-                teacherUser,
-                CreateAssessmentRequest(
-                    sheetId = sheetId,
-                    title = ASSESSMENT_TITLE,
-                    type = AssessmentType.SEQUENCE_MARK,
-                    maxScore = BigDecimal("20"),
-                    weight = BigDecimal.ONE,
-                    schoolId = schoolId
-                )
-            ).block()?.also { report.assessmentsCreated++ }?.let { created ->
-                assessmentRepository.findByIdAndSchoolId(created.id, schoolId).block()
-            }
-        val assessmentId = assessment?.id ?: return
+        // Décalage des notes d'exemple : varie selon la matière et la séquence.
+        val sampleOffset = offset * 3 + (session.number - 1) * 2
 
+        val sequenceId = ensureAssessment(
+            teacherUser, schoolId, sheetId, AssessmentType.SEQUENCE_MARK, ASSESSMENT_TITLE, SEQUENCE_MAX_SCORE, report
+        )
+        if (sequenceId != null) {
+            seedGrades(teacherUser, schoolId, sequenceId, studentIds, SAMPLE_MARKS, sampleOffset, report, bonusMalus = false)
+        }
+
+        // Q-25 : colonnes BONUS / MALUS (points seulement, max 5) — la plupart des élèves restent PENDING.
+        val bonusId = ensureAssessment(
+            teacherUser, schoolId, sheetId, AssessmentType.BONUS, BONUS_TITLE, BONUS_MALUS_MAX_SCORE, report
+        )
+        if (bonusId != null) {
+            seedGrades(teacherUser, schoolId, bonusId, studentIds, SAMPLE_BONUS, sampleOffset, report, bonusMalus = true)
+        }
+        val malusId = ensureAssessment(
+            teacherUser, schoolId, sheetId, AssessmentType.MALUS, MALUS_TITLE, BONUS_MALUS_MAX_SCORE, report
+        )
+        if (malusId != null) {
+            seedGrades(teacherUser, schoolId, malusId, studentIds, SAMPLE_MALUS, sampleOffset, report, bonusMalus = true)
+        }
+    }
+
+    /** Colonne de la fiche (première du type) : insert-if-absent, via [AssessmentService]. */
+    private fun ensureAssessment(
+        teacherUser: CurrentUser,
+        schoolId: String,
+        sheetId: String,
+        type: AssessmentType,
+        title: String,
+        maxScore: BigDecimal,
+        report: SeedReport
+    ): String? {
+        val existing = assessmentRepository.findBySchoolIdAndSheetId(schoolId, sheetId)
+            .filter { it.type == type }
+            .next().block()
+        if (existing != null) return existing.id
+        return assessmentService.create(
+            teacherUser,
+            CreateAssessmentRequest(
+                sheetId = sheetId,
+                title = title,
+                type = type,
+                maxScore = maxScore,
+                weight = BigDecimal.ONE,
+                schoolId = schoolId
+            )
+        ).block()?.also {
+            if (type == AssessmentType.SEQUENCE_MARK) report.assessmentsCreated++ else report.bonusMalusColumnsCreated++
+        }?.id
+    }
+
+    /** Notes d'exemple insert-if-absent (jamais d'écrasement d'une saisie UI) ; `null` = PENDING (jamais 0). */
+    private fun seedGrades(
+        teacherUser: CurrentUser,
+        schoolId: String,
+        assessmentId: String,
+        studentIds: List<String>,
+        samples: List<BigDecimal?>,
+        sampleOffset: Int,
+        report: SeedReport,
+        bonusMalus: Boolean
+    ) {
         studentIds.forEachIndexed { index, studentId ->
             val present = gradeRepository
                 .findBySchoolIdAndAssessmentIdAndStudentId(schoolId, assessmentId, studentId).block()
             if (present != null) return@forEachIndexed
-            val sample = SAMPLE_MARKS[(index + offset * 3) % SAMPLE_MARKS.size]
+            val sample = samples[(index + sampleOffset) % samples.size]
             gradeService.upsert(
                 teacherUser,
                 UpsertGradeRequest(
@@ -480,7 +534,12 @@ class TeacherDemoSeedRunner(
                     schoolId = schoolId
                 )
             ).block()
-            if (sample == null) report.gradesPending++ else report.gradesScored++
+            when {
+                bonusMalus && sample != null -> report.bonusMalusScored++
+                bonusMalus -> report.bonusMalusPending++
+                sample == null -> report.gradesPending++
+                else -> report.gradesScored++
+            }
         }
     }
 
@@ -493,22 +552,33 @@ class TeacherDemoSeedRunner(
         report: SeedReport
     ) {
         val csId = requireNotNull(cs.id)
-        val existing = gradeReportSheetRepository
-            .findBySchoolIdAndClassSubjectIdAndTermNumber(schoolId, csId, 1).block()
-        if (existing != null) return
         try {
-            gradeReportSheetService.generate(
-                teacherUser,
-                GenerateReportSheetRequest(
-                    classSubjectId = csId,
-                    termNumber = 1,
+            val existing = gradeReportSheetRepository
+                .findBySchoolIdAndClassSubjectIdAndTermNumber(schoolId, csId, 1).block()
+            if (existing == null) {
+                gradeReportSheetService.generate(
+                    teacherUser,
+                    GenerateReportSheetRequest(
+                        classSubjectId = csId,
+                        termNumber = 1,
+                        blank = false,
+                        schoolId = schoolId
+                    )
+                ).block()
+                report.reportSheetsCreated++
+            } else if (existing.status == ReportSheetStatus.DRAFT || existing.status == ReportSheetStatus.REJECTED) {
+                // Rafraîchit les 2 séquences (notes + bonus/malus). Une fiche déjà soumise / visée n'est pas
+                // régénérée : la régénération la repasserait en DRAFT et effacerait les visas de test.
+                gradeReportSheetService.regenerate(
+                    teacherUser,
+                    requireNotNull(existing.id),
                     blank = false,
-                    schoolId = schoolId
-                )
-            ).block()
-            report.reportSheetsCreated++
+                    schoolIdOverride = schoolId
+                ).block()
+                report.reportSheetsRegenerated++
+            }
         } catch (error: Exception) {
-            log.warn("Teacher demo seed: report sheet term 1 not generated: {}", error.message)
+            log.warn("Teacher demo seed: report sheet term 1 not generated/refreshed: {}", error.message)
         }
     }
 
@@ -542,12 +612,14 @@ class TeacherDemoSeedRunner(
         log.info(
             "Teacher demo seed done schoolId={} year={} class='{}' | classCreated={} classSubjectsCopied={} " +
                 "teacherAssignedNow={} teacherAlreadyAssigned={} studentsCreated={} enrollmentsCreated={} " +
-                "sessionsEnsured={} session1Opened={} sheetsCreated={} assessmentsCreated={} " +
-                "gradesScored={} gradesPending={} reportSheetsCreated={} (teacher login: {})",
+                "sessionsEnsured={} sessionsOpenedNow={} sheetsCreated={} assessmentsCreated={} " +
+                "bonusMalusColumnsCreated={} gradesScored={} gradesPending={} bonusMalusScored={} " +
+                "bonusMalusPending={} reportSheetsCreated={} reportSheetsRegenerated={} (teacher login: {})",
             schoolId, year.label, schoolClass.name, report.classCreated, report.classSubjectsCopied,
             report.assignedNow, report.alreadyAssigned, report.studentsCreated, report.enrollmentsCreated,
-            report.sessionsEnsured, report.sessionOpened, report.sheetsCreated, report.assessmentsCreated,
-            report.gradesScored, report.gradesPending, report.reportSheetsCreated,
+            report.sessionsEnsured, report.sessionsOpened, report.sheetsCreated, report.assessmentsCreated,
+            report.bonusMalusColumnsCreated, report.gradesScored, report.gradesPending, report.bonusMalusScored,
+            report.bonusMalusPending, report.reportSheetsCreated, report.reportSheetsRegenerated,
             MockUsersBootstrapRunner.EMAIL_TEACHER
         )
     }
@@ -560,12 +632,16 @@ class TeacherDemoSeedRunner(
         var studentsCreated = 0
         var enrollmentsCreated = 0
         var sessionsEnsured = false
-        var sessionOpened = false
+        var sessionsOpened = 0
         var sheetsCreated = 0
         var assessmentsCreated = 0
+        var bonusMalusColumnsCreated = 0
         var gradesScored = 0
         var gradesPending = 0
+        var bonusMalusScored = 0
+        var bonusMalusPending = 0
         var reportSheetsCreated = 0
+        var reportSheetsRegenerated = 0
     }
 
     private data class DemoStudent(
@@ -581,6 +657,12 @@ class TeacherDemoSeedRunner(
         private const val TEACHER_ID = MockUsersBootstrapRunner.STAFF_TEACHER
         private const val MAX_ASSIGNED_SUBJECTS = 2
         private const val ASSESSMENT_TITLE = "Note de séquence / Sequence mark"
+        private const val BONUS_TITLE = "Bonus / Bonus"
+        private const val MALUS_TITLE = "Malus / Malus"
+        private val SEQUENCE_MAX_SCORE = BigDecimal("20")
+        /** Q-25 : bonus et malus sont des points, pas des notes /20. */
+        private val BONUS_MALUS_MAX_SCORE = BigDecimal("5")
+        private val SEEDED_SESSION_NUMBERS = listOf(1, 2)
 
         /** Matières préférées (codes du seed El Shammah), dans l'ordre. */
         private val PREFERRED_SUBJECT_CODES = listOf("MATH", "LANG_FR", "EXP_ECR", "ETUDE_TXT", "CORR_ORTH", "FRENCH")
@@ -589,6 +671,16 @@ class TeacherDemoSeedRunner(
         private val SAMPLE_MARKS: List<BigDecimal?> = listOf(
             BigDecimal("14.50"), BigDecimal("9.00"), BigDecimal("16.00"), BigDecimal("11.50"),
             null, BigDecimal("18.00"), BigDecimal("7.25"), null, BigDecimal("12.75"), null
+        )
+
+        /** Bonus d'exemple (≤ 5 pts) : une minorité SCORED, le reste PENDING. */
+        private val SAMPLE_BONUS: List<BigDecimal?> = listOf(
+            null, BigDecimal("1.00"), null, null, BigDecimal("2.50"), null, null, BigDecimal("0.50"), null, null
+        )
+
+        /** Malus d'exemple (≤ 5 pts) : une minorité SCORED, le reste PENDING. */
+        private val SAMPLE_MALUS: List<BigDecimal?> = listOf(
+            null, null, null, BigDecimal("1.00"), null, null, BigDecimal("0.50"), null, null, null
         )
 
         /** Élèves **fictifs** : aucun nom réel (règle 12). */

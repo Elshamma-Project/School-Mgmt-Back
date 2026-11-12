@@ -56,7 +56,7 @@
 
 | Sujet | Décision |
 |---|---|
-| Séquences et trimestres | 6 séquences, 3 trimestres de 2 séquences |
+| Séquences et trimestres | 6 séquences, 3 trimestres de 2 séquences ; **BR-25** : ≤ 2 OPEN, même trimestre (un trimestre actif paramétré par l’admin) |
 | Note de séquence | Totalisation automatique de la fiche de notes (notes + bonus − malus, plafond 20) |
 | Note manquante | Ignorée ; zéro réel compté |
 | Moyenne d'une matière | Moyenne des moyennes de trimestre (arrondies à 2 décimales) |
