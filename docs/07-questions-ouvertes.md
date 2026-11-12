@@ -9,9 +9,9 @@
 | N° | Sujet | Statut | Décision / défaut retenu en attendant |
 |---|---|---|---|
 | Q-01 | « Bilingue » | 🟡 | Réponse : certaines matières entièrement dans une langue, d'autres dans l'autre ; documents dans les 2 langues, langue de la section prioritaire. **Reste** : un bulletin de classe bilingue affiche-t-il les matières des deux langues ensemble ? un élève peut-il choisir sa langue de bulletin ? |
-| Q-02 | Note de séquence | 🟡 | Réponse : une fiche de travail par séquence ; notes, bonus, malus ; totalisation automatique. **Confirmé (fiche de report)** : c'est bien la **note finale de séquence** (`SequenceMark`) qui est reportée (Comp/20), pas les bonus/malus. **Reste** : formule exacte de totalisation → Q-25 |
+| Q-02 | Note de séquence | ✅ | Fiche de travail par séquence ; notes, bonus, malus ; totalisation automatique. Comp/20 sur la fiche de report = `SequenceMark` (pas les bonus/malus bruts). Formule : Q-25 confirmée. |
 | Q-03 | Bulletin de trimestre / séquence | 🟡 | Réponse : le bulletin de trimestre existe (Form 1, T1). **Reste** : bulletin de séquence ? T2 et T3 identiques à T1 ? gabarit pour les autres classes → Q-26 |
-| Q-04 | Clôture d'une séquence : globale ou par classe ? qui clôture, qui rouvre ? | ❓ | Globale ; administration clôture ; directeur rouvre |
+| Q-04 | Clôture d'une séquence : globale ou par classe ? qui clôture, qui rouvre ? | ✅ | **Confirmé (école)** : clôture **globale** (toute l'école). Clôture : **directeur ou administrateur**. Réouverture : **directeur seul**. |
 | Q-05 | Matricule : règle, génération, conservation entre années | ❓ | Texte libre unique dans l'école. Observé : « 250369841 » (numérique) et « 25F4A327 » (« 25 » + code de classe + numéro ?) |
 | Q-06 | Classement en cas d'ex aequo | 💡 | Proposition : mêmes rang et saut ensuite (1, 2, 2, 4), sur la moyenne **exacte** ; `RankingPolicy.DENSE` si l'école préfère 1, 2, 2, 3 |
 | Q-07 | Pourquoi un élève n'est pas classé (effectif 13 / 12 classés ; rang « 0/0 ») | ❓ | Non classé = pas de moyenne calculable. Hypothèse : pas de moyenne de trimestre 1 (cas FORM 4 ARTS) ; option `HAS_ALL_TERMS` |
@@ -37,7 +37,7 @@
 | N° | Question | Statut | Défaut retenu | Pourquoi |
 |---|---|---|---|---|
 | Q-24 | **Règle de calcul avec notes manquantes** : l'ancien logiciel calcule les lignes (moyenne des trimestres arrondis), les groupes (moyenne de toutes les notes présentes) et la moyenne annuelle (moyenne des trimestres imprimés, parfois calculée avant la dernière saisie) de trois façons différentes. Faut-il une règle unique ? Laquelle est « juste » aux yeux de l'école ? Le trimestre 3 imprimé n'inclut-il vraiment pas DEV6 ? D'où vient 7,42 (FORM 4 ARTS) ? | 💡 | Règle unique : lignes comme imprimées, groupes = somme des lignes, moyenne annuelle = Σ totaux ÷ Σ coefficients, tout en une passe | Les bulletins avec notes manquantes ne se retrouveront pas au centime ; voir `01` § 7 |
-| Q-25 | **Totalisation de la fiche de notes** : comment se combinent notes, bonus, malus ? (moyenne des notes + bonus − malus ? bonus plafonné ? malus par absence ? pondération entre devoirs ?) Un exemplaire de fiche Excel serait idéal | ❓ | `AVERAGE_PLUS_BONUS_MINUS_MALUS`, plafonné à 20 | Détermine `SequenceMark` |
+| Q-25 | **Totalisation de la fiche de notes** : comment se combinent notes, bonus, malus ? (moyenne des notes + bonus − malus ? bonus plafonné ? malus par absence ? pondération entre devoirs ?) Un exemplaire de fiche Excel serait idéal | ✅ | **Confirmé (école)** : moyenne des notes + bonus − malus, plafonné à 20 (`AVERAGE_PLUS_BONUS_MINUS_MALUS`). Une fiche Excel chiffrée reste utile pour les cas limites (pondération, plafond bonus). | Détermine `SequenceMark` |
 | Q-26 | **Gabarits de bulletin** : le bulletin de trimestre de Form 1 vaut-il pour toutes les classes ? Les bulletins de T2 et T3 ? Les classes de 6ème à 3ème francophones ont-elles aussi un bulletin de trimestre par compétences ? Un bulletin de séquence existe-t-il ? | ❓ | Deux gabarits : `ANNUAL_STANDARD` et `TERM_COMPETENCY`, choisis par période et niveau | Quels gabarits PDF écrire |
 | Q-27 | **Seuil de A+** (parfaitement acquis) sur l'échelle des compétences | ❓ | Seuil vide (A au-dessus de 14) | Observé : A jusqu'à 17,25 |
 | Q-28 | **« MAKE EFFORT IN »** : quelle règle (moyenne < 8 ?) et combien de matières au maximum ? | 💡 | Moyenne < 8 | Observé : 7,5 et 6,0 listées, 8,5 non listée |
@@ -76,7 +76,7 @@
 ## 4. Documents complémentaires à demander à la collaboratrice
 
 Priorité 1 (avant la démo) :
-1. **La fiche Excel de notes d'un enseignant pour une séquence**, avec bonus et malus (Q-25 ; Q-02 partiellement confirmée via la fiche de report).
+1. *(Optionnel)* Une fiche Excel chiffrée avec bonus/malus pour valider les cas limites de Q-25 (déjà confirmée : moyenne + bonus − malus, plafond 20).
 1 bis. Confirmation RH : périmètre du Surveillant Général et distinction Principal / Directeur (Q-38).
 2. Un **bulletin de séquence** s'il existe ; les **bulletins de trimestre 2 et 3** et un bulletin de trimestre d'une classe francophone (Q-03, Q-26).
 3. Un bulletin d'une classe **bilingue** (Q-01).

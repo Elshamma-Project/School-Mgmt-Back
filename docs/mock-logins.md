@@ -75,6 +75,16 @@ smels.security.bootstrap.username=superadmin@smels.local
 - Sessions DEV1…DEV6 : celles du JSON El Shammah (par année) ; les gérer via l’UI hub Notes / Séquences.
 - Ne jamais committer de vrais mots de passe ni de données nominatives réelles.
 
+### Jeu de démo enseignant (`TeacherDemoSeedRunner`, @Order 25)
+
+Actif si `smels.security.mock-users.enabled=true` (insert-if-absent, ne réécrit jamais une saisie UI).
+
+- `enseignant@elshammah.demo` peut ouvrir **`/teacher/grades`** et **`/teacher/classes`** après le seed.
+- Classe : **6ème** francophone de l’année courante (copie de structure depuis la 6ème d’une autre année si elle n’existe pas encore pour l’année courante).
+- Affectation de `staff-demo-teacher` sur 1–2 matières (Maths, puis langue française) **uniquement si `teacherId` est vide**.
+- **Roster fictif** (aucun nom réel) : `stu-demo-01` … `stu-demo-10`, nom `DEMO …`, matricules `DEMO-2026-01` … `DEMO-2026-10`, inscriptions `enr-demo-01` … `enr-demo-10` (rollNumber 1…10).
+- Séquence 1 ouverte (via `EvaluationSessionService`), une colonne `SEQUENCE_MARK` par fiche, quelques notes (certaines **PENDING**), puis fiche de report du trimestre 1 générée.
+
 ### Remise à zéro locale
 
 ```bash

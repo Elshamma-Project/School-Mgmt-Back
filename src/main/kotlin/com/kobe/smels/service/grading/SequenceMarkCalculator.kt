@@ -12,7 +12,8 @@ import java.math.RoundingMode
 
 /**
  * Arithmétique pure de l'étape 0 (docs/04) — sans accès base.
- * TODO(Q-25) : confirmer la formule exacte avec la fiche Excel d'origine.
+ * Formule confirmée (Q-25) : moyenne des notes + bonus − malus, plafond à maxScore.
+ * Une fiche Excel chiffrée reste utile pour les cas limites (pondération, plafond bonus).
  */
 object SequenceMarkCalculator {
     private val MC = MathContext.DECIMAL128
