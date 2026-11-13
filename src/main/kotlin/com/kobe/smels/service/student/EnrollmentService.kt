@@ -3,6 +3,7 @@ package com.kobe.smels.service.student
 import com.kobe.smels.dto.student.CreateEnrollmentRequest
 import com.kobe.smels.dto.student.EnrollmentResponse
 import com.kobe.smels.dto.student.EnrollmentSummaryDto
+import com.kobe.smels.dto.student.LevelEnrollmentCountDto
 import com.kobe.smels.dto.student.PageResponse
 import com.kobe.smels.dto.student.UpdateEnrollmentRequest
 import com.kobe.smels.exception.BusinessRuleException
@@ -23,6 +24,9 @@ import com.kobe.smels.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
+import org.springframework.data.mongodb.core.aggregation.Aggregation
+import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -34,7 +38,8 @@ class EnrollmentService(
     private val studentRepository: StudentRepository,
     private val academicYearApi: AcademicYearApi,
     private val schoolClassApi: SchoolClassApi,
-    private val outboxWriter: OutboxWriter
+    private val outboxWriter: OutboxWriter,
+    private val mongoTemplate: ReactiveMongoTemplate
 ) : EnrollmentApi {
 
     private val log = LoggerFactory.getLogger(javaClass)
@@ -313,6 +318,27 @@ class EnrollmentService(
         enrollmentRepository.findBySchoolIdAndStudentIdAndAcademicYearId(schoolId, studentId, academicYearId)
             .map { it.status == EnrollmentStatus.ENROLLED && it.classId == classId }
             .defaultIfEmpty(false)
+
+    override fun countEnrolledByYear(schoolId: String, academicYearId: String): Mono<Long> =
+        enrollmentRepository
+            .countBySchoolIdAndAcademicYearIdAndStatus(schoolId, academicYearId, EnrollmentStatus.ENROLLED)
+            .defaultIfEmpty(0L)
+
+    override fun countEnrolledByLevelForYear(
+        schoolId: String,
+        academicYearId: String
+    ): Flux<LevelEnrollmentCountDto> {
+        val aggregation = Aggregation.newAggregation(
+            Aggregation.match(
+                Criteria.where("schoolId").`is`(schoolId)
+                    .and("academicYearId").`is`(academicYearId)
+                    .and("status").`is`(EnrollmentStatus.ENROLLED)
+            ),
+            Aggregation.group("levelId").count().`as`("enrolledCount"),
+            Aggregation.project("enrolledCount").and("_id").`as`("levelId")
+        )
+        return mongoTemplate.aggregate(aggregation, "student_enrollments", LevelEnrollmentCountDto::class.java)
+    }
 
     /** BR-41 : au plus une inscription par année scolaire. */
     private fun ensureNoEnrollmentForYear(

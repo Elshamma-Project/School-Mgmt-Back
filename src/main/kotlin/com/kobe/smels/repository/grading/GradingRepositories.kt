@@ -10,8 +10,10 @@ import com.kobe.smels.model.grading.GradeCorrectionStatus
 import com.kobe.smels.model.grading.GradeReportSheet
 import com.kobe.smels.model.grading.GradeSheet
 import com.kobe.smels.model.grading.GradingScheme
+import com.kobe.smels.model.grading.ReportSheetStatus
 import com.kobe.smels.model.grading.SequenceMark
 import com.kobe.smels.model.grading.SessionStatus
+import com.kobe.smels.model.grading.SheetStatus
 import org.springframework.data.domain.Pageable
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import reactor.core.publisher.Flux
@@ -59,6 +61,13 @@ interface GradeReportSheetRepository : ReactiveMongoRepository<GradeReportSheet,
         academicYearId: String,
         termNumber: Int
     ): Flux<GradeReportSheet>
+
+    fun countBySchoolIdAndAcademicYearIdAndTermNumberAndStatus(
+        schoolId: String,
+        academicYearId: String,
+        termNumber: Int,
+        status: ReportSheetStatus
+    ): Mono<Long>
 }
 
 interface GradeSheetRepository : ReactiveMongoRepository<GradeSheet, String> {
@@ -79,6 +88,14 @@ interface GradeSheetRepository : ReactiveMongoRepository<GradeSheet, String> {
         classId: String,
         sessionId: String
     ): Flux<GradeSheet>
+
+    fun countBySchoolIdAndSessionIdAndStatus(
+        schoolId: String,
+        sessionId: String,
+        status: SheetStatus
+    ): Mono<Long>
+
+    fun countBySchoolIdAndSessionId(schoolId: String, sessionId: String): Mono<Long>
 }
 
 interface AssessmentRepository : ReactiveMongoRepository<Assessment, String> {
@@ -181,6 +198,8 @@ interface GradeCorrectionRequestRepository : ReactiveMongoRepository<GradeCorrec
         assessmentId: String,
         status: GradeCorrectionStatus
     ): Mono<GradeCorrectionRequest>
+
+    fun countBySchoolIdAndStatus(schoolId: String, status: GradeCorrectionStatus): Mono<Long>
 }
 
 interface GradeCorrectionEvidenceFileRepository : ReactiveMongoRepository<GradeCorrectionEvidenceFile, String> {

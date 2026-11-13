@@ -2,6 +2,7 @@ package com.kobe.smels.service.grading
 
 import com.kobe.smels.dto.grading.GenerateReportSheetRequest
 import com.kobe.smels.dto.grading.GradeReportSheetResponse
+import com.kobe.smels.dto.grading.ReportSheetStatusCountsDto
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
@@ -25,6 +26,7 @@ import com.kobe.smels.repository.grading.SequenceMarkRepository
 import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.academic.api.SubjectApi
+import com.kobe.smels.service.grading.api.GradeReportSheetApi
 import com.kobe.smels.service.staff.api.StaffApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.service.student.api.StudentApi
@@ -56,7 +58,7 @@ class GradeReportSheetService(
     private val enrollmentApi: EnrollmentApi,
     private val studentApi: StudentApi,
     private val outboxWriter: OutboxWriter
-) {
+) : GradeReportSheetApi {
     private val log = LoggerFactory.getLogger(javaClass)
     private val douala = ZoneId.of("Africa/Douala")
 
@@ -724,4 +726,40 @@ class GradeReportSheetService(
         val hours = ChronoUnit.HOURS.between(examInstant, Instant.now())
         return hours > scheme.reportSheetDeadlineHours.toLong()
     }
+
+    override fun countByStatusForTerm(
+        schoolId: String,
+        academicYearId: String,
+        termNumber: Int
+    ): Mono<ReportSheetStatusCountsDto> =
+        Mono.zip(
+            gradeReportSheetRepository
+                .countBySchoolIdAndAcademicYearIdAndTermNumberAndStatus(
+                    schoolId, academicYearId, termNumber, ReportSheetStatus.DRAFT
+                ).defaultIfEmpty(0L),
+            gradeReportSheetRepository
+                .countBySchoolIdAndAcademicYearIdAndTermNumberAndStatus(
+                    schoolId, academicYearId, termNumber, ReportSheetStatus.SUBMITTED
+                ).defaultIfEmpty(0L),
+            gradeReportSheetRepository
+                .countBySchoolIdAndAcademicYearIdAndTermNumberAndStatus(
+                    schoolId, academicYearId, termNumber, ReportSheetStatus.VISA_SG
+                ).defaultIfEmpty(0L),
+            gradeReportSheetRepository
+                .countBySchoolIdAndAcademicYearIdAndTermNumberAndStatus(
+                    schoolId, academicYearId, termNumber, ReportSheetStatus.VISA_PRINCIPAL
+                ).defaultIfEmpty(0L),
+            gradeReportSheetRepository
+                .countBySchoolIdAndAcademicYearIdAndTermNumberAndStatus(
+                    schoolId, academicYearId, termNumber, ReportSheetStatus.REJECTED
+                ).defaultIfEmpty(0L)
+        ).map { tuple ->
+            ReportSheetStatusCountsDto(
+                draft = tuple.t1,
+                submitted = tuple.t2,
+                visaSg = tuple.t3,
+                visaPrincipal = tuple.t4,
+                rejected = tuple.t5
+            )
+        }
 }

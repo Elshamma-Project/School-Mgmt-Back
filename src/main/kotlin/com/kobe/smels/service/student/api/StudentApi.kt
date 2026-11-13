@@ -21,4 +21,6 @@ interface StudentApi {
     fun findActiveBySchool(schoolId: String): Flux<StudentSummaryDto>
     fun findByGuardian(schoolId: String, guardianId: String): Flux<StudentSummaryDto>
     fun findGuardianLink(schoolId: String, studentId: String, guardianId: String): Mono<GuardianLinkDto>
+    /** Compteur élèves actifs (tableau de bord). */
+    fun countActive(schoolId: String): Mono<Long>
 }

@@ -24,6 +24,7 @@ import com.kobe.smels.repository.grading.GradeSheetRepository
 import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.academic.api.SubjectApi
+import com.kobe.smels.service.grading.api.GradeCorrectionApi
 import com.kobe.smels.service.staff.api.StaffApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.service.student.api.StudentApi
@@ -59,7 +60,7 @@ class GradeCorrectionService(
     private val staffApi: StaffApi,
     private val gradeService: GradeService,
     private val outboxWriter: OutboxWriter
-) {
+) : GradeCorrectionApi {
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun create(
@@ -565,6 +566,10 @@ class GradeCorrectionService(
             reviewedAt = request.reviewedAt,
             reviewNote = request.reviewNote
         )
+
+    override fun countPending(schoolId: String): Mono<Long> =
+        requestRepository.countBySchoolIdAndStatus(schoolId, GradeCorrectionStatus.PENDING)
+            .defaultIfEmpty(0L)
 
     companion object {
         private const val MIN_REASON_LEN = 15

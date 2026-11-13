@@ -385,6 +385,9 @@ class StaffService(
             .filter { it.functions.contains(StaffFunction.TEACHER) }
             .map { StaffMapper.toSummary(it) }
 
+    override fun countActive(schoolId: String): Mono<Long> =
+        staffRepository.countBySchoolIdAndActive(schoolId, true).defaultIfEmpty(0L)
+
     private fun emitChanged(staff: Staff): Mono<Void> =
         outboxWriter.append(
             schoolId = staff.schoolId,

@@ -12,4 +12,6 @@ interface StaffApi {
     fun getSummary(schoolId: String, staffId: String): Mono<StaffSummaryDto>
     fun findActiveBySchool(schoolId: String): Flux<StaffSummaryDto>
     fun findActiveTeachers(schoolId: String): Flux<StaffSummaryDto>
+    /** Compteur personnel actif (tableau de bord). */
+    fun countActive(schoolId: String): Mono<Long>
 }

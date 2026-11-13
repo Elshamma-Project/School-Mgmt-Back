@@ -560,6 +560,9 @@ class StudentService(
     override fun findActiveBySchool(schoolId: String): Flux<StudentSummaryDto> =
         studentRepository.findBySchoolIdAndActiveTrue(schoolId).map { StudentMapper.toStudentSummary(it) }
 
+    override fun countActive(schoolId: String): Mono<Long> =
+        studentRepository.countBySchoolIdAndActive(schoolId, true).defaultIfEmpty(0L)
+
     override fun findByGuardian(schoolId: String, guardianId: String): Flux<StudentSummaryDto> =
         studentRepository.findBySchoolIdAndGuardiansGuardianId(schoolId, guardianId)
             .map { StudentMapper.toStudentSummary(it) }

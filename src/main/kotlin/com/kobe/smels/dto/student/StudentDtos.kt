@@ -245,6 +245,12 @@ data class EnrollmentSummaryDto(
     val leftOn: LocalDate? = null
 )
 
+/** Effectif ENROLLED regroupé par niveau (tableau de bord). */
+data class LevelEnrollmentCountDto(
+    val levelId: String,
+    val enrolledCount: Long
+)
+
 data class PageResponse<T>(
     val content: List<T>,
     val page: Int,

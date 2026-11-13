@@ -1,6 +1,7 @@
 package com.kobe.smels.service.student.api
 
 import com.kobe.smels.dto.student.EnrollmentSummaryDto
+import com.kobe.smels.dto.student.LevelEnrollmentCountDto
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
@@ -26,4 +27,13 @@ interface EnrollmentApi {
         classId: String,
         academicYearId: String
     ): Mono<Boolean>
+
+    /** Effectif ENROLLED de l’année (tableau de bord). */
+    fun countEnrolledByYear(schoolId: String, academicYearId: String): Mono<Long>
+
+    /** Effectifs ENROLLED regroupés par niveau (tableau de bord). */
+    fun countEnrolledByLevelForYear(
+        schoolId: String,
+        academicYearId: String
+    ): Flux<LevelEnrollmentCountDto>
 }

@@ -241,8 +241,37 @@ data class EvaluationSessionSummaryDto(
     val academicYearId: String,
     val number: Int,
     val termNumber: Int,
-    val status: SessionStatus
+    val status: SessionStatus,
+    val shortLabel: String? = null,
+    val name: LocalizedTextDto? = null,
+    val entryDeadline: LocalDate? = null,
+    val examDate: LocalDate? = null
 )
+
+/** File d’attente fiches de report — agrégat pour le tableau de bord. */
+data class ReportSheetStatusCountsDto(
+    val draft: Long = 0,
+    val submitted: Long = 0,
+    val visaSg: Long = 0,
+    val visaPrincipal: Long = 0,
+    val rejected: Long = 0
+) {
+    val total: Long get() = draft + submitted + visaSg + visaPrincipal + rejected
+    val pendingReview: Long get() = submitted + visaSg
+}
+
+/** Progression de saisie des fiches personnelles (GradeSheet) sur les séquences ouvertes. */
+data class EntryProgressDto(
+    val expectedSheets: Long,
+    val draftSheets: Long,
+    val submittedSheets: Long,
+    val lockedSheets: Long,
+    val existingSheets: Long
+) {
+    val completionRatio: Double
+        get() = if (expectedSheets <= 0L) 0.0
+        else (submittedSheets + lockedSheets).toDouble() / expectedSheets.toDouble()
+}
 
 data class ScoreBandWriteDto(
     @field:NotBlank val code: String,

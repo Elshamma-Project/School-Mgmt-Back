@@ -72,6 +72,12 @@ interface EnrollmentRepository : ReactiveMongoRepository<Enrollment, String> {
 
     fun countBySchoolIdAndAcademicYearId(schoolId: String, academicYearId: String): Mono<Long>
 
+    fun countBySchoolIdAndAcademicYearIdAndStatus(
+        schoolId: String,
+        academicYearId: String,
+        status: EnrollmentStatus
+    ): Mono<Long>
+
     fun findBySchoolIdAndStudentId(schoolId: String, studentId: String): Flux<Enrollment>
 
     fun findBySchoolIdAndClassIdAndStatus(

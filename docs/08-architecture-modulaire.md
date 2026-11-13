@@ -16,6 +16,7 @@
 | `reporting` | gabarits, bulletins, absences/sanctions/décisions | `reporting_templates`, `reporting_report_cards`, `reporting_period_reviews` | `grading`, `academic`, `student`, `staff` |
 | `timetable` | grille horaire, emplois du temps, cases | `timetable_grids`, `timetable_timetables`, `timetable_entries` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
+| `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
 
 Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `fees`, `cards`, `enrollment`.
 
@@ -28,8 +29,11 @@ flowchart LR
   timetable --> academic & staff
   academic --> staff
   notification --> user
+  portal --> academic & student & staff & grading & notification
 ```
 Les flèches vont du module qui **consomme** vers celui qui **fournit**. **Aucune flèche inverse, aucun cycle** : si un cycle apparaît, c'est que l'information doit descendre par un événement (§ 4) ou qu'un module est mal découpé.
+
+**Portail** : `GET /api/v1/dashboard/summary` agrège compteurs, séquences, file de fiches, progression de saisie, inscriptions par cycle, charge enseignant et notifications. Les blocs absents du rôle sont `null`. Pas de modèle Mongo propre — extractable en BFF.
 
 ## 2. Arborescence du projet
 

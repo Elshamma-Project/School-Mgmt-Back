@@ -9,6 +9,7 @@ import com.kobe.smels.model.notification.NotificationCategory
 import com.kobe.smels.model.notification.NotificationSeverity
 import com.kobe.smels.model.shared.LocalizedText
 import com.kobe.smels.repository.notification.InAppNotificationRepository
+import com.kobe.smels.service.notification.api.NotificationApi
 import com.kobe.smels.shared.security.CurrentUser
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
@@ -19,7 +20,7 @@ import java.time.Instant
 @Service
 class NotificationService(
     private val notificationRepository: InAppNotificationRepository
-) {
+) : NotificationApi {
     fun listMine(
         currentUser: CurrentUser,
         unreadOnly: Boolean = false,
@@ -207,6 +208,21 @@ class NotificationService(
                     )
             }
     }
+
+    override fun countUnread(schoolId: String, accountId: String): Mono<Long> =
+        notificationRepository
+            .countBySchoolIdAndRecipientAccountIdAndReadAtIsNull(schoolId, accountId)
+            .defaultIfEmpty(0L)
+
+    override fun listRecent(
+        schoolId: String,
+        accountId: String,
+        limit: Int
+    ): Flux<InAppNotificationResponse> =
+        notificationRepository
+            .findBySchoolIdAndRecipientAccountIdOrderByCreatedAtDesc(schoolId, accountId)
+            .take(limit.coerceIn(1, 50).toLong())
+            .map { toResponse(it) }
 
     private fun toResponse(n: InAppNotification) = InAppNotificationResponse(
         id = n.id!!,

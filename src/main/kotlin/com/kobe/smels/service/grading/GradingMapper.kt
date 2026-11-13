@@ -206,7 +206,11 @@ object GradingMapper {
         academicYearId = session.academicYearId,
         number = session.number,
         termNumber = session.termNumber,
-        status = session.status
+        status = session.status,
+        shortLabel = session.shortLabel,
+        name = toLocalizedDto(session.name),
+        entryDeadline = session.entryDeadline,
+        examDate = session.examDate
     )
 
     fun toReportSheetResponse(sheet: GradeReportSheet, deadlineWarning: Boolean = false) =
