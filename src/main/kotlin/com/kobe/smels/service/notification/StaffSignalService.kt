@@ -211,7 +211,7 @@ class StaffSignalService(
         relatedSessionNumber = s.relatedSessionNumber,
         relatedClassSubjectId = s.relatedClassSubjectId,
         status = s.status,
-        createdAt = s.createdAt,
+        createdAt = s.createdAt ?: Instant.now(),
         acknowledgedBy = s.acknowledgedBy,
         acknowledgedAt = s.acknowledgedAt,
         closedBy = s.closedBy,

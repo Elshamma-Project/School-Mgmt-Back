@@ -208,7 +208,7 @@ class NotificationService(
         resourceId = n.resourceId,
         deepLink = n.deepLink,
         ackRequired = n.ackRequired,
-        createdAt = n.createdAt,
+        createdAt = n.createdAt ?: Instant.now(),
         readAt = n.readAt,
         ackedAt = n.ackedAt,
         unread = n.readAt == null,

@@ -41,7 +41,6 @@ data class StaffSignal(
     var relatedClassSubjectId: String? = null,
 
     var status: StaffSignalStatus = StaffSignalStatus.OPEN,
-    var createdAt: Instant = Instant.now(),
     var acknowledgedBy: String? = null,
     var acknowledgedAt: Instant? = null,
     var closedBy: String? = null,

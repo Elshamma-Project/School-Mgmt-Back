@@ -52,7 +52,6 @@ data class InAppNotification(
     var deepLink: String? = null,
 
     var ackRequired: Boolean = false,
-    var createdAt: Instant = Instant.now(),
     var readAt: Instant? = null,
     var ackedAt: Instant? = null
 ) : TenantDocument()
