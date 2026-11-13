@@ -410,6 +410,9 @@ data class GradeAuditEntryResponse(
     val classSubjectId: String,
     val sessionId: String?,
     val studentId: String?,
+    val reportSheetId: String? = null,
+    val gradeId: String? = null,
+    val sequenceMarkId: String? = null,
     val changedBy: String,
     /** Username lisible (résolu à la lecture) ; repli UI = `changedBy`. */
     val changedByLabel: String? = null,
@@ -418,7 +421,9 @@ data class GradeAuditEntryResponse(
     val reason: String?,
     val afterSessionClosed: Boolean,
     val previousValue: BigDecimal?,
-    val newValue: BigDecimal?
+    val newValue: BigDecimal?,
+    val previousReportStatus: String? = null,
+    val newReportStatus: String? = null
 )
 
 data class GradeCorrectionEvidenceDto(

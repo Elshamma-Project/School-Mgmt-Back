@@ -64,6 +64,9 @@ class GradeAuditService(
                             classSubjectId = entry.classSubjectId,
                             sessionId = entry.sessionId,
                             studentId = entry.studentId,
+                            reportSheetId = entry.reportSheetId,
+                            gradeId = entry.gradeId,
+                            sequenceMarkId = entry.sequenceMarkId,
                             changedBy = entry.changedBy,
                             changedByLabel = usernames[entry.changedBy]?.takeIf { it.isNotBlank() },
                             changedByRole = entry.changedByRole,
@@ -71,7 +74,9 @@ class GradeAuditService(
                             reason = entry.reason,
                             afterSessionClosed = entry.afterSessionClosed,
                             previousValue = entry.previousValue,
-                            newValue = entry.newValue
+                            newValue = entry.newValue,
+                            previousReportStatus = entry.previousReportStatus?.name,
+                            newReportStatus = entry.newReportStatus?.name
                         )
                     }
                     val totalPages = if (total == 0L) 0 else ((total + pageSize - 1) / pageSize).toInt()
