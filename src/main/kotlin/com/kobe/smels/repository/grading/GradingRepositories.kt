@@ -154,6 +154,7 @@ interface GradeAuditEntryRepository : ReactiveMongoRepository<GradeAuditEntry, S
         pageable: Pageable
     ): Flux<GradeAuditEntry>
     fun findBySchoolId(schoolId: String, pageable: Pageable): Flux<GradeAuditEntry>
+    fun countBySchoolId(schoolId: String): Mono<Long>
 }
 
 interface GradeCorrectionRequestRepository : ReactiveMongoRepository<GradeCorrectionRequest, String> {

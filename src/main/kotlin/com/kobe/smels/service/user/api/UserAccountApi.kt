@@ -40,4 +40,10 @@ interface UserAccountApi {
      * Utilisé par le module notification (destinataires administration / direction).
      */
     fun findActiveAccountIdsByRoles(schoolId: String, roles: Collection<Role>): Flux<String>
+
+    /**
+     * Usernames lisibles pour des `accountId` (même établissement).
+     * Clé = accountId. Absent si compte inconnu ou hors école.
+     */
+    fun findUsernamesByIds(schoolId: String, accountIds: Collection<String>): Mono<Map<String, String>>
 }

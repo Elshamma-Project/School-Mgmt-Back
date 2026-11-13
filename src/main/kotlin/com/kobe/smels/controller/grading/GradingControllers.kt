@@ -213,10 +213,21 @@ class GradeAuditController(private val gradeAuditService: GradeAuditService) {
     @GetMapping
     fun list(
         @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "50") size: Int,
-        @RequestParam(required = false) schoolId: String?
-    ) = SecuritySupport.currentUser().flatMapMany {
-        gradeAuditService.list(it, page, size, schoolId)
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) schoolId: String?,
+        @RequestParam(required = false) action: String?,
+        @RequestParam(required = false) target: String?,
+        @RequestParam(required = false) afterSessionClosed: Boolean?
+    ) = SecuritySupport.currentUser().flatMap {
+        gradeAuditService.list(
+            currentUser = it,
+            page = page,
+            size = size,
+            schoolIdOverride = schoolId,
+            action = action,
+            target = target,
+            afterSessionClosed = afterSessionClosed
+        )
     }
 }
 

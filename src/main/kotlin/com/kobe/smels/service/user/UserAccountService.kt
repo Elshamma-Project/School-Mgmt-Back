@@ -143,6 +143,26 @@ class UserAccountService(
             .distinct()
     }
 
+    override fun findUsernamesByIds(
+        schoolId: String,
+        accountIds: Collection<String>
+    ): Mono<Map<String, String>> {
+        val ids = accountIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (ids.isEmpty()) {
+            return Mono.just(emptyMap())
+        }
+        return userAccountRepository
+            .findAllById(ids)
+            .filter { account ->
+                val id = account.id?.trim().orEmpty()
+                id.isNotEmpty() && account.schoolId == schoolId
+            }
+            .collectMap(
+                { it.id!!.trim() },
+                { it.username.trim() }
+            )
+    }
+
     fun disable(currentUser: CurrentUser, id: String): Mono<UserAccountResponse> {
         log.info("user.disable start by={} accountId={}", currentUser.username, id)
         return userAccountRepository.findById(id)

@@ -23,6 +23,14 @@ import java.time.LocalDate
 
 data class LocalizedTextDto(val fr: String? = null, val en: String? = null)
 
+data class PageResponse<T>(
+    val content: List<T>,
+    val page: Int,
+    val size: Int,
+    val totalElements: Long,
+    val totalPages: Int
+)
+
 data class EnsureSessionsRequest(
     @field:NotBlank val academicYearId: String,
     val schoolId: String? = null
@@ -403,6 +411,8 @@ data class GradeAuditEntryResponse(
     val sessionId: String?,
     val studentId: String?,
     val changedBy: String,
+    /** Username lisible (résolu à la lecture) ; repli UI = `changedBy`. */
+    val changedByLabel: String? = null,
     val changedByRole: Role?,
     val changedAt: Instant,
     val reason: String?,
