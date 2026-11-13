@@ -15,8 +15,9 @@
 | `grading` | séquences, fiches de notes, notes, notes de séquence, audit, barèmes | `grading_sessions`, `grading_sheets`, `grading_assessments`, `grading_grades`, `grading_sequence_marks`, `grading_audit_entries`, `grading_schemes` | `academic`, `student`, `staff` (ids) |
 | `reporting` | gabarits, bulletins, absences/sanctions/décisions | `reporting_templates`, `reporting_report_cards`, `reporting_period_reviews` | `grading`, `academic`, `student`, `staff` |
 | `timetable` | grille horaire, emplois du temps, cases | `timetable_grids`, `timetable_timetables`, `timetable_entries` | `academic`, `staff` (ids) |
+| `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 
-Futurs : `file-storage` (photos, logos, PDF), `notification` (SMS/WhatsApp/e-mail), `fees` (frais et paiements), `cards` (cartes d'élèves), `enrollment` (dossiers d'inscription).
+Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `fees`, `cards`, `enrollment`.
 
 ```mermaid
 flowchart LR
@@ -26,6 +27,7 @@ flowchart LR
   reporting --> grading & academic & student & staff
   timetable --> academic & staff
   academic --> staff
+  notification --> user
 ```
 Les flèches vont du module qui **consomme** vers celui qui **fournit**. **Aucune flèche inverse, aucun cycle** : si un cycle apparaît, c'est que l'information doit descendre par un événement (§ 4) ou qu'un module est mal découpé.
 
@@ -74,7 +76,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `staff.member.changed` | staff | academic, timetable, reporting, user | `staffId`, nom affiché, civilité, `active` |
 | `student.enrolled` / `student.enrollment.changed` | student | grading, reporting | `enrollmentId`, `studentId`, `classId`, `academicYearId`, statut |
 | `student.guardian.linked` | student | user | `guardianId`, `studentId`, droits de consultation |
-| `grading.session.opened` / `grading.session.closed` | grading | reporting, notification | `sessionId`, numéro, `termNumber` |
+| `grading.session.opened` / `grading.session.closed` | grading | reporting, notification | `sessionId`, numéro, `termNumber` ; à la clôture : `shortLabel`, `academicYearId`, `teacherIds` (staff) |
 | `grading.mark.changed` | grading | reporting (invalidation des brouillons) | `studentId`, `classSubjectId`, `sessionId` |
 | `grading.report-sheet.submitted` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `deadlineWarning` ; si BR-79 : `autoOnSessionClose`, `sessionId`, `sessionNumber` |
 | `grading.report-sheet.visaed` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `level` (SUPERVISOR\|PRINCIPAL) |

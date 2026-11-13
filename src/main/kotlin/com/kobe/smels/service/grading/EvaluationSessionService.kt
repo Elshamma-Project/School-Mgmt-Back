@@ -219,18 +219,27 @@ class EvaluationSessionService(
                                         lockSheets(closed)
                                             .then(gradeReportSheetService.autoSubmitTeacherVisasOnSessionClosed(currentUser, closed))
                                             .then(
-                                                outboxWriter.append(
-                                                    schoolId = closed.schoolId,
-                                                    module = "grading",
-                                                    aggregateType = "EvaluationSession",
-                                                    aggregateId = closed.id!!,
-                                                    eventType = "grading.session.closed",
-                                                    payload = mapOf(
-                                                        "sessionId" to closed.id,
-                                                        "number" to closed.number,
-                                                        "termNumber" to closed.termNumber
-                                                    )
-                                                )
+                                                gradeSheetRepository.findBySchoolIdAndSessionId(closed.schoolId, closed.id!!)
+                                                    .mapNotNull { it.teacherId?.trim()?.takeIf { id -> id.isNotEmpty() } }
+                                                    .distinct()
+                                                    .collectList()
+                                                    .flatMap { teacherIds ->
+                                                        outboxWriter.append(
+                                                            schoolId = closed.schoolId,
+                                                            module = "grading",
+                                                            aggregateType = "EvaluationSession",
+                                                            aggregateId = closed.id!!,
+                                                            eventType = "grading.session.closed",
+                                                            payload = mapOf(
+                                                                "sessionId" to closed.id,
+                                                                "number" to closed.number,
+                                                                "termNumber" to closed.termNumber,
+                                                                "academicYearId" to closed.academicYearId,
+                                                                "shortLabel" to closed.shortLabel,
+                                                                "teacherIds" to teacherIds
+                                                            )
+                                                        )
+                                                    }
                                             )
                                             .thenReturn(closed)
                                     }

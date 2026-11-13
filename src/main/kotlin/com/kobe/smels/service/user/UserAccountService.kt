@@ -17,6 +17,7 @@ import com.kobe.smels.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.Instant
 
@@ -111,7 +112,10 @@ class UserAccountService(
                     .mapNotNull { account ->
                         val profileId = account.profileId?.trim()?.takeIf { it.isNotEmpty() }
                             ?: return@mapNotNull null
+                        val accountId = account.id?.trim()?.takeIf { it.isNotEmpty() }
+                            ?: return@mapNotNull null
                         profileId to StaffLinkedAccountDto(
+                            accountId = accountId,
                             username = account.username,
                             lastLoginAt = account.lastLoginAt
                         )
@@ -129,6 +133,15 @@ class UserAccountService(
                 account.lastLoginAt?.let { staffId to it }
             }.toMap()
         }
+
+    override fun findActiveAccountIdsByRoles(schoolId: String, roles: Collection<Role>): Flux<String> {
+        val roleSet = roles.toSet()
+        if (roleSet.isEmpty()) return Flux.empty()
+        return userAccountRepository
+            .findBySchoolIdAndStatusAndRolesIn(schoolId, AccountStatus.ACTIVE, roleSet)
+            .mapNotNull { it.id }
+            .distinct()
+    }
 
     fun disable(currentUser: CurrentUser, id: String): Mono<UserAccountResponse> {
         log.info("user.disable start by={} accountId={}", currentUser.username, id)

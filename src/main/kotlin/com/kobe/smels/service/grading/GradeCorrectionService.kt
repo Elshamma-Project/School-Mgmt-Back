@@ -196,6 +196,7 @@ class GradeCorrectionService(
                                                                                     "requestId" to withEvidence.id,
                                                                                     "sessionId" to sessionId,
                                                                                     "classSubjectId" to classSubjectId,
+                                                                                    "studentLabel" to withEvidence.studentLabel,
                                                                                     "status" to GradeCorrectionStatus.PENDING.name
                                                                                 )
                                                                             ).thenReturn(toResponse(withEvidence))

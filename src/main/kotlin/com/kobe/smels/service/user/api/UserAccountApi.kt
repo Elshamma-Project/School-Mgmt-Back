@@ -3,7 +3,9 @@ package com.kobe.smels.service.user.api
 import com.kobe.smels.dto.user.CreateUserAccountRequest
 import com.kobe.smels.dto.user.StaffLinkedAccountDto
 import com.kobe.smels.dto.user.UserAccountResponse
+import com.kobe.smels.model.user.Role
 import com.kobe.smels.shared.security.CurrentUser
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.Instant
 
@@ -32,4 +34,10 @@ interface UserAccountApi {
      * Clé = `profileId` (staffId). Absent si aucun compte lié ou jamais connecté.
      */
     fun findStaffLastLogins(schoolId: String, staffIds: Collection<String>): Mono<Map<String, Instant>>
+
+    /**
+     * Identifiants de comptes ACTIVE d’un établissement ayant au moins un des rôles donnés.
+     * Utilisé par le module notification (destinataires administration / direction).
+     */
+    fun findActiveAccountIdsByRoles(schoolId: String, roles: Collection<Role>): Flux<String>
 }

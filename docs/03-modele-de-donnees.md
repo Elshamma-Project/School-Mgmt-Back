@@ -60,6 +60,8 @@
 | timetable | `timetable_grids` | `TimeSlotGrid` (+ `GridPeriod`) | Grille horaire de la journée |
 | timetable | `timetable_timetables` | `Timetable` | Emploi du temps d'une année (révisions) |
 | timetable | `timetable_entries` | `TimetableEntry` | Cases de l'emploi du temps |
+| notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) |
+| notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
 
 ## 3. Index clés et requêtes chaudes
 
