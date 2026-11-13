@@ -51,6 +51,8 @@ data class GradeCorrectionRequest(
     var subjectLabelFr: String? = null,
     var subjectLabelEn: String? = null,
     var teacherId: String? = null,
+    /** Nom figé de l’enseignant titulaire / demandeur (copie staff). */
+    var teacherLabel: String? = null,
 
     var previousStatus: GradeStatus = GradeStatus.PENDING,
     @Field(targetType = FieldType.DECIMAL128)

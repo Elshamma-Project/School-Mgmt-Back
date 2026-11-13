@@ -435,6 +435,7 @@ data class GradeCorrectionRequestResponse(
     val subjectLabelFr: String?,
     val subjectLabelEn: String?,
     val teacherId: String?,
+    val teacherLabel: String? = null,
     val previousStatus: GradeStatus,
     val previousValue: BigDecimal?,
     val proposedStatus: GradeStatus,

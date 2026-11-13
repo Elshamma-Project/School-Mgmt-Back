@@ -24,6 +24,7 @@ import com.kobe.smels.repository.grading.GradeSheetRepository
 import com.kobe.smels.service.academic.api.ClassSubjectApi
 import com.kobe.smels.service.academic.api.SchoolClassApi
 import com.kobe.smels.service.academic.api.SubjectApi
+import com.kobe.smels.service.staff.api.StaffApi
 import com.kobe.smels.service.student.api.EnrollmentApi
 import com.kobe.smels.service.student.api.StudentApi
 import com.kobe.smels.shared.outbox.OutboxWriter
@@ -55,6 +56,7 @@ class GradeCorrectionService(
     private val subjectApi: SubjectApi,
     private val studentApi: StudentApi,
     private val enrollmentApi: EnrollmentApi,
+    private val staffApi: StaffApi,
     private val gradeService: GradeService,
     private val outboxWriter: OutboxWriter
 ) {
@@ -140,7 +142,8 @@ class GradeCorrectionService(
                                                         cs.classId,
                                                         cs.subjectId,
                                                         studentId,
-                                                        session.academicYearId
+                                                        session.academicYearId,
+                                                        cs.teacherId
                                                     ).flatMap { labels ->
                                                         gradeRepository
                                                             .findBySchoolIdAndAssessmentIdAndStudentId(
@@ -171,6 +174,7 @@ class GradeCorrectionService(
                                                                     subjectLabelFr = labels.subjectFr,
                                                                     subjectLabelEn = labels.subjectEn,
                                                                     teacherId = cs.teacherId,
+                                                                    teacherLabel = labels.teacherLabel,
                                                                     previousStatus = prevStatus,
                                                                     previousValue = prevValue,
                                                                     proposedStatus = proposedStatus,
@@ -197,6 +201,8 @@ class GradeCorrectionService(
                                                                                     "sessionId" to sessionId,
                                                                                     "classSubjectId" to classSubjectId,
                                                                                     "studentLabel" to withEvidence.studentLabel,
+                                                                                    "classLabel" to withEvidence.classLabel,
+                                                                                    "teacherLabel" to withEvidence.teacherLabel,
                                                                                     "status" to GradeCorrectionStatus.PENDING.name
                                                                                 )
                                                                             ).thenReturn(toResponse(withEvidence))
@@ -439,6 +445,7 @@ class GradeCorrectionService(
         val classLabel: String?,
         val subjectFr: String?,
         val subjectEn: String?,
+        val teacherLabel: String?,
         val enrollmentId: String?
     )
 
@@ -454,7 +461,8 @@ class GradeCorrectionService(
         classId: String,
         subjectId: String,
         studentId: String,
-        academicYearId: String
+        academicYearId: String,
+        teacherId: String?
     ): Mono<Labels> =
         Mono.zip(
             studentApi.getSummary(schoolId, studentId)
@@ -466,18 +474,26 @@ class GradeCorrectionService(
             subjectApi.getSummary(schoolId, subjectId)
                 .map { listOf(it.name.fr, it.name.en) }
                 .defaultIfEmpty(listOf(null, null)),
+            resolveTeacherLabel(schoolId, teacherId),
             enrollmentApi.findByStudentAndYear(schoolId, studentId, academicYearId)
                 .map { it.id }
                 .defaultIfEmpty("")
         ).map { tuple ->
             Labels(
                 studentLabel = tuple.t1,
-                classLabel = tuple.t2,
+                classLabel = tuple.t2.takeIf { it.isNotBlank() && it != "—" },
                 subjectFr = tuple.t3.getOrNull(0),
                 subjectEn = tuple.t3.getOrNull(1),
-                enrollmentId = tuple.t4.ifBlank { null }
+                teacherLabel = tuple.t4.takeIf { it.isNotBlank() },
+                enrollmentId = tuple.t5.ifBlank { null }
             )
         }
+
+    private fun resolveTeacherLabel(schoolId: String, teacherId: String?): Mono<String> =
+        if (teacherId.isNullOrBlank()) Mono.just("")
+        else staffApi.getSummary(schoolId, teacherId)
+            .map { it.displayName }
+            .defaultIfEmpty("")
 
     private fun parseStatus(raw: String?): GradeStatus {
         if (raw.isNullOrBlank()) return GradeStatus.SCORED
@@ -526,6 +542,7 @@ class GradeCorrectionService(
             subjectLabelFr = request.subjectLabelFr,
             subjectLabelEn = request.subjectLabelEn,
             teacherId = request.teacherId,
+            teacherLabel = request.teacherLabel,
             previousStatus = request.previousStatus,
             previousValue = request.previousValue,
             proposedStatus = request.proposedStatus,

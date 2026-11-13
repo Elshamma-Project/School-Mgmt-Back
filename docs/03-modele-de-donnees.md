@@ -51,7 +51,7 @@
 | grading | `grading_sequence_marks` | `SequenceMark` | **Note de séquence** totalisée (colonne DEVn du bulletin) |
 | grading | `grading_report_sheets` | `GradeReportSheet` (+ lignes / cellules) | **Fiche de report** trimestrielle (instantané officiel, ≠ GradeSheet) |
 | grading | `grading_audit_entries` | `GradeAuditEntry` | Journal append-only (notes, notes de séquence, fiches, report sheets) |
-| grading | `grading_correction_requests` | `GradeCorrectionRequest` | Demandes de correction post-clôture (BR-80) |
+| grading | `grading_correction_requests` | `GradeCorrectionRequest` | Demandes de correction post-clôture (BR-80) ; libellés figés `studentLabel`, `classLabel`, `teacherLabel`, matières |
 | grading | `grading_correction_evidence` | `GradeCorrectionEvidenceFile` | Pièces jointes (binaires) des demandes |
 | grading | `grading_schemes` | `GradingScheme` (+ `AppreciationScale`, `ScoreBand`, `DistinctionRule`) | Règles de notation configurables (+ params fiche de report) |
 | reporting | `reporting_templates` | `ReportTemplate` | Gabarits de bulletin (annuel, trimestre) |

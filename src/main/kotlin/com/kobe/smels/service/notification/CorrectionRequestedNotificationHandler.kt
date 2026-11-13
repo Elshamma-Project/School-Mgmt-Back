@@ -22,21 +22,15 @@ class CorrectionRequestedNotificationHandler(
         val eventId = event.id ?: return Mono.empty()
         val requestId = event.payload["requestId"]?.toString() ?: event.aggregateId
         val studentLabel = event.payload["studentLabel"]?.toString()?.takeIf { it.isNotBlank() }
+        val classLabel = event.payload["classLabel"]?.toString()?.takeIf { it.isNotBlank() }
+        val teacherLabel = event.payload["teacherLabel"]?.toString()?.takeIf { it.isNotBlank() }
         val title = LocalizedText(
             fr = "Demande de correction de note",
             en = "Grade correction request"
         )
         val body = LocalizedText(
-            fr = if (studentLabel != null) {
-                "Une correction a été proposée pour $studentLabel. Revue requise."
-            } else {
-                "Une demande de correction post-clôture attend votre décision."
-            },
-            en = if (studentLabel != null) {
-                "A correction was proposed for $studentLabel. Review required."
-            } else {
-                "A post-close correction request awaits your decision."
-            }
+            fr = buildBodyFr(studentLabel, classLabel, teacherLabel),
+            en = buildBodyEn(studentLabel, classLabel, teacherLabel)
         )
         return userAccountApi
             .findActiveAccountIdsByRoles(event.schoolId, listOf(Role.DIRECTOR))
@@ -57,5 +51,43 @@ class CorrectionRequestedNotificationHandler(
                 )
             }
             .then()
+    }
+
+    private fun buildBodyFr(
+        studentLabel: String?,
+        classLabel: String?,
+        teacherLabel: String?
+    ): String {
+        if (studentLabel == null) {
+            return "Une demande de correction post-clôture attend votre décision."
+        }
+        val details = buildList {
+            if (classLabel != null) add("classe $classLabel")
+            if (teacherLabel != null) add("enseignant $teacherLabel")
+        }
+        return if (details.isEmpty()) {
+            "Une correction a été proposée pour $studentLabel. Revue requise."
+        } else {
+            "Une correction a été proposée pour $studentLabel (${details.joinToString(", ")}). Revue requise."
+        }
+    }
+
+    private fun buildBodyEn(
+        studentLabel: String?,
+        classLabel: String?,
+        teacherLabel: String?
+    ): String {
+        if (studentLabel == null) {
+            return "A post-close correction request awaits your decision."
+        }
+        val details = buildList {
+            if (classLabel != null) add("class $classLabel")
+            if (teacherLabel != null) add("teacher $teacherLabel")
+        }
+        return if (details.isEmpty()) {
+            "A correction was proposed for $studentLabel. Review required."
+        } else {
+            "A correction was proposed for $studentLabel (${details.joinToString(", ")}). Review required."
+        }
     }
 }
