@@ -65,7 +65,7 @@ class SessionClosedNotificationHandler(
                             sourceEventType = event.eventType,
                             resourceType = "EvaluationSession",
                             resourceId = sessionId,
-                            deepLink = "/teacher/grades",
+                            deepLink = "/teacher/grades?term=$termNumber",
                             ackRequired = true
                         )
                     }

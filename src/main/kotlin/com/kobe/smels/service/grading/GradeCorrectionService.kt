@@ -294,7 +294,11 @@ class GradeCorrectionService(
                             payload = mapOf(
                                 "requestId" to saved.id,
                                 "sessionId" to saved.sessionId,
-                                "classSubjectId" to saved.classSubjectId
+                                "classSubjectId" to saved.classSubjectId,
+                                "requestedBy" to saved.requestedBy,
+                                "teacherId" to saved.teacherId,
+                                "studentLabel" to saved.studentLabel,
+                                "decision" to "APPROVED"
                             )
                         ).thenReturn(toResponse(saved))
                     }
@@ -336,7 +340,12 @@ class GradeCorrectionService(
                         payload = mapOf(
                             "requestId" to saved.id,
                             "sessionId" to saved.sessionId,
-                            "classSubjectId" to saved.classSubjectId
+                            "classSubjectId" to saved.classSubjectId,
+                            "requestedBy" to saved.requestedBy,
+                            "teacherId" to saved.teacherId,
+                            "studentLabel" to saved.studentLabel,
+                            "decision" to "REJECTED",
+                            "reviewNote" to saved.reviewNote
                         )
                     ).thenReturn(toResponse(saved))
                 }

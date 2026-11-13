@@ -278,6 +278,10 @@ class GradeReportSheetService(
             }
     }
 
+    /**
+     * BR-83 : le visa Principal finalise la fiche et complète automatiquement les visas
+     * enseignant / SG encore manquants (même horodatage, motif d’audit AUTO_ON_PRINCIPAL_VISA).
+     */
     fun visaPrincipal(
         currentUser: CurrentUser,
         id: String,
@@ -288,16 +292,49 @@ class GradeReportSheetService(
         return gradeReportSheetRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("REPORT_SHEET_NOT_FOUND", "Report sheet not found")))
             .flatMap { sheet ->
-                if (sheet.status != ReportSheetStatus.VISA_SG && sheet.status != ReportSheetStatus.SUBMITTED) {
+                if (sheet.status == ReportSheetStatus.VISA_PRINCIPAL) {
                     return@flatMap Mono.error(
-                        BusinessRuleException("INVALID_STATUS", "Sheet must be SUBMITTED or VISA_SG before Principal visa")
+                        BusinessRuleException("ALREADY_VISAED", "Principal visa already applied")
+                    )
+                }
+                if (sheet.status != ReportSheetStatus.DRAFT &&
+                    sheet.status != ReportSheetStatus.REJECTED &&
+                    sheet.status != ReportSheetStatus.SUBMITTED &&
+                    sheet.status != ReportSheetStatus.VISA_SG
+                ) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException(
+                            "INVALID_STATUS",
+                            "Sheet cannot receive Principal visa in status ${sheet.status}"
+                        )
                     )
                 }
                 val previous = sheet.status
+                val now = Instant.now()
+                val cascaded = mutableListOf<String>()
+                // Visa enseignant (soumission) manquant → complété.
+                if (sheet.submittedAt == null) {
+                    sheet.submittedAt = now
+                    sheet.submittedBy = currentUser.accountId
+                    cascaded += "TEACHER"
+                }
+                // Visa SG manquant → complété.
+                if (sheet.visaSupervisor == null) {
+                    sheet.visaSupervisor = ReportSheetVisa(currentUser.accountId, now)
+                    cascaded += "SUPERVISOR"
+                }
                 sheet.status = ReportSheetStatus.VISA_PRINCIPAL
-                sheet.visaPrincipal = ReportSheetVisa(currentUser.accountId, Instant.now())
+                sheet.visaPrincipal = ReportSheetVisa(currentUser.accountId, now)
+                sheet.rejectionReason = null
+                sheet.rejectedAt = null
+                sheet.rejectedBy = null
+                val reason = if (cascaded.isEmpty()) {
+                    null
+                } else {
+                    "AUTO_ON_PRINCIPAL_VISA:${cascaded.joinToString("+")}"
+                }
                 gradeReportSheetRepository.save(sheet).flatMap { saved ->
-                    auditTransition(currentUser, saved, previous, AuditAction.VISAED, null)
+                    auditTransition(currentUser, saved, previous, AuditAction.VISAED, reason)
                         .then(emitVisaed(saved, "PRINCIPAL"))
                         .thenReturn(GradingMapper.toReportSheetResponse(saved))
                 }
@@ -345,7 +382,8 @@ class GradeReportSheetService(
                                 payload = mapOf(
                                     "reportSheetId" to saved.id,
                                     "classSubjectId" to saved.classSubjectId,
-                                    "termNumber" to saved.termNumber
+                                    "termNumber" to saved.termNumber,
+                                    "teacherId" to saved.teacherId
                                 )
                             )
                         ).thenReturn(GradingMapper.toReportSheetResponse(saved))

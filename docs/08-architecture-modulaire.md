@@ -80,7 +80,9 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `grading.mark.changed` | grading | reporting (invalidation des brouillons) | `studentId`, `classSubjectId`, `sessionId` |
 | `grading.report-sheet.submitted` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `deadlineWarning` ; si BR-79 : `autoOnSessionClose`, `sessionId`, `sessionNumber` |
 | `grading.report-sheet.visaed` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `level` (SUPERVISOR\|PRINCIPAL) |
-| `grading.report-sheet.rejected` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber` |
+| `grading.report-sheet.rejected` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `teacherId` |
+| `grading.correction.requested` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `studentLabel` |
+| `grading.correction.approved` / `grading.correction.rejected` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `requestedBy`, `teacherId`, `studentLabel`, `decision` ; rejet : `reviewNote` |
 | `reporting.report-card.published` | reporting | notification, student portal | `reportCardId`, `studentId`, période |
 | `timetable.published` | timetable | notification | `timetableId`, `academicYearId` |
 

@@ -1,8 +1,10 @@
 package com.kobe.smels.service.grading
 
 import com.kobe.smels.exception.NotFoundException
+import com.kobe.smels.model.grading.EvaluationSession
 import com.kobe.smels.model.grading.GradeReportSheet
 import com.kobe.smels.model.shared.Language
+import com.kobe.smels.repository.grading.EvaluationSessionRepository
 import com.kobe.smels.repository.grading.GradeReportSheetRepository
 import com.kobe.smels.repository.grading.GradingSchemeRepository
 import com.kobe.smels.service.academic.api.SchoolClassApi
@@ -20,15 +22,18 @@ import com.lowagie.text.pdf.PdfWriter
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
+import java.time.LocalDate
 
 /**
  * PDF A4 paysage de la fiche de report (BR-75).
  * Jusqu'à reportSheetMaxRowsPerPage lignes / page ; au-delà pages suivantes avec en-tête répété.
+ * En-têtes de séquence et dates d'examen synchronisés avec les [EvaluationSession] du trimestre.
  */
 @Service
 class GradeReportSheetPdfService(
     private val gradeReportSheetRepository: GradeReportSheetRepository,
     private val gradingSchemeRepository: GradingSchemeRepository,
+    private val evaluationSessionRepository: EvaluationSessionRepository,
     private val schoolClassApi: SchoolClassApi
 ) {
     fun renderPdf(
@@ -44,12 +49,27 @@ class GradeReportSheetPdfService(
                 GradingAccess.assertCanReadReportSheet(currentUser, sheet.teacherId)
                 schoolClassApi.getSummary(schoolId, sheet.classId).flatMap { clazz ->
                     val lang = languageOverride ?: clazz.defaultLanguage
-                    resolveMaxRows(schoolId, clazz.gradingSchemeId).map { maxRows ->
-                        buildPdf(sheet, lang, maxRows)
+                    Mono.zip(
+                        resolveMaxRows(schoolId, clazz.gradingSchemeId),
+                        loadTermSessions(schoolId, sheet)
+                    ).map { tuple ->
+                        val maxRows = tuple.t1
+                        val sessions = tuple.t2
+                        buildPdf(sheet, lang, maxRows, sessions)
                     }
                 }
             }
     }
+
+    private fun loadTermSessions(schoolId: String, sheet: GradeReportSheet): Mono<List<EvaluationSession>> =
+        evaluationSessionRepository
+            .findBySchoolIdAndAcademicYearIdAndTermNumber(
+                schoolId,
+                sheet.academicYearId,
+                sheet.termNumber
+            )
+            .collectList()
+            .defaultIfEmpty(emptyList())
 
     fun pageCountFor(lineCount: Int, maxRowsPerPage: Int): Int =
         ReportSheetCalculator.expectedPageCount(lineCount, maxRowsPerPage)
@@ -65,7 +85,43 @@ class GradeReportSheetPdfService(
                 .defaultIfEmpty(45)
         }
 
-    private fun buildPdf(sheet: GradeReportSheet, language: Language, maxRows: Int): ByteArray {
+    private data class SequencePdfMeta(
+        val label: String,
+        val examDate: LocalDate?
+    )
+
+    private fun resolveSequenceMeta(
+        sheet: GradeReportSheet,
+        sessions: List<EvaluationSession>
+    ): Pair<SequencePdfMeta, SequencePdfMeta> {
+        val byNumber = sessions.associateBy { it.number }
+        val byId = sessions.associateBy { it.id }
+        val s1 = sheet.sequence1SessionId?.let { byId[it] }
+            ?: sheet.sequence1Number?.let { byNumber[it] }
+            ?: sessions.sortedBy { it.number }.getOrNull(0)
+        val s2 = sheet.sequence2SessionId?.let { byId[it] }
+            ?: sheet.sequence2Number?.let { byNumber[it] }
+            ?: sessions.sortedBy { it.number }.getOrNull(1)
+        val meta1 = SequencePdfMeta(
+            label = s1?.shortLabel?.takeIf { it.isNotBlank() }
+                ?: "S${sheet.sequence1Number ?: s1?.number ?: 1}",
+            examDate = s1?.examDate ?: sheet.sequence1ExamDate
+        )
+        val meta2 = SequencePdfMeta(
+            label = s2?.shortLabel?.takeIf { it.isNotBlank() }
+                ?: "S${sheet.sequence2Number ?: s2?.number ?: 2}",
+            examDate = s2?.examDate ?: sheet.sequence2ExamDate
+        )
+        return meta1 to meta2
+    }
+
+    private fun buildPdf(
+        sheet: GradeReportSheet,
+        language: Language,
+        maxRows: Int,
+        sessions: List<EvaluationSession> = emptyList()
+    ): ByteArray {
+        val (seq1, seq2) = resolveSequenceMeta(sheet, sessions)
         val out = ByteArrayOutputStream()
         val document = Document(PageSize.A4.rotate(), 18f, 18f, 14f, 16f)
         PdfWriter.getInstance(document, out)
@@ -92,7 +148,7 @@ class GradeReportSheetPdfService(
             )
             document.add(
                 Paragraph(
-                    metaLine(sheet, language),
+                    metaLine(sheet, language, seq1.examDate, seq2.examDate),
                     smallFont
                 )
             )
@@ -101,7 +157,7 @@ class GradeReportSheetPdfService(
             val table = PdfPTable(floatArrayOf(0.5f, 2.4f, 0.5f, 0.7f, 0.5f, 0.7f, 0.5f, 0.5f, 0.7f, 0.5f, 0.7f, 0.5f, 0.5f))
             table.widthPercentage = 100f
             table.headerRows = 1
-            addHeaderRow(table, headerFont, language, sheet)
+            addHeaderRow(table, headerFont, language, seq1.label, seq2.label)
             pageLines.forEach { line ->
                 addCell(table, line.rollNumber?.toString() ?: "", cellFont)
                 addCell(table, line.studentLabel, cellFont, Element.ALIGN_LEFT)
@@ -149,7 +205,12 @@ class GradeReportSheetPdfService(
         return out.toByteArray()
     }
 
-    private fun metaLine(sheet: GradeReportSheet, language: Language): String {
+    private fun metaLine(
+        sheet: GradeReportSheet,
+        language: Language,
+        examDate1: LocalDate?,
+        examDate2: LocalDate?
+    ): String {
         val subject = when (language) {
             Language.FR -> sheet.subjectLabel.fr ?: sheet.subjectLabel.en
             Language.EN -> sheet.subjectLabel.en ?: sheet.subjectLabel.fr
@@ -181,9 +242,9 @@ class GradeReportSheetPdfService(
             }
             append("  |  ")
             append(if (language == Language.FR) "Dates: " else "Dates: ")
-            append(sheet.sequence1ExamDate?.toString() ?: "-")
+            append(examDate1?.toString() ?: "-")
             append(" / ")
-            append(sheet.sequence2ExamDate?.toString() ?: "-")
+            append(examDate2?.toString() ?: "-")
         }
     }
 
@@ -191,16 +252,15 @@ class GradeReportSheetPdfService(
         table: PdfPTable,
         font: Font,
         language: Language,
-        sheet: GradeReportSheet
+        seq1Label: String,
+        seq2Label: String
     ) {
-        val s1 = "S${sheet.sequence1Number ?: 1}"
-        val s2 = "S${sheet.sequence2Number ?: 2}"
         listOf(
             "N°",
             if (language == Language.FR) "Noms et prénoms" else "Full names",
             if (language == Language.FR) "Sexe" else "Sex",
-            "$s1 Comp/20", "$s1 Coef", "$s1 N×C", "$s1 Rang", "$s1 App",
-            "$s2 Comp/20", "$s2 Coef", "$s2 N×C", "$s2 Rang", "$s2 App"
+            "$seq1Label Comp/20", "$seq1Label Coef", "$seq1Label N×C", "$seq1Label Rang", "$seq1Label App",
+            "$seq2Label Comp/20", "$seq2Label Coef", "$seq2Label N×C", "$seq2Label Rang", "$seq2Label App"
         ).forEach { addCell(table, it, font) }
     }
 

@@ -6,6 +6,7 @@ import com.kobe.smels.model.grading.ReportSheetSequenceCell
 import com.kobe.smels.model.shared.Language
 import com.kobe.smels.model.shared.LocalizedText
 import com.kobe.smels.model.shared.Sex
+import com.kobe.smels.repository.grading.EvaluationSessionRepository
 import com.kobe.smels.repository.grading.GradeReportSheetRepository
 import com.kobe.smels.repository.grading.GradingSchemeRepository
 import com.kobe.smels.service.academic.api.SchoolClassApi
@@ -21,6 +22,7 @@ class GradeReportSheetPdfServiceTest {
     private val service = GradeReportSheetPdfService(
         mock<GradeReportSheetRepository>(),
         mock<GradingSchemeRepository>(),
+        mock<EvaluationSessionRepository>(),
         mock<SchoolClassApi>()
     )
 
@@ -53,10 +55,11 @@ class GradeReportSheetPdfServiceTest {
             "buildPdf",
             GradeReportSheet::class.java,
             Language::class.java,
-            Int::class.javaPrimitiveType
+            Int::class.javaPrimitiveType,
+            List::class.java
         )
         method.isAccessible = true
-        return method.invoke(service, sheet, Language.FR, maxRows) as ByteArray
+        return method.invoke(service, sheet, Language.FR, maxRows, emptyList<Any>()) as ByteArray
     }
 
     private fun sampleSheet(n: Int) = GradeReportSheet(
