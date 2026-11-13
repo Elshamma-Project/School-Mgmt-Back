@@ -181,7 +181,8 @@ class GradeService(
         ctx: GradeContext,
         studentId: String,
         enrollmentId: String,
-        request: UpsertGradeRequest
+        request: UpsertGradeRequest,
+        approvedByDirectorId: String? = null
     ): Mono<Grade> {
         val afterClosed = ctx.session.status == SessionStatus.CLOSED
         return gradeRepository.findBySchoolIdAndAssessmentIdAndStudentId(
@@ -198,7 +199,8 @@ class GradeService(
                 gradeRepository.save(existing).flatMap { saved ->
                     auditGrade(
                         currentUser, ctx, saved, AuditAction.UPDATED,
-                        previousValue, previousStatus, request.reason, afterClosed
+                        previousValue, previousStatus, request.reason, afterClosed,
+                        approvedByDirectorId
                     ).then(
                         sequenceMarkService.recalculateForStudent(
                             currentUser, ctx.sheet, ctx.session, studentId, enrollmentId
@@ -224,7 +226,8 @@ class GradeService(
                     gradeRepository.save(created).flatMap { saved ->
                         auditGrade(
                             currentUser, ctx, saved, AuditAction.CREATED,
-                            null, null, request.reason, afterClosed
+                            null, null, request.reason, afterClosed,
+                            approvedByDirectorId
                         ).then(
                             sequenceMarkService.recalculateForStudent(
                                 currentUser, ctx.sheet, ctx.session, studentId, enrollmentId
@@ -235,6 +238,56 @@ class GradeService(
             )
     }
 
+    /**
+     * BR-80 : application persistante d’une correction approuvée par le directeur
+     * (séquence CLOSED). Ne pas exposer directement au contrôleur notes.
+     */
+    fun applyDirectorApprovedCorrection(
+        director: CurrentUser,
+        assessmentId: String,
+        studentId: String,
+        status: GradeStatus,
+        value: BigDecimal?,
+        reason: String,
+        requestId: String
+    ): Mono<Grade> {
+        GradingAccess.assertDirector(director)
+        val schoolId = GradingAccess.resolveSchoolId(director, null)
+        return loadContext(schoolId, assessmentId)
+            .flatMap { ctx ->
+                if (ctx.session.status != SessionStatus.CLOSED) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException("SESSION_NOT_CLOSED", "Approved correction requires CLOSED session")
+                    )
+                }
+                academicYearApi.assertWritable(schoolId, ctx.session.academicYearId)
+                    .then(
+                        enrollmentApi.findByStudentAndYear(schoolId, studentId, ctx.session.academicYearId)
+                            .switchIfEmpty(
+                                Mono.error(BusinessRuleException("NOT_ENROLLED", "Student is not enrolled"))
+                            )
+                            .flatMap { enrollment ->
+                                validatePayload(status, value, ctx.assessment.maxScore)
+                                writeGrade(
+                                    director,
+                                    ctx,
+                                    studentId,
+                                    enrollment.id,
+                                    UpsertGradeRequest(
+                                        assessmentId = assessmentId,
+                                        studentId = studentId,
+                                        status = status,
+                                        value = value,
+                                        reason = "CORRECTION_APPROVED:$requestId — $reason",
+                                        schoolId = schoolId
+                                    ),
+                                    approvedByDirectorId = director.accountId
+                                )
+                            }
+                    )
+            }
+    }
+
     private fun auditGrade(
         currentUser: CurrentUser,
         ctx: GradeContext,
@@ -243,7 +296,8 @@ class GradeService(
         previousValue: BigDecimal?,
         previousStatus: GradeStatus?,
         reason: String?,
-        afterClosed: Boolean
+        afterClosed: Boolean,
+        approvedByDirectorId: String? = null
     ): Mono<GradeAuditEntry> =
         gradeAuditEntryRepository.save(
             GradeAuditEntry(
@@ -263,7 +317,9 @@ class GradeService(
                 changedByRole = currentUser.roles.firstOrNull(),
                 changedAt = Instant.now(),
                 reason = reason,
-                afterSessionClosed = afterClosed
+                afterSessionClosed = afterClosed,
+                approvedBy = approvedByDirectorId,
+                approvedAt = approvedByDirectorId?.let { Instant.now() }
             )
         )
 
@@ -306,13 +362,16 @@ class GradeService(
                 throw BusinessRuleException("SESSION_NOT_OPEN", "Session is not open for entry")
             SessionStatus.OPEN -> Unit
             SessionStatus.CLOSED -> {
+                // BR-80 : saisie directe post-clôture réservée au directeur (via approbation ou correction exceptionnelle).
                 if (!currentUser.hasAnyRole(
-                        com.kobe.smels.model.user.Role.ADMINISTRATION,
                         com.kobe.smels.model.user.Role.DIRECTOR,
                         com.kobe.smels.model.user.Role.SUPER_ADMIN
                     )
                 ) {
-                    throw BusinessRuleException("SESSION_CLOSED", "Teachers cannot edit grades after session close")
+                    throw BusinessRuleException(
+                        "SESSION_CLOSED",
+                        "After close, teachers must submit a correction request; only the director can apply grades"
+                    )
                 }
                 if (reason.isNullOrBlank()) {
                     throw BusinessRuleException("REASON_REQUIRED", "Reason is required after session close")

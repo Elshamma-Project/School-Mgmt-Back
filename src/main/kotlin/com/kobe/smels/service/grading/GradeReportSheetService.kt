@@ -193,6 +193,65 @@ class GradeReportSheetService(
             }
     }
 
+    /**
+     * BR-79 : à la clôture d’une séquence, pose le visa enseignant sur toutes les fiches de report
+     * du trimestre encore en DRAFT ou REJECTED.
+     */
+    fun autoSubmitTeacherVisasOnSessionClosed(
+        currentUser: CurrentUser,
+        closedSession: EvaluationSession
+    ): Mono<Void> {
+        val now = Instant.now()
+        val reason = "AUTO_ON_SESSION_CLOSE:${closedSession.number}"
+        return gradeReportSheetRepository
+            .findBySchoolIdAndAcademicYearIdAndTermNumber(
+                closedSession.schoolId,
+                closedSession.academicYearId,
+                closedSession.termNumber
+            )
+            .filter { it.status == ReportSheetStatus.DRAFT || it.status == ReportSheetStatus.REJECTED }
+            .concatMap { sheet ->
+                val previous = sheet.status
+                sheet.status = ReportSheetStatus.SUBMITTED
+                sheet.submittedAt = now
+                sheet.submittedBy = currentUser.accountId
+                sheet.rejectionReason = null
+                sheet.rejectedAt = null
+                sheet.rejectedBy = null
+                gradeReportSheetRepository.save(sheet).flatMap { saved ->
+                    auditTransition(currentUser, saved, previous, AuditAction.SUBMITTED, reason)
+                        .then(
+                            outboxWriter.append(
+                                schoolId = saved.schoolId,
+                                module = "grading",
+                                aggregateType = "GradeReportSheet",
+                                aggregateId = saved.id!!,
+                                eventType = "grading.report-sheet.submitted",
+                                payload = mapOf(
+                                    "reportSheetId" to saved.id,
+                                    "classSubjectId" to saved.classSubjectId,
+                                    "termNumber" to saved.termNumber,
+                                    "deadlineWarning" to false,
+                                    "autoOnSessionClose" to true,
+                                    "sessionId" to closedSession.id,
+                                    "sessionNumber" to closedSession.number
+                                )
+                            )
+                        )
+                }
+            }
+            .then()
+            .doOnSuccess {
+                log.info(
+                    "report-sheet.auto-submit on close by={} schoolId={} term={} session={}",
+                    currentUser.username,
+                    closedSession.schoolId,
+                    closedSession.termNumber,
+                    closedSession.number
+                )
+            }
+    }
+
     fun visaSupervisor(
         currentUser: CurrentUser,
         id: String,

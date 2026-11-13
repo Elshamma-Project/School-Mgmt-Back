@@ -3,9 +3,11 @@ package com.kobe.smels.controller.grading
 import com.kobe.smels.dto.grading.BatchUpsertGradesRequest
 import com.kobe.smels.dto.grading.CloseSessionRequest
 import com.kobe.smels.dto.grading.CreateAssessmentRequest
+import com.kobe.smels.dto.grading.CreateGradeCorrectionRequest
 import com.kobe.smels.dto.grading.CreateGradingSchemeRequest
 import com.kobe.smels.dto.grading.EnsureSessionsRequest
 import com.kobe.smels.dto.grading.GenerateReportSheetRequest
+import com.kobe.smels.dto.grading.RejectGradeCorrectionRequest
 import com.kobe.smels.dto.grading.RejectReportSheetRequest
 import com.kobe.smels.dto.grading.ReopenSessionRequest
 import com.kobe.smels.dto.grading.UpdateAssessmentRequest
@@ -15,9 +17,10 @@ import com.kobe.smels.dto.grading.UpsertGradeRequest
 import com.kobe.smels.model.shared.Language
 import com.kobe.smels.service.grading.AssessmentService
 import com.kobe.smels.service.grading.EvaluationSessionService
+import com.kobe.smels.service.grading.GradeAuditService
+import com.kobe.smels.service.grading.GradeCorrectionService
 import com.kobe.smels.service.grading.GradeReportSheetPdfService
 import com.kobe.smels.service.grading.GradeReportSheetService
-import com.kobe.smels.service.grading.GradeAuditService
 import com.kobe.smels.service.grading.GradeService
 import com.kobe.smels.service.grading.GradeSheetService
 import com.kobe.smels.service.grading.GradingSchemeService
@@ -303,6 +306,64 @@ class GradeReportSheetController(
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"grade-report-sheet.pdf\"")
                     .contentType(MediaType.APPLICATION_PDF)
                     .body(bytes)
+            }
+        }
+}
+
+/** BR-80 : demandes de correction post-clôture (enseignant) + revue directeur. */
+@RestController
+@RequestMapping("/api/v1/grade-correction-requests")
+class GradeCorrectionController(private val gradeCorrectionService: GradeCorrectionService) {
+    @PostMapping
+    fun create(@Valid @RequestBody request: CreateGradeCorrectionRequest) =
+        SecuritySupport.currentUser().flatMap { gradeCorrectionService.create(it, request) }
+
+    @GetMapping("/pending")
+    fun pending(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { gradeCorrectionService.listPending(it, schoolId) }
+
+    @GetMapping("/mine")
+    fun mine(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { gradeCorrectionService.listMine(it, schoolId) }
+
+    @GetMapping
+    fun forSheet(
+        @RequestParam sessionId: String,
+        @RequestParam classSubjectId: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMapMany {
+        gradeCorrectionService.listForSheet(it, sessionId, classSubjectId, schoolId)
+    }
+
+    @PostMapping("/{id}/approve")
+    fun approve(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { gradeCorrectionService.approve(it, id, schoolId) }
+
+    @PostMapping("/{id}/reject")
+    fun reject(
+        @PathVariable id: String,
+        @Valid @RequestBody request: RejectGradeCorrectionRequest
+    ) = SecuritySupport.currentUser().flatMap {
+        gradeCorrectionService.reject(it, id, request.reviewNote, request.schoolId)
+    }
+
+    @GetMapping("/{id}/evidence/{evidenceId}")
+    fun evidence(
+        @PathVariable id: String,
+        @PathVariable evidenceId: String,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser().flatMap { user ->
+            gradeCorrectionService.getEvidence(user, id, evidenceId, schoolId).map { file ->
+                ResponseEntity.ok()
+                    .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"${file.fileName.replace("\"", "")}\""
+                    )
+                    .contentType(MediaType.parseMediaType(file.contentType))
+                    .body(file.data.data)
             }
         }
 }

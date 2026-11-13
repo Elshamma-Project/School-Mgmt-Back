@@ -40,7 +40,8 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Élèves, tuteurs : CRUD (student) | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | lecture de ses propres données ; enseignant : élèves de ses classes |
 | Inscriptions : CRUD (student) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Fiche de notes** : notes, bonus, malus (grading) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : `ClassSubject.teacherId` = lui **et** séquence `OPEN` |
-| **Corriger après clôture** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | motif obligatoire, trace `afterSessionClosed` |
+| **Proposer correction après clôture** | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant titulaire ; motif + preuves (BR-80) |
+| **Approuver / rejeter correction** | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | directeur seul ; seule voie de modification persistante post-clôture |
 | Consulter les notes de séquence | ◐ | ◐ | ◐ | ✔ | ✔ | ◐ | élève : les siennes ; parent : ses enfants (`canViewGrades`) ; enseignant : ses matières |
 | Exporter sa fiche de notes (plusieurs pages) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses fiches |
 | **Fiche de report** : générer / soumettre (grading) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses ClassSubject |

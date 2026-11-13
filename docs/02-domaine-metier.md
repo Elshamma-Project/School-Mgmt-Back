@@ -129,15 +129,17 @@ Lecture clé : **`ClassSubject` est le pivot** (qui enseigne quoi, à quelle cla
 - **BR-73** `weightedMark = mark × coefficient` ; PENDING → cellules numériques vides, jamais 0.
 - **BR-74** App calculée automatiquement via l'échelle du barème (LETTER / COMPETENCY, Q-10 / Q-36) ; version **vierge** imprimable (noms seuls) pour saisie manuscrite.
 - **BR-75** PDF A4 paysage ; jusqu'à `reportSheetMaxRowsPerPage` (45) lignes / page, puis pages suivantes avec en-tête répété (Q-35). Pied : visas Enseignant, Surveillant Général, Principal ; mention ratures + délai 72 h.
-- **BR-76** Cycle : DRAFT → SUBMITTED (enseignant) → VISA_SG → VISA_PRINCIPAL ; REJECTED avec motif → retour possible en régénération DRAFT.
+- **BR-76** Cycle : DRAFT → SUBMITTED (enseignant, manuel **ou automatique BR-79**) → VISA_SG → VISA_PRINCIPAL ; REJECTED avec motif → retour possible en régénération DRAFT.
 - **BR-77** Délai `reportSheetDeadlineHours` (72) après `examDate` : **avertissement** seulement tant que `reportSheetDeadlineBlocking = false` (Q-37).
 - **BR-78** Élève et parent : **aucun accès** à la fiche de report. Correction sur fiche déjà soumise/visée : motif + approbation Principal (`GradeAuditEntry.approvedBy`).
+- **BR-79** À la **clôture** d’une séquence (`EvaluationSession` → `CLOSED`) par un utilisateur habilité (BR-23), le **visa enseignant** est posé automatiquement sur toutes les fiches de report (`GradeReportSheet`) du **même trimestre** encore en `DRAFT` ou `REJECTED` : passage en `SUBMITTED`, `submittedAt` / `submittedBy` = auteur de la clôture, motif d’audit `AUTO_ON_SESSION_CLOSE`. Les fiches déjà soumises ou visées (SG / Principal) ne sont pas modifiées.
 
 ### 5.3 Séquences et clôture
 - **BR-20** Une année compte 6 séquences ; 1-2, 3-4, 5-6 forment les trimestres 1, 2, 3. Chaque séquence = une `EvaluationSession`.
 - **BR-21** Séquence `OPEN` : l'enseignant a le CRUD complet sur les notes de ses fiches.
-- **BR-22** Séquence `CLOSED` : plus aucune saisie d'enseignant. L'administration (et le directeur) peut corriger avec **motif obligatoire** ; trace `afterSessionClosed = true`.
+- **BR-22** Séquence `CLOSED` : plus aucune saisie directe d'enseignant. Une **demande de correction** (BR-80) est possible ; la modification persistante n’est appliquée qu’après **approbation du directeur**. Trace `afterSessionClosed = true` + `approvedBy`.
 - **BR-23** Clôturer : administration ou directeur ; rouvrir : directeur seul (Q-04).
+- **BR-80** Après clôture : l’enseignant titulaire peut **proposer** une correction Comp./20 (nouvelle note, motif ≥ 15 caractères, 0–3 pièces JPEG/PNG/WebP/PDF ≤ 5 Mo, empreinte SHA-256). Une seule demande `PENDING` par élève / colonne. **Seul le directeur** (ou `SUPER_ADMIN`) peut **approuver** (écrit la note + audit) ou **rejeter** (motif de revue). Collection `grading_correction_requests` (+ preuves).
 - **BR-24** Le bulletin d'une période ne se génère définitivement que lorsque ses séquences sont clôturées (brouillon possible avant).
 - **BR-25** Au plus **2** séquences `OPEN` en même temps pour une année ; elles appartiennent forcément au **même trimestre** (donc un seul trimestre « actif » à la fois). L’ouverture / clôture est un paramètre d’administration (pas un choix libre enseignant).
 
@@ -185,7 +187,7 @@ stateDiagram-v2
 1. **Préparation (administration)** : année, classes, matières de classe (coefficient, groupe, enseignant, heures), inscription des élèves, grille horaire et emploi du temps.
 2. **Ouverture** de la séquence n ; création automatique des fiches de notes.
 3. **Saisie (enseignants)** : chaque enseignant remplit sa fiche ; le logiciel totalise la note de séquence ; les notes sont visibles en temps réel pour l'élève et ses parents.
-3 bis. **Fiche de report** (par trimestre) : génération depuis les `SequenceMark`, soumission, visas SG puis Principal (ou impression vierge pour workflow manuscrit).
+3 bis. **Fiche de report** (par trimestre) : génération depuis les `SequenceMark`, soumission enseignant (ou **visa enseignant auto à la clôture de séquence**, BR-79), visas SG puis Principal (ou impression vierge pour workflow manuscrit).
 4. **Clôture** de la séquence (administration) ; corrections ensuite avec motif et trace.
 5. **Éléments hors notes** : absences, retards, sanctions, distinctions, compétences du trimestre.
 6. **Génération** des bulletins : calcul (`04-regles-de-calcul.md`), `ReportCard` en `DRAFT`, PDF une page.

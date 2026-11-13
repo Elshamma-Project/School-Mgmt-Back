@@ -3,6 +3,7 @@ package com.kobe.smels.dto.grading
 import com.kobe.smels.model.grading.AssessmentType
 import com.kobe.smels.model.grading.AuditAction
 import com.kobe.smels.model.grading.AuditTarget
+import com.kobe.smels.model.grading.GradeCorrectionStatus
 import com.kobe.smels.model.grading.GradeStatus
 import com.kobe.smels.model.grading.MarkSource
 import com.kobe.smels.model.grading.SessionStatus
@@ -408,4 +409,65 @@ data class GradeAuditEntryResponse(
     val afterSessionClosed: Boolean,
     val previousValue: BigDecimal?,
     val newValue: BigDecimal?
+)
+
+data class GradeCorrectionEvidenceDto(
+    val id: String,
+    val fileName: String,
+    val contentType: String,
+    val sizeBytes: Long,
+    val sha256: String,
+    val capturedAt: Instant
+)
+
+data class GradeCorrectionRequestResponse(
+    val id: String,
+    val schoolId: String,
+    val academicYearId: String,
+    val sessionId: String,
+    val sessionNumber: Int,
+    val classId: String,
+    val classSubjectId: String,
+    val assessmentId: String,
+    val studentId: String,
+    val studentLabel: String,
+    val classLabel: String?,
+    val subjectLabelFr: String?,
+    val subjectLabelEn: String?,
+    val teacherId: String?,
+    val previousStatus: GradeStatus,
+    val previousValue: BigDecimal?,
+    val proposedStatus: GradeStatus,
+    val proposedValue: BigDecimal?,
+    val reason: String,
+    val evidence: List<GradeCorrectionEvidenceDto>,
+    val status: GradeCorrectionStatus,
+    val requestedBy: String,
+    val requestedAt: Instant,
+    val reviewedBy: String?,
+    val reviewedAt: Instant?,
+    val reviewNote: String?
+)
+
+data class RejectGradeCorrectionRequest(
+    @field:NotBlank val reviewNote: String,
+    val schoolId: String? = null
+)
+
+data class GradeCorrectionEvidenceUploadDto(
+    @field:NotBlank val fileName: String,
+    @field:NotBlank val contentType: String,
+    /** Contenu fichier encodé base64 (sans préfixe data:). */
+    @field:NotBlank val base64Data: String
+)
+
+data class CreateGradeCorrectionRequest(
+    @field:NotBlank val sessionId: String,
+    @field:NotBlank val classSubjectId: String,
+    @field:NotBlank val studentId: String,
+    @field:NotBlank val reason: String,
+    val proposedValue: String? = null,
+    val proposedStatus: String? = null,
+    @field:Size(max = 3) val evidence: List<GradeCorrectionEvidenceUploadDto> = emptyList(),
+    val schoolId: String? = null
 )

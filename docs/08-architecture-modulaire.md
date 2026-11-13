@@ -76,7 +76,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `student.guardian.linked` | student | user | `guardianId`, `studentId`, droits de consultation |
 | `grading.session.opened` / `grading.session.closed` | grading | reporting, notification | `sessionId`, numéro, `termNumber` |
 | `grading.mark.changed` | grading | reporting (invalidation des brouillons) | `studentId`, `classSubjectId`, `sessionId` |
-| `grading.report-sheet.submitted` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `deadlineWarning` |
+| `grading.report-sheet.submitted` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `deadlineWarning` ; si BR-79 : `autoOnSessionClose`, `sessionId`, `sessionNumber` |
 | `grading.report-sheet.visaed` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `level` (SUPERVISOR\|PRINCIPAL) |
 | `grading.report-sheet.rejected` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber` |
 | `reporting.report-card.published` | reporting | notification, student portal | `reportCardId`, `studentId`, période |

@@ -4,6 +4,9 @@ import com.kobe.smels.model.grading.Assessment
 import com.kobe.smels.model.grading.EvaluationSession
 import com.kobe.smels.model.grading.Grade
 import com.kobe.smels.model.grading.GradeAuditEntry
+import com.kobe.smels.model.grading.GradeCorrectionEvidenceFile
+import com.kobe.smels.model.grading.GradeCorrectionRequest
+import com.kobe.smels.model.grading.GradeCorrectionStatus
 import com.kobe.smels.model.grading.GradeReportSheet
 import com.kobe.smels.model.grading.GradeSheet
 import com.kobe.smels.model.grading.GradingScheme
@@ -151,6 +154,41 @@ interface GradeAuditEntryRepository : ReactiveMongoRepository<GradeAuditEntry, S
         pageable: Pageable
     ): Flux<GradeAuditEntry>
     fun findBySchoolId(schoolId: String, pageable: Pageable): Flux<GradeAuditEntry>
+}
+
+interface GradeCorrectionRequestRepository : ReactiveMongoRepository<GradeCorrectionRequest, String> {
+    fun findByIdAndSchoolId(id: String, schoolId: String): Mono<GradeCorrectionRequest>
+    fun findBySchoolIdAndStatusOrderByRequestedAtDesc(
+        schoolId: String,
+        status: GradeCorrectionStatus
+    ): Flux<GradeCorrectionRequest>
+    fun findBySchoolIdAndRequestedByOrderByRequestedAtDesc(
+        schoolId: String,
+        requestedBy: String
+    ): Flux<GradeCorrectionRequest>
+    fun findBySchoolIdAndSessionIdAndClassSubjectIdAndStatus(
+        schoolId: String,
+        sessionId: String,
+        classSubjectId: String,
+        status: GradeCorrectionStatus
+    ): Flux<GradeCorrectionRequest>
+    fun findBySchoolIdAndSessionIdAndClassSubjectIdAndStudentIdAndAssessmentIdAndStatus(
+        schoolId: String,
+        sessionId: String,
+        classSubjectId: String,
+        studentId: String,
+        assessmentId: String,
+        status: GradeCorrectionStatus
+    ): Mono<GradeCorrectionRequest>
+}
+
+interface GradeCorrectionEvidenceFileRepository : ReactiveMongoRepository<GradeCorrectionEvidenceFile, String> {
+    fun findByIdAndSchoolIdAndRequestId(
+        id: String,
+        schoolId: String,
+        requestId: String
+    ): Mono<GradeCorrectionEvidenceFile>
+    fun findBySchoolIdAndRequestId(schoolId: String, requestId: String): Flux<GradeCorrectionEvidenceFile>
 }
 
 interface GradingSchemeRepository : ReactiveMongoRepository<GradingScheme, String> {
