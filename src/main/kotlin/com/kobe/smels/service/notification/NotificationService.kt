@@ -3,7 +3,6 @@ package com.kobe.smels.service.notification
 import com.kobe.smels.dto.notification.InAppNotificationResponse
 import com.kobe.smels.dto.notification.LocalizedTextDto
 import com.kobe.smels.dto.notification.UnreadCountResponse
-import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.notification.InAppNotification
 import com.kobe.smels.model.notification.NotificationCategory
@@ -51,6 +50,10 @@ class NotificationService(
             .defaultIfEmpty(UnreadCountResponse(0))
     }
 
+    /**
+     * Ouverture d’un message : lu pour le destinataire + accusé irréversible si requis (BR-81).
+     * Remettre « non lu » n’annule pas [ackedAt].
+     */
     fun markRead(
         currentUser: CurrentUser,
         id: String,
@@ -62,17 +65,23 @@ class NotificationService(
             .findByIdAndSchoolIdAndRecipientAccountId(id, schoolId, currentUser.accountId)
             .switchIfEmpty(Mono.error(NotFoundException("NOTIFICATION_NOT_FOUND", "Notification not found")))
             .flatMap { notif ->
+                val now = Instant.now()
+                var changed = false
                 if (notif.readAt == null) {
-                    notif.readAt = Instant.now()
-                    notificationRepository.save(notif)
-                } else {
-                    Mono.just(notif)
+                    notif.readAt = now
+                    changed = true
                 }
+                if (notif.ackRequired && notif.ackedAt == null) {
+                    notif.ackedAt = now
+                    changed = true
+                }
+                if (changed) notificationRepository.save(notif) else Mono.just(notif)
             }
             .map { toResponse(it) }
     }
 
-    fun acknowledge(
+    /** Relire plus tard : non lu pour soi uniquement ; l’accusé expéditeur reste. */
+    fun markUnread(
         currentUser: CurrentUser,
         id: String,
         schoolIdOverride: String? = null
@@ -83,18 +92,21 @@ class NotificationService(
             .findByIdAndSchoolIdAndRecipientAccountId(id, schoolId, currentUser.accountId)
             .switchIfEmpty(Mono.error(NotFoundException("NOTIFICATION_NOT_FOUND", "Notification not found")))
             .flatMap { notif ->
-                if (!notif.ackRequired) {
-                    return@flatMap Mono.error(
-                        BusinessRuleException("ACK_NOT_REQUIRED", "This notification does not require acknowledgement")
-                    )
+                if (notif.readAt == null) {
+                    Mono.just(notif)
+                } else {
+                    notif.readAt = null
+                    notificationRepository.save(notif)
                 }
-                val now = Instant.now()
-                if (notif.readAt == null) notif.readAt = now
-                if (notif.ackedAt == null) notif.ackedAt = now
-                notificationRepository.save(notif)
             }
             .map { toResponse(it) }
     }
+
+    fun acknowledge(
+        currentUser: CurrentUser,
+        id: String,
+        schoolIdOverride: String? = null
+    ): Mono<InAppNotificationResponse> = markRead(currentUser, id, schoolIdOverride)
 
     /**
      * Création idempotente (ignore les doublons sourceEventId + destinataire).

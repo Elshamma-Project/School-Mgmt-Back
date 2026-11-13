@@ -38,6 +38,12 @@ class NotificationController(
         @RequestParam(required = false) schoolId: String?
     ) = SecuritySupport.currentUser().flatMap { notificationService.markRead(it, id, schoolId) }
 
+    @PostMapping("/{id}/unread")
+    fun markUnread(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { notificationService.markUnread(it, id, schoolId) }
+
     @PostMapping("/{id}/ack")
     fun acknowledge(
         @PathVariable id: String,
