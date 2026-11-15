@@ -34,7 +34,7 @@ internal object GradingAccess {
         }
     }
 
-    /** Visa Principal = DIRECTOR tant que Q-38 n'introduit pas PRINCIPAL. */
+    /** Visa Principal = DIRECTOR (Q-38 v1 : pas de rôle PRINCIPAL distinct). */
     fun assertPrincipalVisa(currentUser: CurrentUser) {
         if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
             throw ForbiddenException("FORBIDDEN", "Only DIRECTOR (Principal) can give final visa")

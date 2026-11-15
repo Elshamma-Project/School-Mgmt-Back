@@ -14,8 +14,9 @@ Utilisateurs non techniques ; données de **mineurs**. **Tout doit être paramé
 - Package racine : `com.kobe.smels` ; couches : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`, `shared`
 
 ## Modules (même sous-dossier dans chaque couche)
-`user` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · (`shared` : noyau commun)
+`user` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · `notification` · `portal` · (`shared` : noyau commun)
 Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `service/grading/api/` = interface publique), `controller/grading/`, `dto/grading/`.
+`portal` : agrégats lecture seule (dashboard), **pas** de collections Mongo.
 
 ## Où lire quoi
 | Besoin | Document |
@@ -30,9 +31,14 @@ Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `servic
 | Modules, frontières, événements | `docs/08-architecture-modulaire.md` |
 | Emploi du temps | `docs/09-emploi-du-temps.md` |
 | Jeux de test anonymisés | `docs/fixtures/*.json` |
+| Comptes démo | `docs/mock-logins.md` |
 
-## État
-Le package `model` (8 sous-packages, 106 classes) est écrit, compilé contre des annotations simulées : à recompiler avec Gradle. Les dossiers des autres couches existent par module mais sont vides. Rien d'autre n'est implémenté : ni services, ni sécurité, ni configuration.
+## État (nov. 2026)
+- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements), `portal` (`GET /api/v1/dashboard/summary`).
+- **Modèle seul / services vides** : `timetable` (controller/service/repository à faire).
+- **Front** (dépôt séparé Next.js) : workspaces `/teacher`, `/administration`, `/director`, `/surveillant-general`, `/super-admin` ; élève/parent en shell « bientôt ».
+- **Décisions v1 figées** tant que Q-xx non rouvertes : Principal = `DIRECTOR` (pas de rôle `PRINCIPAL`) ; SG = espace dédié visas fiches ; EDT = saisie manuelle + duplication ; parents = navigateur, enfants liés seulement (UI parent encore stub).
+- Test **ArchUnit** des frontières de modules : `src/test/.../architecture/ModuleBoundariesArchTest.kt` (CI Gradle).
 
 ## Règles impératives
 1. **Frontières de modules** : un module ne lit et n'écrit que ses collections ; il n'importe jamais le `repository` ni le `model` d'un autre module ; il passe par `service/<autre>/api` et les `dto/<autre>`. Pas de jointure entre modules, pas de transaction entre modules, pas de dépendance cyclique (graphe dans `docs/08`). Un test ArchUnit le vérifie.

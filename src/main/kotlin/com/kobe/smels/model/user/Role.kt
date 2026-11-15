@@ -15,8 +15,8 @@ enum class Role {
     TEACHER,
 
     /**
-     * Surveillant Général : vise les fiches de report de notes (lecture + visa SG).
-     * TODO(Q-38) : confirmer le périmètre exact avec l'école (création du rôle validée côté modèle).
+     * Surveillant Général : lecture + visa SG des fiches de report.
+     * Q-38 v1 : espace UI `/surveillant-general` (pas d’admin complet).
      */
     SURVEILLANT_GENERAL,
 
@@ -25,7 +25,7 @@ enum class Role {
 
     /**
      * Directeur / chef d'établissement : accès complet, gère aussi les comptes d'administration.
-     * Visa final Principal des fiches de report = ce rôle tant que Q-38 n'introduit pas un rôle PRINCIPAL distinct.
+     * Q-38 v1 : visa final Principal = ce rôle (pas de rôle PRINCIPAL distinct).
      */
     DIRECTOR,
 

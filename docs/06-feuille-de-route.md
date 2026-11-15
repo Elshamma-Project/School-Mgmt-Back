@@ -5,16 +5,18 @@
 | Étape | Contenu | État |
 |---|---|---|
 | 0 | Analyse (7 bulletins + emploi du temps), domaine, **modèle par modules**, règles de calcul, rôles, architecture modulaire | ✅ fait (`docs/` + package `model`) |
-| 1 | Projet : dépendances, configuration, Mongo, Docker, CI, **test d'architecture des modules** | à faire |
-| 2 | Référentiels (module `academic`, `staff`, `student`) | à faire |
-| 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | 🟡 services grading + report sheet faits ; export PDF GradeSheet multi-pages encore à peaufiner |
+| 1 | Projet : dépendances, configuration, Mongo, Docker, CI, **test ArchUnit** | 🟡 Gradle + Mongo + sécurité OK ; ArchUnit + workflow CI ajoutés ; docker-compose encore optionnel |
+| 2 | Référentiels (module `academic`, `staff`, `student`) | ✅ services + API + front hubs |
+| 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | ✅ services + visas SG/directeur + corrections ; PDF GradeSheet multi-pages encore à peaufiner |
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | ✅ `GradeCalculationEngine` + `GradeCalculationService` + tests fixtures docs/04 §6 |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | ✅ templates seed, `ReportCardService`, PDF Z1–Z10 1 page FR/EN (annuel + TERM_COMPETENCY) |
-| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | à faire |
-| 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | 🟡 partiel — auth/JWT/sessions/lockout OK ; appartenance ReportCard/Student/SequenceMark/barèmes/period-review/audit colmatée (docs/05) ; hors scope : timetable (étape 6), portail élève prod, rôle PRINCIPAL (Q-38) |
-| 8 | Modules suivants : cartes, inscriptions, notifications, fichiers, import des élèves | à faire |
+| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | ❌ modèle seul — services/controller à faire (Q-32/Q-33 figés v1) |
+| 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | ✅ auth/JWT/sessions/lockout ; appartenance colmatée sur grading/reporting/student ; portail élève prod encore hors scope |
+| 8 | Notifications, dashboard (`portal`), signalements | ✅ inbox + outbox handlers + `GET /api/v1/dashboard/summary` |
+| 9 | Modules suivants : cartes, frais, import massif, file-storage | ❌ non démarré |
+| — | Espace UI Surveillant Général | ✅ `/surveillant-general` (fiches de report) — Q-38 v1 |
 
-**Ordre conseillé** : 1 → 2 → 3 → 4 → 5 → 6 ; la sécurité (7) peut démarrer dès l'étape 2. Le calcul (4) tôt : il permet la démo de rejeu de décembre.
+**Prochaines priorités** : étape 6 (EDT) · portail parent/élève prod (Q-20 UI) · peaufiner PDF GradeSheet · docker-compose VPS.
 
 ## 2. Règles à donner à l'assistant IA (déjà dans `AGENTS.md`)
 

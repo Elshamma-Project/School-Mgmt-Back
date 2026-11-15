@@ -27,7 +27,7 @@
 | Q-17 | 2nd cycle : séries avec coefficients différents | ✅ | **Oui** (confirmé par 2NDE C / 2NDE ALL, FORM 4 ARTS / SC) ; `SchoolClass.trackCode` + `ClassSubject` par classe |
 | Q-18 | Passage en classe supérieure, procès-verbal du conseil | ❓ | `councilDecision` saisi à la main |
 | Q-19 | Relation avec SKYSOFT / Easy School Mobile | 🟡 | Réponse : ces logiciels sont bien ceux de l'école ; l'ancien prestataire n'a plus de contrat ; l'école veut changer de prestataire (l'école ne dit pas pourquoi). **Reste** : peut-on récupérer les données (élèves, notes, historique) ? en quel format ? |
-| Q-20 | Consultation par les parents | ✅ | **Navigateur uniquement** ; connexion à leur compte ; ils voient automatiquement le ou les bulletins de **tous leurs enfants, et uniquement les leurs** |
+| Q-20 | Consultation par les parents | ✅ | **Navigateur uniquement** ; connexion à leur compte ; ils voient automatiquement le ou les bulletins de **tous leurs enfants, et uniquement les leurs**. **Implémentation** : règle métier + modèle `guardians` OK ; UI parent encore shell « bientôt » (pas de flux prod) |
 | Q-21 | Absences et retards : qui saisit, unité, justifiées | ❓ | Heures entières, saisies par l'administration |
 | Q-22 | Enseignant remplacé en cours d'année | ❓ | Dernier enseignant, nom figé à la génération |
 | Q-23 | Signature, cachet, copies du bulletin | ❓ | Zone de signature, nom du chef imprimé ; signature manuscrite après impression |
@@ -44,13 +44,13 @@
 | Q-29 | **Tableau d'honneur et sanctions** : un avertissement / blâme de conduite empêche-t-il le tableau d'honneur ? Seuils des encouragements et félicitations ? Avertissements automatiques sous un seuil de moyenne ? Pourquoi le profil de classe utilise-t-il 10 en Form 1 (trimestre) et 12 ailleurs ? | ❓ | Tableau d'honneur >= 12 et bloqué par une sanction ; seuil de classe 12 (annuel) / 10 (trimestre Form 1) ; le reste saisi à la main | Observé : élève à 12,30 sans tableau d'honneur avec « Avertissement conduite : Oui » |
 | Q-30 | **Matière « F/N »** de Form 4 (Etoundi) : French/National language ? Et « LCN », « PCT », « H.BIOLOGY », « SVTEEHB » : noms complets FR et EN ? | ❓ | Alias d'emploi du temps libres | Catalogue de matières bilingue |
 | Q-31 | **Zéro et « non saisi »** : dans l'ancien logiciel, une séquence non faite apparaît parfois comme 0.0 (FORM 4 ARTS). Faut-il distinguer « absent / 0 réel / pas encore noté » sur les fiches ? | 💡 | Oui : `PENDING` n'est jamais un zéro | Évite des moyennes fausses |
-| Q-32 | **Génération de l'emploi du temps** : saisie manuelle avec contrôle de conflits, ou génération automatique ? Contraintes (disponibilités, salles, maximum d'heures par jour) ? Qui le fait aujourd'hui, avec quel outil ? | ❓ | Saisie manuelle guidée + duplication d'une année sur l'autre | Périmètre du module timetable |
-| Q-33 | **Samedi et remplacements** : le cours du samedi (1ère C/D) est-il régulier ? Un remplacement ponctuel d'enseignant modifie-t-il l'emploi du temps annuel ? | ❓ | Cours hors grille régulier ; pas de remplacement ponctuel | `customStart` / `customEnd` |
-| Q-34 | **Reprise des données** (élèves, historique de notes) : format fourni par l'ancien prestataire ? Import des élèves plus tard ou création un par un ? | ❓ | Création un par un au début | Hors périmètre actuel |
+| Q-32 | **Génération de l'emploi du temps** : saisie manuelle avec contrôle de conflits, ou génération automatique ? Contraintes (disponibilités, salles, maximum d'heures par jour) ? Qui le fait aujourd'hui, avec quel outil ? | 🟡 | **v1 figée** : saisie manuelle guidée + contrôle de conflits + duplication d'année ; pas de solveur automatique. Contraintes avancées (disponibilités) = évolution. | Périmètre du module timetable |
+| Q-33 | **Samedi et remplacements** : le cours du samedi (1ère C/D) est-il régulier ? Un remplacement ponctuel d'enseignant modifie-t-il l'emploi du temps annuel ? | 🟡 | **v1 figée** : créneaux hors grille via `customStart`/`customEnd` ; remplacements ponctuels **ne** modifient **pas** l'EDT annuel (hors scope v1). | `customStart` / `customEnd` |
+| Q-34 | **Reprise des données** (élèves, historique de notes) : format fourni par l'ancien prestataire ? Import des élèves plus tard ou création un par un ? | 🟡 | **v1 figée** : création un par un (CRUD UI) ; import massif / reprise SKYSOFT hors périmètre jusqu'à format fourni (lié Q-19). | Hors périmètre actuel |
 | Q-35 | **Fiche de report** : sens du « N° » d'en-tête ; une fiche > 45 élèves peut-elle tenir sur 2 pages ? | ✅ | **N° = numéro du trimestre**. Oui, 2 pages OK (en-tête de tableau répété) ; `reportSheetMaxRowsPerPage = 45` | Design papier remis |
 | Q-36 | Qui remplit la colonne « App » ? Logiciel ou enseignant ? Impression vierge ? | ✅ | **Logiciel** (échelle du barème, Q-10). Garder une **version vierge** (noms seuls) pour saisie manuscrite — le logiciel ne remplace pas le workflow papier | Réponse école |
 | Q-37 | Le délai de 72 h est-il bloquant ? | ✅ | **Non** (indicatif) : `reportSheetDeadlineBlocking = false` ; avertissement seulement | Réponse école |
-| Q-38 | Rôle Surveillant Général / rôle Principal ? | ❓ | `SURVEILLANT_GENERAL` ajouté au modèle ; Principal = `DIRECTOR` en attendant confirmation d'un rôle `PRINCIPAL` distinct | Pas encore de réponse RH |
+| Q-38 | Rôle Surveillant Général / rôle Principal ? | 🟡 | **v1 figée** : `SURVEILLANT_GENERAL` = espace UI `/surveillant-general` (visa SG fiches de report uniquement) ; **Principal = `DIRECTOR`** (visa final) ; pas de rôle `PRINCIPAL` distinct tant que RH ne le demande pas. | Décision produit ; confirmation RH toujours bienvenue |
 
 ## 3. Décisions provisoires (résumé)
 
@@ -77,7 +77,7 @@
 
 Priorité 1 (avant la démo) :
 1. *(Optionnel)* Une fiche Excel chiffrée avec bonus/malus pour valider les cas limites de Q-25 (déjà confirmée : moyenne + bonus − malus, plafond 20).
-1 bis. Confirmation RH : périmètre du Surveillant Général et distinction Principal / Directeur (Q-38).
+1 bis. *(Optionnel)* Confirmation RH si un rôle `PRINCIPAL` distinct du Directeur est requis (Q-38 déjà figé v1 : Principal = DIRECTOR ; SG = visas fiches).
 2. Un **bulletin de séquence** s'il existe ; les **bulletins de trimestre 2 et 3** et un bulletin de trimestre d'une classe francophone (Q-03, Q-26).
 3. Un bulletin d'une classe **bilingue** (Q-01).
 4. Le **règlement d'évaluation** et le **procès-verbal d'un conseil de classe** (Q-09, Q-11, Q-18, Q-29).

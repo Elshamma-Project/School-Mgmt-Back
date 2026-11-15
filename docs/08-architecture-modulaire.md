@@ -66,7 +66,7 @@ Pour extraire un module en microservice : on prend ses 5 dossiers (`model`, `rep
 9. **Sécurité par module** : chaque module contrôle lui-même les droits sur ses ressources à partir du jeton (qui reste le même partout : identité, rôles, `schoolId`, profil).
 10. **Config et secrets par module** : un préfixe de configuration par module (`smels.grading.*`) ; une base Mongo par module en production (même cluster au début), nom `smels_<module>`.
 
-Vérification automatique recommandée : un test **ArchUnit** (ou Spring Modulith) qui échoue si une classe de `service.<A>` importe `repository.<B>` ou `model.<B>` pour B ≠ A.
+Vérification automatique : test **ArchUnit** `ModuleBoundariesArchTest` (exécuté par `./gradlew test` et CI) — échoue si une classe de `service.<A>` importe `repository.<B>` ou `model.<B>` pour B ≠ A (et B ≠ `shared`). Le module `portal` n’a pas de `model`/`repository` propres.
 
 ## 4. Événements entre modules
 

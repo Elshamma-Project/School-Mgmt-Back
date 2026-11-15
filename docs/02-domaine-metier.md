@@ -52,9 +52,9 @@ Le logiciel permet de **tout configurer depuis l'interface graphique, dans les d
 | Élève | `STUDENT` | Plus tard : se connecte avec son matricule, suit ses notes en temps réel |
 | Parent / tuteur | `PARENT` | **Navigateur uniquement** (réponse Q-20) : se connecte à son compte et voit automatiquement les notes et les bulletins de **tous ses enfants, et uniquement les siens** ; télécharge le bulletin annuel publié |
 | Enseignant | `TEACHER` | Remplit les **fiches de notes** de ses matières et classes tant que la séquence est ouverte ; génère / soumet sa **fiche de report** ; consulte son emploi du temps |
-| Surveillant Général | `SURVEILLANT_GENERAL` | Lit et **vise** les fiches de report (visa SG) ; Q-38 ouverte sur le périmètre exact |
+| Surveillant Général | `SURVEILLANT_GENERAL` | Lit et **vise** les fiches de report (visa SG) ; UI `/surveillant-general` (Q-38 v1) |
 | Administration | `ADMINISTRATION` | Tout ce que fait l'enseignant ; corrige après clôture ; régénère / corrige les fiches de report avec motif ; gère matières, coefficients, enseignants, élèves, inscriptions, emplois du temps ; génère et imprime les bulletins |
-| Directeur / Principal | `DIRECTOR` | Accès complet ; visa final Principal des fiches de report (Q-38 : rôle PRINCIPAL distinct ?) ; gère les comptes d'administration |
+| Directeur / Principal | `DIRECTOR` | Accès complet ; visa final Principal des fiches de report (Q-38 v1 : Principal = DIRECTOR) ; gère les comptes d'administration |
 | Développeur | `SUPER_ADMIN` | Accès plateforme et support |
 
 Détail : `05-roles-permissions.md`.

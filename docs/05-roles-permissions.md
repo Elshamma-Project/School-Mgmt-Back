@@ -11,9 +11,9 @@
 | `STUDENT` | Élève (connexion par **e-mail** ; compte créé par l’admin — futur envoi MDP par e-mail) | Ses propres données |
 | `PARENT` | Parent / tuteur | **Tous ses enfants, et uniquement eux** (réponse Q-20), via `Student.guardians` |
 | `TEACHER` | Enseignant | Ses `ClassSubject` : ses fiches de notes, ses fiches de report, son emploi du temps |
-| `SURVEILLANT_GENERAL` | Surveillant Général | Lecture + visa SG des fiches de report (Q-38 : périmètre exact à confirmer) |
+| `SURVEILLANT_GENERAL` | Surveillant Général | Lecture + visa SG des fiches de report ; UI `/surveillant-general` (Q-38 v1) |
 | `ADMINISTRATION` | Secrétariat, censeur | Tout l'établissement, sauf **Direction** (RH), comptes d'administration (user) et réouverture ; régénération / correction fiche de report avec motif |
-| `DIRECTOR` | Directeur / chef d'établissement (= Principal provisoirement, Q-38) | Tout l'établissement ; visa final des fiches de report ; approbation des corrections post-dépôt |
+| `DIRECTOR` | Directeur / chef d'établissement (= Principal v1, Q-38) | Tout l'établissement ; visa final des fiches de report ; approbation des corrections post-dépôt |
 | `SUPER_ADMIN` | Développeur | Plateforme, tous établissements |
 
 Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit effectif est l'union. **Fonction ≠ rôle** : `Staff.functions` décrit le poste ; `UserAccount.roles` décrit les droits.
@@ -96,5 +96,5 @@ Contrôler **dans la couche service** de chaque module. Entre modules, le module
 | Saisie des absences et sanctions | Administration seulement |
 | Parents et bulletins | Seul le bulletin annuel est téléchargeable ; les notes sont visibles en temps réel |
 | Élève qui se connecte | Plus tard |
-| Principal vs Directeur (Q-38) | Visa Principal = `DIRECTOR` jusqu'à confirmation d'un rôle `PRINCIPAL` distinct |
-| Surveillant Général (Q-38) | Rôle `SURVEILLANT_GENERAL` créé côté modèle ; périmètre RH à confirmer |
+| Principal vs Directeur (Q-38) | **v1** : Visa Principal = `DIRECTOR` ; pas de rôle `PRINCIPAL` distinct |
+| Surveillant Général (Q-38) | **v1** : rôle `SURVEILLANT_GENERAL` ; espace UI dédié ; périmètre = visas fiches de report |

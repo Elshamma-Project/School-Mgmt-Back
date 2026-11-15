@@ -35,7 +35,7 @@ Ce fichier mock **ne crée plus** d’années / classes / notes fictives.
 | SUPER_ADMIN | `superadmin@smels.local` | auto (repli plateforme) | — |
 | DIRECTOR (Principal) | `directeur@elshammah.demo` | `school-elshammah` | `staff-demo-director` |
 | ADMINISTRATION | `admin@elshammah.demo` | `school-elshammah` | `staff-demo-admin` |
-| SURVEILLANT_GENERAL | `surveillant@elshammah.demo` | `school-elshammah` | `staff-demo-sg` |
+| SURVEILLANT_GENERAL | `surveillant@elshammah.demo` | `school-elshammah` | `staff-demo-sg` (UI `/surveillant-general`) |
 | TEACHER | `enseignant@elshammah.demo` | `school-elshammah` | `staff-demo-teacher` |
 | PARENT | `parent.demo@elshammah.demo` | `school-elshammah` | `guardian-demo-parent` |
 | STUDENT | `eleve.demo@elshammah.demo` | `school-elshammah` | `student-demo-01` |

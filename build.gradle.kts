@@ -50,6 +50,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testCompileOnly("org.projectlombok:lombok")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testAnnotationProcessor("org.projectlombok:lombok")
