@@ -41,7 +41,7 @@ import java.util.Optional
 
 /**
  * Agrégat lecture seule du tableau de bord (module portal — docs/08).
- * Orchestre uniquement via `service/*/api` ; aucun repository métier.
+ * Orchestre uniquement via les interfaces `service/<module>/api` ; aucun repository métier.
  */
 @Service
 class DashboardService(
