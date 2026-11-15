@@ -14,9 +14,15 @@ internal object AcademicAccess {
         }
     }
 
+    /**
+     * Lecture du catalogue (années, niveaux, classes, matières, ClassSubject…).
+     * Inclut [Role.SURVEILLANT_GENERAL] : nécessaire pour le hub visas (année courante, libellés)
+     * sans droit d’écriture (Q-38 / docs/05).
+     */
     fun assertCanReadCatalog(currentUser: CurrentUser) {
         if (!currentUser.hasAnyRole(
                 Role.TEACHER,
+                Role.SURVEILLANT_GENERAL,
                 Role.ADMINISTRATION,
                 Role.DIRECTOR,
                 Role.SUPER_ADMIN

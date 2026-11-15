@@ -28,8 +28,8 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Paramètres sensibles** (logo, identité, en-têtes, année courante) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | enseignant / SG : consultation seule ; modification = admin + directeur |
 | Ouvrir / clôturer une séquence (grading) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Rouvrir une séquence clôturée | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | provisoire (Q-04) |
-| Niveaux, classes, salles : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | |
-| Matières, groupes, **coefficients** : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | |
+| Niveaux, classes, salles : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | **SG** : lecture seule (année / libellés pour hub visas) ; pas de colonne dédiée — même règle que Ens. |
+| Matières, groupes, **coefficients** : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | **SG** : lecture seule (idem) |
 | Compétences du trimestre (academic) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses ClassSubject |
 | Affecter un enseignant à une matière de classe | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Barèmes de notation, gabarits de bulletin (grading, reporting) | ✖ | ✖ | ✖ | lecture | ✔ | ✔ | un changement modifie les calculs |
@@ -97,4 +97,4 @@ Contrôler **dans la couche service** de chaque module. Entre modules, le module
 | Parents et bulletins | Seul le bulletin annuel est téléchargeable ; les notes sont visibles en temps réel |
 | Élève qui se connecte | Plus tard |
 | Principal vs Directeur (Q-38) | **v1** : Visa Principal = `DIRECTOR` ; pas de rôle `PRINCIPAL` distinct |
-| Surveillant Général (Q-38) | **v1** : rôle `SURVEILLANT_GENERAL` ; espace UI dédié ; périmètre = visas fiches de report |
+| Surveillant Général (Q-38) | **v1** : rôle `SURVEILLANT_GENERAL` ; espace UI `/surveillant-general` ; **lecture catalogue academic** + **visa SG** fiches de report (pas de CRUD academic, pas de journal d’audit, pas de bulletins) |
