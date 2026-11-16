@@ -184,6 +184,10 @@ class StaffService(
                     staff.lastName = request.lastName.trim()
                     staff.firstName = request.firstName.trim()
                     staff.civility = request.civility
+                    // Profil : renseigner ou corriger le sexe (MALE / FEMALE) ; null = ne pas effacer.
+                    if (request.sex != null) {
+                        staff.sex = request.sex
+                    }
                     staff.contact = StaffMapper.toContact(request.contact)
                     stampActor(staff, currentUser)
                     staffRepository.save(staff)

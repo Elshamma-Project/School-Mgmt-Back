@@ -77,6 +77,7 @@ data class UpdateStaffRequest(
 /**
  * Mise à jour limitée de l’identité (self-service profil ou admin).
  * Ne touche pas aux fonctions RH / matières enseignables.
+ * [sex] : `MALE` / `FEMALE` — permet de compléter la fiche si encore vide (profil).
  */
 data class UpdateStaffIdentityRequest(
     @field:NotBlank
@@ -85,6 +86,7 @@ data class UpdateStaffIdentityRequest(
     @field:Size(max = 120)
     val firstName: String = "",
     val civility: Civility? = null,
+    val sex: Sex? = null,
     @field:Valid
     val contact: ContactInfoDto = ContactInfoDto()
 )
