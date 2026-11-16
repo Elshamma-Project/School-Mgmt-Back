@@ -2,6 +2,8 @@ package com.kobe.smels.repository.timetable
 
 import com.kobe.smels.model.timetable.TimeSlotGrid
 import com.kobe.smels.model.timetable.Timetable
+import com.kobe.smels.model.timetable.TimetableChangeRequest
+import com.kobe.smels.model.timetable.TimetableChangeStatus
 import com.kobe.smels.model.timetable.TimetableEntry
 import com.kobe.smels.model.timetable.TimetableStatus
 import com.kobe.smels.model.timetable.TimetableSubjectAlias
@@ -69,6 +71,31 @@ interface TimetableEntryRepository : ReactiveMongoRepository<TimetableEntry, Str
     ): Flux<TimetableEntry>
 
     fun deleteBySchoolIdAndTimetableId(schoolId: String, timetableId: String): Mono<Void>
+}
+
+interface TimetableChangeRequestRepository : ReactiveMongoRepository<TimetableChangeRequest, String> {
+    fun findByIdAndSchoolId(id: String, schoolId: String): Mono<TimetableChangeRequest>
+    fun findBySchoolIdAndStatusOrderByRequestedAtDesc(
+        schoolId: String,
+        status: TimetableChangeStatus
+    ): Flux<TimetableChangeRequest>
+
+    fun findBySchoolIdAndRequestedByOrderByRequestedAtDesc(
+        schoolId: String,
+        requestedBy: String
+    ): Flux<TimetableChangeRequest>
+
+    fun findBySchoolIdAndTeacherIdOrderByRequestedAtDesc(
+        schoolId: String,
+        teacherId: String
+    ): Flux<TimetableChangeRequest>
+
+    fun findBySchoolIdAndSourceTimetableIdAndSourceEntryIdAndStatus(
+        schoolId: String,
+        sourceTimetableId: String,
+        sourceEntryId: String,
+        status: TimetableChangeStatus
+    ): Flux<TimetableChangeRequest>
 }
 
 interface TimetableSubjectAliasRepository : ReactiveMongoRepository<TimetableSubjectAlias, String> {

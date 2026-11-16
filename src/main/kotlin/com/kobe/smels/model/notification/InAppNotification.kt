@@ -64,6 +64,10 @@ enum class NotificationCategory {
     STAFF_SIGNAL,
     /** Emploi du temps publié (`timetable.published`). */
     TIMETABLE_PUBLISHED,
+    /** Demande de modification de créneau (BR-67). */
+    TIMETABLE_CHANGE_REQUESTED,
+    /** Décision admin/directeur sur une demande de créneau (BR-67). */
+    TIMETABLE_CHANGE_DECIDED,
     SYSTEM
 }
 

@@ -61,7 +61,8 @@
 | timetable | `timetable_timetables` | `Timetable` | Emploi du temps d'une année (révisions) + `headerContact` PDF |
 | timetable | `timetable_entries` | `TimetableEntry` | Cases (options LV2, `sessionGroupId`, `classSubjectIds`) |
 | timetable | `timetable_subject_aliases` | `TimetableSubjectAlias` | Alias libellé EDT → ClassSubject(s) |
-| notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégorie `TIMETABLE_PUBLISHED` |
+| timetable | `timetable_change_requests` | `TimetableChangeRequest` (+ `TimetableEntrySnapshot`) | Demandes de modif de créneau enseignant → admin/dir. (BR-67) ; libellés figés |
+| notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégories `TIMETABLE_PUBLISHED`, `TIMETABLE_CHANGE_REQUESTED`, `TIMETABLE_CHANGE_DECIDED` |
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
 
 ## 3. Index clés et requêtes chaudes
@@ -88,6 +89,7 @@
 | Conflits enseignant / salle | `timetable_entries` | `idx_teacher_day`, `idx_room_day` ; séances communes : `idx_session_group` |
 | Heures hebdomadaires | `timetable_entries` par `classSubjectIds` | `idx_classsubjects` |
 | Alias libellé EDT | `timetable_subject_aliases` | `uk_alias_year_section` |
+| Demandes de créneau en attente | `timetable_change_requests` par `status` | `idx_tt_change_status` ; pending par entry : `idx_tt_change_entry_pending` |
 | Événements à publier | `shared_outbox_events` par `status` + `occurredAt` | `idx_status_time` |
 
 Création automatique des index : désactivée par défaut avec Spring Data MongoDB 3+ : `spring.data.mongodb.auto-index-creation=true` en développement ; script de migration en production.

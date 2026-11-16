@@ -58,6 +58,8 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Journal d'audit des notes | ✖ | ✖ | ✖ | ✔ | ✔ | ◐ | |
 | **Emploi du temps** : créer, modifier, publier (timetable) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | SG : si `School.timetableSurveillantCanEdit` (défaut false, Q-32) |
 | Emploi du temps : consulter | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | élève : sa classe ; parent : classes de ses enfants ; enseignant : ses cours |
+| **Proposer modif de créneau** (timetable) | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant sur ses cases PUBLISHED ; motif (BR-67) |
+| **Approuver / refuser modif de créneau** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration **ou** directeur ; applique sur brouillon / révision |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Plusieurs établissements, support | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | accès journalisé |
 

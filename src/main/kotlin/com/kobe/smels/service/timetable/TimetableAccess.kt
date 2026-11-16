@@ -33,6 +33,24 @@ internal object TimetableAccess {
         throw ForbiddenException("FORBIDDEN", "Insufficient role to manage timetable")
     }
 
+    /** Visa des demandes de modification de créneau (enseignant → admin/directeur). */
+    fun assertCanReviewChangeRequests(currentUser: CurrentUser) {
+        if (!currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            throw ForbiddenException(
+                "FORBIDDEN",
+                "Only ADMINISTRATION or DIRECTOR can review timetable change requests"
+            )
+        }
+    }
+
+    fun assertTeacher(currentUser: CurrentUser) {
+        if (!currentUser.hasRole(Role.TEACHER) &&
+            !currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)
+        ) {
+            throw ForbiddenException("FORBIDDEN", "Only teachers can request timetable changes")
+        }
+    }
+
     fun resolveSchoolId(currentUser: CurrentUser, override: String?): String =
         currentUser.requireSchoolId(override)
 

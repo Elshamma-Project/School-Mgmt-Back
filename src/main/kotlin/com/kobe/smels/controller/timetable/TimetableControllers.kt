@@ -1,9 +1,11 @@
 package com.kobe.smels.controller.timetable
 
 import com.kobe.smels.dto.timetable.CreateTimeSlotGridRequest
+import com.kobe.smels.dto.timetable.CreateTimetableChangeRequest
 import com.kobe.smels.dto.timetable.CreateTimetableRequest
 import com.kobe.smels.dto.timetable.DuplicateTimetableRequest
 import com.kobe.smels.dto.timetable.LinkSessionGroupRequest
+import com.kobe.smels.dto.timetable.ReviewTimetableChangeRequest
 import com.kobe.smels.dto.timetable.UnlinkSessionGroupRequest
 import com.kobe.smels.dto.timetable.UpdateTimeSlotGridRequest
 import com.kobe.smels.dto.timetable.UpdateTimetableRequest
@@ -11,6 +13,7 @@ import com.kobe.smels.dto.timetable.UpsertTimetableEntryRequest
 import com.kobe.smels.dto.timetable.UpsertTimetableSubjectAliasRequest
 import com.kobe.smels.model.shared.Language
 import com.kobe.smels.service.timetable.TimeSlotGridService
+import com.kobe.smels.service.timetable.TimetableChangeRequestService
 import com.kobe.smels.service.timetable.TimetableConflictService
 import com.kobe.smels.service.timetable.TimetableEntryService
 import com.kobe.smels.service.timetable.TimetablePdfService
@@ -221,4 +224,44 @@ class TimetableSubjectAliasController(
     fun deactivate(@PathVariable id: String, @RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser()
             .flatMap { timetableSubjectAliasService.deactivate(it, id, schoolId) }
+}
+
+/** BR-67 : demandes de modification de créneau (enseignant) + revue admin/directeur. */
+@RestController
+@RequestMapping("/api/v1/timetable-change-requests")
+class TimetableChangeRequestController(
+    private val timetableChangeRequestService: TimetableChangeRequestService
+) {
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    fun create(@Valid @RequestBody request: CreateTimetableChangeRequest) =
+        SecuritySupport.currentUser().flatMap { timetableChangeRequestService.create(it, request) }
+
+    @GetMapping("/pending")
+    fun pending(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { timetableChangeRequestService.listPending(it, schoolId) }
+
+    @GetMapping("/mine")
+    fun mine(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { timetableChangeRequestService.listMine(it, schoolId) }
+
+    @PostMapping("/{id}/approve")
+    fun approve(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { timetableChangeRequestService.approve(it, id, schoolId) }
+
+    @PostMapping("/{id}/reject")
+    fun reject(
+        @PathVariable id: String,
+        @Valid @RequestBody request: ReviewTimetableChangeRequest
+    ) = SecuritySupport.currentUser().flatMap {
+        timetableChangeRequestService.reject(it, id, request.reviewNote, request.schoolId)
+    }
+
+    @PostMapping("/{id}/cancel")
+    fun cancel(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { timetableChangeRequestService.cancel(it, id, schoolId) }
 }

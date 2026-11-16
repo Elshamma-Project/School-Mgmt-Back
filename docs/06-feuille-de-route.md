@@ -10,13 +10,13 @@
 | 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | ✅ services + visas SG/directeur + corrections ; PDF GradeSheet multi-pages encore à peaufiner |
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | ✅ `GradeCalculationEngine` + `GradeCalculationService` + tests fixtures docs/04 §6 |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | ✅ templates seed, `ReportCardService`, PDF Z1–Z10 1 page FR/EN (annuel + TERM_COMPETENCY) |
-| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | 🟡 **phases 0–E** (API + PDF + éditeur front admin/dir) ; F lecture enseignant — voir `09` § 7 |
+| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | ✅ **phases 0–F** (API + PDF + fronts admin/dir + lecture enseignant) — voir `09` § 7 |
 | 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | ✅ auth/JWT/sessions/lockout ; appartenance colmatée sur grading/reporting/student ; portail élève prod encore hors scope |
 | 8 | Notifications, dashboard (`portal`), signalements | ✅ inbox + outbox handlers + `GET /api/v1/dashboard/summary` |
 | 9 | Modules suivants : cartes, frais, import massif, file-storage | ❌ non démarré |
 | — | Espace UI Surveillant Général | ✅ `/surveillant-general` (fiches de report) — Q-38 v1 |
 
-**Prochaines priorités** : EDT phase **F** (lecture enseignant) · portail parent/élève · PDF GradeSheet · docker-compose VPS.
+**Prochaines priorités** : portail parent/élève · PDF GradeSheet · docker-compose VPS.
 
 ### Étape 6 — découpage EDT (rappel)
 
@@ -28,7 +28,7 @@
 | **C** | Publier + dupliquer + `timetable.published` | ✅ |
 | **D** | PDF 1 page + `headerContact` ; test 12×40 cases | ✅ |
 | **E** | Front admin/directeur | ✅ |
-| **F** | Front enseignant (lecture) | ❌ |
+| **F** | Front enseignant (lecture) | ✅ |
 
 ## 2. Règles à donner à l'assistant IA (déjà dans `AGENTS.md`)
 

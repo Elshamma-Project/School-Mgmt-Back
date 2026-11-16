@@ -89,6 +89,8 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `grading.correction.approved` / `grading.correction.rejected` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `requestedBy`, `teacherId`, `studentLabel`, `decision` ; rejet : `reviewNote` |
 | `reporting.report-card.published` | reporting | notification, student portal | `reportCardId`, `studentId`, période |
 | `timetable.published` | timetable | notification | `timetableId`, `academicYearId`, `revision` |
+| `timetable.change.requested` | timetable | notification | `requestId`, `timetableId`, `teacherId`, `teacherLabel`, `classLabel`, `changeKind`, `status` |
+| `timetable.change.approved` / `timetable.change.rejected` | timetable | notification | `requestId`, `requestedBy`, `teacherId`, `classLabel`, `decision` ; rejet : `reviewNote` ; approbation : `appliedTimetableId` |
 | *(alias EDT)* | — | — | `TimetableSubjectAlias` tenu à jour par chargeur / admin ; pas d’événement dédié en v1 (rafraîchissement des libellés d’entrée via `academic.subject.renamed` + republish) |
 
 Versionner chaque charge utile (`schemaVersion`) ; n'y mettre que des identifiants et les valeurs nécessaires.

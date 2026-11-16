@@ -92,6 +92,7 @@ Index : `uk_class_slot_option`, `idx_teacher_day`, `idx_room_day`, `idx_classsub
 - **BR-64** Enseignant hors `ClassSubject.teacherId` → avertissement (remplacement ?).
 - **BR-65** `ACTIVITY` : pas de `classSubjectIds` obligatoires ; pas d’obligation d’enseignant pour le conflit.
 - **BR-66** Case hors pause / nettoyage (sauf hors grille explicite).
+- **BR-67** Demande de modification de créneau par l’enseignant (miroir BR-80 notes) : `PENDING` → approbation admin/directeur (applique sur DRAFT / revise) ou refus avec motif.
 
 ## 4. Génération, édition, impression
 
@@ -102,7 +103,7 @@ Index : `uk_class_slot_option`, `idx_teacher_day`, `idx_room_day`, `idx_classsub
 
 ## 5. Événements
 
-Publie `timetable.published`. Consomme `academic.class-subject.changed`, `academic.class.changed`, `academic.subject.renamed`, `staff.member.changed` (doc 08). Alias : mise à jour manuelle / chargeur (pas d’événement dédié en v1).
+Publie `timetable.published`, `timetable.change.requested` / `.approved` / `.rejected`. Consomme `academic.class-subject.changed`, `academic.class.changed`, `academic.subject.renamed`, `staff.member.changed` (doc 08). Alias : mise à jour manuelle / chargeur (pas d’événement dédié en v1).
 
 ## 6. Permissions (conception)
 
@@ -110,6 +111,8 @@ Publie `timetable.published`. Consomme `academic.class-subject.changed`, `academ
 |---|---|---|---|---|
 | Lire (ses cours / tout) | ses cours | lecture | tout | tout |
 | Modifier / publier | non | si `timetableSurveillantCanEdit` | oui | oui |
+| Proposer modif créneau (BR-67) | ses cases | non | non | non |
+| Approuver / refuser demande | non | non | oui | oui |
 | Élève / parent | lecture classe / enfants (plus tard) | | | |
 
 ## 7. Plan d’implémentation
@@ -122,7 +125,7 @@ Publie `timetable.published`. Consomme `academic.class-subject.changed`, `academ
 | **C** | Publier + dupliquer + événement | ✅ |
 | **D** | PDF 1 page + `headerContact` | ✅ |
 | **E** | Front admin/dir (éditeur) | ✅ |
-| **F** | Front enseignant (lecture) | ❌ |
+| **F** | Front enseignant (lecture) | ✅ |
 
 Ordre : **0 → A → B → C → D → E → F** (B avant E).
 

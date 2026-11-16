@@ -184,6 +184,7 @@ stateDiagram-v2
 - **BR-61** Une case = classe + jour + période (+ option LV2) + `classSubjectIds` + enseignant (+ salle) ; ou `ACTIVITY`. Hors grille / samedi : `customStart`/`customEnd`.
 - **BR-62** **Impression : une seule page A4 paysage par classe** (et par enseignant ou par salle sur demande), jamais de seconde page.
 - **BR-63** Périodes EDT ↔ **somme** des `weeklyHours` des `classSubjectIds` liés (avertissement) ; résolution des libellés via `TimetableSubjectAlias`.
+- **BR-67** Sur un EDT **PUBLISHED**, l’enseignant titulaire d’une case peut **proposer** une modification / suppression de créneau (motif ≥ 15 caractères). Une seule demande `PENDING` par case. **Administration** ou **directeur** (ou `SUPER_ADMIN`) **approuve** (applique sur le brouillon existant ou crée une nouvelle révision) ou **refuse** (motif de revue). Collection `timetable_change_requests`.
 
 ## 6. Parcours principal : de la saisie au bulletin
 
