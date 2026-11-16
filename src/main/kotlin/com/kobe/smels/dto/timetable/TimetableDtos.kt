@@ -200,3 +200,44 @@ data class TimetableSummaryDto(
     val revision: Int,
     val status: TimetableStatus
 )
+
+enum class TimetableIssueSeverity { BLOCKING, WARNING }
+
+data class TimetableIssueDto(
+    val severity: TimetableIssueSeverity,
+    val code: String,
+    val message: String,
+    val entryId: String? = null,
+    val otherEntryId: String? = null,
+    val classId: String? = null,
+    val teacherId: String? = null,
+    val roomId: String? = null,
+    val classSubjectId: String? = null
+)
+
+data class TimetableEntryWriteResponse(
+    val entry: TimetableEntryResponse,
+    val warnings: List<TimetableIssueDto> = emptyList()
+)
+
+data class TimetableConflictsResponse(
+    val timetableId: String,
+    val blocking: List<TimetableIssueDto>,
+    val warnings: List<TimetableIssueDto>
+)
+
+data class LinkSessionGroupRequest(
+    @field:NotEmpty
+    val entryIds: List<String>,
+    val schoolId: String? = null
+)
+
+data class UnlinkSessionGroupRequest(
+    val entryIds: List<String> = emptyList(),
+    val schoolId: String? = null
+)
+
+data class SessionGroupResponse(
+    val sessionGroupId: String,
+    val entryIds: List<String>
+)

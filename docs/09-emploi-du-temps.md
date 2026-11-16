@@ -118,7 +118,7 @@ Publie `timetable.published`. Consomme `academic.class-subject.changed`, `academ
 |---|---|---|
 | **0** | Modèle : séances communes, options LV2, alias, samedi, activités ; docs 03/08/09/07 | ✅ |
 | **A** | API lecture + grille + brouillon | ✅ |
-| **B** | Saisie + conflits (BR-09) + séances communes / options | ❌ |
+| **B** | Saisie + conflits (BR-09) + séances communes / options | ✅ |
 | **C** | Publier + dupliquer + événement | ❌ |
 | **D** | PDF 1 page + `headerContact` | ❌ |
 | **E** | Front admin/dir (éditeur) | ❌ |

@@ -62,6 +62,12 @@ interface TimetableEntryRepository : ReactiveMongoRepository<TimetableEntry, Str
         optionCode: String
     ): Flux<TimetableEntry>
 
+    fun findBySchoolIdAndTimetableIdAndSessionGroupId(
+        schoolId: String,
+        timetableId: String,
+        sessionGroupId: String
+    ): Flux<TimetableEntry>
+
     fun deleteBySchoolIdAndTimetableId(schoolId: String, timetableId: String): Mono<Void>
 }
 

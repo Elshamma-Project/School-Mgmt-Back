@@ -1,6 +1,7 @@
 package com.kobe.smels.service.timetable
 
 import com.kobe.smels.dto.timetable.TimetableEntryResponse
+import com.kobe.smels.dto.timetable.TimetableEntryWriteResponse
 import com.kobe.smels.dto.timetable.UpsertTimetableEntryRequest
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ConflictException
@@ -8,6 +9,7 @@ import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
 import com.kobe.smels.model.timetable.EntryKind
 import com.kobe.smels.model.timetable.PeriodKind
+import com.kobe.smels.model.timetable.TimeSlotGrid
 import com.kobe.smels.model.timetable.TimetableEntry
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.model.user.Role
@@ -21,12 +23,14 @@ import org.springframework.dao.DuplicateKeyException
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.util.Optional
 
 @Service
 class TimetableEntryService(
     private val entryRepository: TimetableEntryRepository,
     private val gridRepository: TimeSlotGridRepository,
     private val timetableService: TimetableService,
+    private val conflictService: TimetableConflictService,
     private val academicYearApi: AcademicYearApi,
     private val schoolBrandApi: SchoolBrandApi
 ) {
@@ -36,70 +40,61 @@ class TimetableEntryService(
         currentUser: CurrentUser,
         timetableId: String,
         request: UpsertTimetableEntryRequest
-    ): Mono<TimetableEntryResponse> {
+    ): Mono<TimetableEntryWriteResponse> {
         val schoolId = TimetableAccess.resolveSchoolId(currentUser, request.schoolId)
         return assertCanManage(currentUser, schoolId)
             .then(timetableService.requireDraft(schoolId, timetableId))
             .flatMap { timetable ->
                 academicYearApi.assertWritable(schoolId, timetable.academicYearId)
-                    .then(validateAgainstGrid(schoolId, timetable.gridId, request))
-                    .thenReturn(timetable)
-            }
-            .flatMap { timetable ->
-                val optionCode = request.optionCode.trim()
-                val slotKey = SlotKeys.resolve(request.startPeriod, request.customStart)
-                applyEntryRules(request)
-                entryRepository
-                    .findBySchoolIdAndTimetableIdAndDayAndSlotKeyAndOptionCode(
-                        schoolId,
-                        timetableId,
-                        request.day,
-                        slotKey,
-                        optionCode
-                    )
-                    .filter { it.classId == request.classId.trim() }
-                    .next()
-                    .flatMap { existing ->
-                        applyFields(existing, request, slotKey, optionCode)
-                        entryRepository.save(existing)
-                    }
-                    .switchIfEmpty(
-                        Mono.defer {
-                            entryRepository.save(
-                                TimetableEntry(
+                    .then(loadGrid(schoolId, timetable.gridId))
+                    .flatMap { grid ->
+                        validateAgainstGrid(grid, request)
+                        applyEntryRules(request)
+                        val optionCode = request.optionCode.trim()
+                        val slotKey = SlotKeys.resolve(request.startPeriod, request.customStart)
+                        findExisting(schoolId, timetableId, request, slotKey, optionCode)
+                            .flatMap { existingOpt ->
+                                val existing = existingOpt.orElse(null)
+                                val excludeId = existing?.id
+                                val candidate = buildCandidate(
                                     schoolId = schoolId,
                                     academicYearId = timetable.academicYearId,
                                     timetableId = timetableId,
-                                    classId = request.classId.trim(),
-                                    day = request.day,
-                                    startPeriod = request.startPeriod,
-                                    periodCount = request.periodCount.coerceAtLeast(1),
-                                    customStart = request.customStart,
-                                    customEnd = request.customEnd,
+                                    request = request,
                                     slotKey = slotKey,
-                                    kind = request.kind,
-                                    classSubjectIds = request.classSubjectIds.map { it.trim() }
-                                        .filter { it.isNotBlank() },
-                                    subjectId = request.subjectId?.trim()?.ifBlank { null },
-                                    teacherId = request.teacherId?.trim()?.ifBlank { null },
-                                    roomId = request.roomId?.trim()?.ifBlank { null },
-                                    activityType = request.activityType,
-                                    sessionGroupId = request.sessionGroupId?.trim()?.ifBlank { null },
-                                    optionGroupCode = request.optionGroupCode?.trim()?.ifBlank { null },
                                     optionCode = optionCode,
-                                    label = TimetableMapper.toLocalized(request.label),
-                                    note = request.note?.trim()?.ifBlank { null },
-                                    subjectLabel = request.subjectLabel?.trim()?.ifBlank { null },
-                                    teacherLabel = request.teacherLabel?.trim()?.ifBlank { null }
+                                    existingId = excludeId
                                 )
-                            )
-                        }
-                    )
-                    .onErrorMap(DuplicateKeyException::class.java) {
-                        ConflictException(
-                            "ENTRY_SLOT_TAKEN",
-                            "An entry already exists for this class, day, slot and option"
-                        )
+                                conflictService
+                                    .assertNoBlockingForCandidate(
+                                        schoolId = schoolId,
+                                        timetableId = timetableId,
+                                        grid = grid,
+                                        candidateEntry = candidate,
+                                        excludeEntryId = excludeId
+                                    )
+                                    .flatMap { warnings ->
+                                        val toSave = if (existing != null) {
+                                            applyFields(existing, request, slotKey, optionCode)
+                                            existing
+                                        } else {
+                                            candidate
+                                        }
+                                        entryRepository.save(toSave)
+                                            .onErrorMap(DuplicateKeyException::class.java) {
+                                                ConflictException(
+                                                    "ENTRY_SLOT_TAKEN",
+                                                    "An entry already exists for this class, day, slot and option"
+                                                )
+                                            }
+                                            .map { saved ->
+                                                TimetableEntryWriteResponse(
+                                                    entry = TimetableMapper.toEntryResponse(saved),
+                                                    warnings = warnings
+                                                )
+                                            }
+                                    }
+                            }
                     }
             }
             .doOnSuccess {
@@ -110,7 +105,6 @@ class TimetableEntryService(
                     timetableId
                 )
             }
-            .map { TimetableMapper.toEntryResponse(it) }
     }
 
     fun update(
@@ -118,7 +112,7 @@ class TimetableEntryService(
         id: String,
         request: UpsertTimetableEntryRequest,
         schoolIdOverride: String? = null
-    ): Mono<TimetableEntryResponse> {
+    ): Mono<TimetableEntryWriteResponse> {
         val schoolId = TimetableAccess.resolveSchoolId(currentUser, schoolIdOverride ?: request.schoolId)
         return assertCanManage(currentUser, schoolId)
             .then(entryRepository.findByIdAndSchoolId(id, schoolId))
@@ -127,24 +121,39 @@ class TimetableEntryService(
                 timetableService.requireDraft(schoolId, entry.timetableId)
                     .flatMap { timetable ->
                         academicYearApi.assertWritable(schoolId, entry.academicYearId)
-                            .then(validateAgainstGrid(schoolId, timetable.gridId, request))
-                            .thenReturn(entry)
+                            .then(loadGrid(schoolId, timetable.gridId))
+                            .flatMap { grid ->
+                                validateAgainstGrid(grid, request)
+                                applyEntryRules(request)
+                                val optionCode = request.optionCode.trim()
+                                val slotKey = SlotKeys.resolve(request.startPeriod, request.customStart)
+                                applyFields(entry, request, slotKey, optionCode)
+                                conflictService
+                                    .assertNoBlockingForCandidate(
+                                        schoolId = schoolId,
+                                        timetableId = entry.timetableId,
+                                        grid = grid,
+                                        candidateEntry = entry,
+                                        excludeEntryId = entry.id
+                                    )
+                                    .flatMap { warnings ->
+                                        entryRepository.save(entry)
+                                            .onErrorMap(DuplicateKeyException::class.java) {
+                                                ConflictException(
+                                                    "ENTRY_SLOT_TAKEN",
+                                                    "An entry already exists for this class, day, slot and option"
+                                                )
+                                            }
+                                            .map { saved ->
+                                                TimetableEntryWriteResponse(
+                                                    entry = TimetableMapper.toEntryResponse(saved),
+                                                    warnings = warnings
+                                                )
+                                            }
+                                    }
+                            }
                     }
             }
-            .flatMap { entry ->
-                val optionCode = request.optionCode.trim()
-                val slotKey = SlotKeys.resolve(request.startPeriod, request.customStart)
-                applyEntryRules(request)
-                applyFields(entry, request, slotKey, optionCode)
-                entryRepository.save(entry)
-                    .onErrorMap(DuplicateKeyException::class.java) {
-                        ConflictException(
-                            "ENTRY_SLOT_TAKEN",
-                            "An entry already exists for this class, day, slot and option"
-                        )
-                    }
-            }
-            .map { TimetableMapper.toEntryResponse(it) }
     }
 
     fun delete(
@@ -208,12 +217,68 @@ class TimetableEntryService(
             .map { TimetableMapper.toEntryResponse(it) }
     }
 
+    private fun findExisting(
+        schoolId: String,
+        timetableId: String,
+        request: UpsertTimetableEntryRequest,
+        slotKey: String,
+        optionCode: String
+    ): Mono<Optional<TimetableEntry>> =
+        entryRepository
+            .findBySchoolIdAndTimetableIdAndDayAndSlotKeyAndOptionCode(
+                schoolId,
+                timetableId,
+                request.day,
+                slotKey,
+                optionCode
+            )
+            .filter { it.classId == request.classId.trim() }
+            .next()
+            .map { Optional.of(it) }
+            .defaultIfEmpty(Optional.empty())
+
+    private fun buildCandidate(
+        schoolId: String,
+        academicYearId: String,
+        timetableId: String,
+        request: UpsertTimetableEntryRequest,
+        slotKey: String,
+        optionCode: String,
+        existingId: String?
+    ): TimetableEntry =
+        TimetableEntry(
+            id = existingId,
+            schoolId = schoolId,
+            academicYearId = academicYearId,
+            timetableId = timetableId,
+            classId = request.classId.trim(),
+            day = request.day,
+            startPeriod = request.startPeriod,
+            periodCount = request.periodCount.coerceAtLeast(1),
+            customStart = request.customStart,
+            customEnd = request.customEnd,
+            slotKey = slotKey,
+            kind = request.kind,
+            classSubjectIds = request.classSubjectIds.map { it.trim() }.filter { it.isNotBlank() },
+            subjectId = request.subjectId?.trim()?.ifBlank { null },
+            teacherId = request.teacherId?.trim()?.ifBlank { null },
+            roomId = request.roomId?.trim()?.ifBlank { null },
+            activityType = request.activityType,
+            sessionGroupId = request.sessionGroupId?.trim()?.ifBlank { null },
+            optionGroupCode = request.optionGroupCode?.trim()?.ifBlank { null },
+            optionCode = optionCode,
+            label = TimetableMapper.toLocalized(request.label),
+            note = request.note?.trim()?.ifBlank { null },
+            subjectLabel = request.subjectLabel?.trim()?.ifBlank { null },
+            teacherLabel = request.teacherLabel?.trim()?.ifBlank { null }
+        )
+
     private fun applyFields(
         entry: TimetableEntry,
         request: UpsertTimetableEntryRequest,
         slotKey: String,
         optionCode: String
-    ) {
+    ): TimetableEntry {
         entry.classId = request.classId.trim()
         entry.day = request.day
         entry.startPeriod = request.startPeriod
@@ -234,6 +299,7 @@ class TimetableEntryService(
         entry.note = request.note?.trim()?.ifBlank { null }
         entry.subjectLabel = request.subjectLabel?.trim()?.ifBlank { null }
         entry.teacherLabel = request.teacherLabel?.trim()?.ifBlank { null }
+        return entry
     }
 
     private fun applyEntryRules(request: UpsertTimetableEntryRequest) {
@@ -263,49 +329,31 @@ class TimetableEntryService(
         }
     }
 
-    private fun validateAgainstGrid(
-        schoolId: String,
-        gridId: String,
-        request: UpsertTimetableEntryRequest
-    ): Mono<Void> {
-        if (request.startPeriod == null) {
-            // Hors grille (samedi / créneau libre) — Q-33
-            return Mono.empty()
-        }
-        return gridRepository.findByIdAndSchoolId(gridId, schoolId)
+    private fun loadGrid(schoolId: String, gridId: String): Mono<TimeSlotGrid> =
+        gridRepository.findByIdAndSchoolId(gridId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("GRID_NOT_FOUND", "Time slot grid not found")))
-            .flatMap { grid ->
-                if (request.day !in grid.days) {
-                    return@flatMap Mono.error<Void>(
-                        BusinessRuleException(
-                            "DAY_NOT_IN_GRID",
-                            "Day is not part of the grid; use customStart/customEnd for off-grid slots"
-                        )
-                    )
-                }
-                val lesson = grid.periods.firstOrNull {
-                    it.kind == PeriodKind.LESSON && it.number == request.startPeriod
-                }
-                if (lesson == null) {
-                    return@flatMap Mono.error<Void>(
-                        BusinessRuleException(
-                            "PERIOD_NOT_IN_GRID",
-                            "startPeriod ${request.startPeriod} is not a LESSON period of the grid"
-                        )
-                    )
-                }
-                val maxLesson = grid.periods.mapNotNull { it.number }.maxOrNull() ?: 0
-                val last = request.startPeriod!! + request.periodCount - 1
-                if (last > maxLesson) {
-                    return@flatMap Mono.error<Void>(
-                        BusinessRuleException(
-                            "PERIOD_SPAN",
-                            "periodCount exceeds remaining lesson periods"
-                        )
-                    )
-                }
-                Mono.empty()
-            }
+
+    private fun validateAgainstGrid(grid: TimeSlotGrid, request: UpsertTimetableEntryRequest) {
+        if (request.startPeriod == null) return
+        if (request.day !in grid.days) {
+            throw BusinessRuleException(
+                "DAY_NOT_IN_GRID",
+                "Day is not part of the grid; use customStart/customEnd for off-grid slots"
+            )
+        }
+        val lesson = grid.periods.firstOrNull {
+            it.kind == PeriodKind.LESSON && it.number == request.startPeriod
+        } ?: throw BusinessRuleException(
+            "PERIOD_NOT_IN_GRID",
+            "startPeriod ${request.startPeriod} is not a LESSON period of the grid"
+        )
+        // silence unused if needed - lesson confirms LESSON
+        check(lesson.kind == PeriodKind.LESSON)
+        val maxLesson = grid.periods.mapNotNull { it.number }.maxOrNull() ?: 0
+        val last = request.startPeriod!! + request.periodCount - 1
+        if (last > maxLesson) {
+            throw BusinessRuleException("PERIOD_SPAN", "periodCount exceeds remaining lesson periods")
+        }
     }
 
     private fun assertCanManage(currentUser: CurrentUser, schoolId: String): Mono<Void> =

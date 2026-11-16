@@ -2,13 +2,17 @@ package com.kobe.smels.controller.timetable
 
 import com.kobe.smels.dto.timetable.CreateTimeSlotGridRequest
 import com.kobe.smels.dto.timetable.CreateTimetableRequest
+import com.kobe.smels.dto.timetable.LinkSessionGroupRequest
+import com.kobe.smels.dto.timetable.UnlinkSessionGroupRequest
 import com.kobe.smels.dto.timetable.UpdateTimeSlotGridRequest
 import com.kobe.smels.dto.timetable.UpdateTimetableRequest
 import com.kobe.smels.dto.timetable.UpsertTimetableEntryRequest
 import com.kobe.smels.dto.timetable.UpsertTimetableSubjectAliasRequest
 import com.kobe.smels.service.timetable.TimeSlotGridService
+import com.kobe.smels.service.timetable.TimetableConflictService
 import com.kobe.smels.service.timetable.TimetableEntryService
 import com.kobe.smels.service.timetable.TimetableService
+import com.kobe.smels.service.timetable.TimetableSessionGroupService
 import com.kobe.smels.service.timetable.TimetableSubjectAliasService
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
@@ -56,7 +60,9 @@ class TimeSlotGridController(private val timeSlotGridService: TimeSlotGridServic
 @RequestMapping("/api/v1/timetables")
 class TimetableController(
     private val timetableService: TimetableService,
-    private val timetableEntryService: TimetableEntryService
+    private val timetableEntryService: TimetableEntryService,
+    private val timetableConflictService: TimetableConflictService,
+    private val timetableSessionGroupService: TimetableSessionGroupService
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -97,6 +103,33 @@ class TimetableController(
         @PathVariable id: String,
         @Valid @RequestBody request: UpsertTimetableEntryRequest
     ) = SecuritySupport.currentUser().flatMap { timetableEntryService.upsert(it, id, request) }
+
+    @GetMapping("/{id}/conflicts")
+    fun conflicts(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { timetableConflictService.analyze(it, id, schoolId) }
+
+    @PostMapping("/{id}/session-groups")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun linkSessionGroup(
+        @PathVariable id: String,
+        @Valid @RequestBody request: LinkSessionGroupRequest
+    ) = SecuritySupport.currentUser().flatMap { timetableSessionGroupService.link(it, id, request) }
+
+    @PostMapping("/{id}/session-groups/{sessionGroupId}/unlink")
+    fun unlinkSessionGroup(
+        @PathVariable id: String,
+        @PathVariable sessionGroupId: String,
+        @RequestBody(required = false) request: UnlinkSessionGroupRequest?
+    ) = SecuritySupport.currentUser().flatMap {
+        timetableSessionGroupService.unlink(
+            it,
+            id,
+            sessionGroupId,
+            request ?: UnlinkSessionGroupRequest()
+        )
+    }
 }
 
 @RestController
