@@ -87,7 +87,9 @@ data class UpdateSchoolRequest(
     @field:Valid
     val reportCardDisclaimer: LocalizedTextDto? = null,
     val timezone: String = "Africa/Douala",
-    val active: Boolean = true
+    val active: Boolean = true,
+    /** Q-32 : droit SG sur l’EDT (défaut false). */
+    val timetableSurveillantCanEdit: Boolean = false
 )
 
 data class SchoolResponse(
@@ -106,7 +108,14 @@ data class SchoolResponse(
     val reportCardNotice: LocalizedTextDto?,
     val reportCardDisclaimer: LocalizedTextDto?,
     val timezone: String,
-    val active: Boolean
+    val active: Boolean,
+    val timetableSurveillantCanEdit: Boolean = false
+)
+
+/** Réglages EDT exposés au module timetable (frontière api). */
+data class SchoolTimetableSettingsDto(
+    val schoolId: String,
+    val timetableSurveillantCanEdit: Boolean
 )
 
 /** Marque publique (écran de connexion) — sans contact ni champs internes. */

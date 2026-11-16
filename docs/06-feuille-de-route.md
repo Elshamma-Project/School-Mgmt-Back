@@ -10,20 +10,20 @@
 | 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | ✅ services + visas SG/directeur + corrections ; PDF GradeSheet multi-pages encore à peaufiner |
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | ✅ `GradeCalculationEngine` + `GradeCalculationService` + tests fixtures docs/04 §6 |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | ✅ templates seed, `ReportCardService`, PDF Z1–Z10 1 page FR/EN (annuel + TERM_COMPETENCY) |
-| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | 🟡 **phase 0 modèle** (séances communes, LV2, alias, samedi) ; API A–F à faire — voir `09` § 7 |
+| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | 🟡 **phases 0+A** (modèle + API grille/brouillon/entries) ; B–F à faire — voir `09` § 7 |
 | 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | ✅ auth/JWT/sessions/lockout ; appartenance colmatée sur grading/reporting/student ; portail élève prod encore hors scope |
 | 8 | Notifications, dashboard (`portal`), signalements | ✅ inbox + outbox handlers + `GET /api/v1/dashboard/summary` |
 | 9 | Modules suivants : cartes, frais, import massif, file-storage | ❌ non démarré |
 | — | Espace UI Surveillant Général | ✅ `/surveillant-general` (fiches de report) — Q-38 v1 |
 
-**Prochaines priorités** : EDT phases **A→B→C→D→E→F** (après phase 0) · portail parent/élève · PDF GradeSheet · docker-compose VPS.
+**Prochaines priorités** : EDT phases **B→C→D→E→F** · portail parent/élève · PDF GradeSheet · docker-compose VPS.
 
 ### Étape 6 — découpage EDT (rappel)
 
 | Phase | Contenu | État |
 |---|---|---|
 | **0** | Modèle : `sessionGroupId`, options LV2, `TimetableSubjectAlias`, samedi hors grille, activités ; docs 03/08/09/07 | ✅ |
-| **A** | API lecture + grille + brouillon | ❌ |
+| **A** | API lecture + grille + brouillon | ✅ |
 | **B** | Saisie + conflits BR-09 + séances communes / options | ❌ |
 | **C** | Publier + dupliquer + `timetable.published` | ❌ |
 | **D** | PDF 1 page + `headerContact` ; test 12×40 cases | ❌ |

@@ -4,6 +4,7 @@ import com.kobe.smels.dto.academic.CreateSchoolRequest
 import com.kobe.smels.dto.academic.SchoolBulletinBrandDto
 import com.kobe.smels.dto.academic.SchoolPublicBrandResponse
 import com.kobe.smels.dto.academic.SchoolResponse
+import com.kobe.smels.dto.academic.SchoolTimetableSettingsDto
 import com.kobe.smels.dto.academic.UpdateSchoolRequest
 import com.kobe.smels.exception.BusinessRuleException
 import com.kobe.smels.exception.ConflictException
@@ -86,6 +87,7 @@ class SchoolService(
                 school.reportCardDisclaimer = AcademicMapper.toLocalized(request.reportCardDisclaimer)
                 school.timezone = request.timezone.trim().ifBlank { "Africa/Douala" }
                 school.active = request.active
+                school.timetableSurveillantCanEdit = request.timetableSurveillantCanEdit
                 schoolRepository.save(school)
             }
             .map { AcademicMapper.toSchoolResponse(it) }
@@ -165,6 +167,16 @@ class SchoolService(
         assertSchoolScope(currentUser, schoolId)
         return loadLogo(schoolId)
     }
+
+    override fun getTimetableSettings(schoolId: String): Mono<SchoolTimetableSettingsDto> =
+        schoolRepository.findById(schoolId.trim())
+            .switchIfEmpty(Mono.error(NotFoundException("SCHOOL_NOT_FOUND", "School not found")))
+            .map { school ->
+                SchoolTimetableSettingsDto(
+                    schoolId = school.id!!,
+                    timetableSurveillantCanEdit = school.timetableSurveillantCanEdit
+                )
+            }
 
     override fun getBulletinBrand(schoolId: String): Mono<SchoolBulletinBrandDto> =
         schoolRepository.findById(schoolId.trim())

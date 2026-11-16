@@ -103,7 +103,8 @@ object AcademicMapper {
             reportCardNotice = toLocalizedDto(school.reportCardNotice),
             reportCardDisclaimer = toLocalizedDto(school.reportCardDisclaimer),
             timezone = school.timezone,
-            active = school.active
+            active = school.active,
+            timetableSurveillantCanEdit = school.timetableSurveillantCanEdit
         )
 
     fun toTerm(dto: TermDto): Term =

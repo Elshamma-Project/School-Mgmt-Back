@@ -34,8 +34,8 @@ Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `servic
 | Comptes démo | `docs/mock-logins.md` |
 
 ## État (nov. 2026)
-- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements), `portal` (`GET /api/v1/dashboard/summary`).
-- **Timetable** : **phase 0 modèle** faite (séances communes, LV2, alias, samedi) ; services/API/PDF = phases A–F (`docs/09` § 7).
+- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements), `portal` (`GET /api/v1/dashboard/summary`), `timetable` **phases 0+A** (modèle + API grille / brouillon / entries / alias ; `School.timetableSurveillantCanEdit`).
+- **Timetable restant** : phases B–F (conflits BR-09, publier/dupliquer, PDF, fronts) — `docs/09` § 7.
 - **Front** (dépôt séparé Next.js) : workspaces `/teacher`, `/administration`, `/director`, `/surveillant-general`, `/super-admin` ; élève/parent en shell « bientôt ».
 - **Décisions v1 figées** tant que Q-xx non rouvertes : Principal = `DIRECTOR` (pas de rôle `PRINCIPAL`) ; SG = lecture catalogue academic + visa fiches de report (`/surveillant-general`) ; EDT = saisie manuelle + duplication ; parents = navigateur, enfants liés seulement (UI parent encore stub).
 - Test **ArchUnit** des frontières de modules : `src/test/.../architecture/ModuleBoundariesArchTest.kt` (CI Gradle).

@@ -114,15 +114,15 @@ Publie `timetable.published`. Consomme `academic.class-subject.changed`, `academ
 
 ## 7. Plan d’implémentation
 
-| Phase | Contenu |
-|---|---|
-| **0** | Modèle : séances communes, options LV2, alias, samedi, activités ; docs 03/08/09/07 |
-| **A** | API lecture + grille + brouillon |
-| **B** | Saisie + conflits (BR-09) + séances communes / options |
-| **C** | Publier + dupliquer + événement |
-| **D** | PDF 1 page + `headerContact` |
-| **E** | Front admin/dir (éditeur) |
-| **F** | Front enseignant (lecture) |
+| Phase | Contenu | État |
+|---|---|---|
+| **0** | Modèle : séances communes, options LV2, alias, samedi, activités ; docs 03/08/09/07 | ✅ |
+| **A** | API lecture + grille + brouillon | ✅ |
+| **B** | Saisie + conflits (BR-09) + séances communes / options | ❌ |
+| **C** | Publier + dupliquer + événement | ❌ |
+| **D** | PDF 1 page + `headerContact` | ❌ |
+| **E** | Front admin/dir (éditeur) | ❌ |
+| **F** | Front enseignant (lecture) | ❌ |
 
 Ordre : **0 → A → B → C → D → E → F** (B avant E).
 
