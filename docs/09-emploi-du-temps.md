@@ -503,6 +503,12 @@ Idempotence : couple `(sourceEventId, recipientAccountId)`.
 | `academic.class.changed` (CREATED/ACTIVATED, sans cases) | `TIMETABLE_UPDATE_NEEDED` | Éditeurs EDT |
 | `timetable.change.requested` | `TIMETABLE_CHANGE_REQUESTED` | Admin / directeur |
 | `timetable.change.approved` / `.rejected` | `TIMETABLE_CHANGE_DECIDED` | Enseignant demandeur |
+| `grading.session.schedule.changed` | `SESSION_SCHEDULE_CHANGED` | **Tous** les comptes scolaires |
+
+### 11.4 Grille paramétrable + examens
+
+- **Grille** (`TimeSlotGrid`) : entièrement modifiable depuis l’UI (périodes, pauses, nettoyage, libellés FR/EN, jours). Les cases référencent le **numéro** de période ; les heures affichées / PDF suivent la grille courante.
+- **Examens** : dates de composition = `EvaluationSession` (module grading). Onglet **Examens** du hub EDT lit / met à jour le même calendrier. Modification → événement + notif globale. **Pas** de duplication en cases hebdomadaires en v1 (Q-64).
 
 ---
 

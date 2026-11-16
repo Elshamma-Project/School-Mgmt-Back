@@ -81,6 +81,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `student.enrolled` / `student.enrollment.changed` | student | grading, reporting | `enrollmentId`, `studentId`, `classId`, `academicYearId`, statut |
 | `student.guardian.linked` | student | user | `guardianId`, `studentId`, droits de consultation |
 | `grading.session.opened` / `grading.session.closed` | grading | reporting, notification | `sessionId`, numéro, `termNumber` ; à la clôture : `shortLabel`, `academicYearId`, `teacherIds` (staff) |
+| `grading.session.schedule.changed` | grading | notification | `sessionId`, `academicYearId`, `number`, `termNumber`, `shortLabel`, `examDate`, `startDate`, `endDate`, `entryDeadline`, `status` ; notif `SESSION_SCHEDULE_CHANGED` à **tous** les comptes scolaires (synchro calendrier examens ↔ UI EDT) |
 | `grading.mark.changed` | grading | reporting (invalidation des brouillons) | `studentId`, `classSubjectId`, `sessionId` |
 | `grading.report-sheet.submitted` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `deadlineWarning` ; si BR-79 : `autoOnSessionClose`, `sessionId`, `sessionNumber` |
 | `grading.report-sheet.visaed` | grading | notification | `reportSheetId`, `classSubjectId`, `termNumber`, `level` (SUPERVISOR\|PRINCIPAL) |

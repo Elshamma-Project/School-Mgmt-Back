@@ -139,6 +139,27 @@ class EvaluationSessionService(
                         }
                     )
             }
+            .flatMap { saved ->
+                outboxWriter.append(
+                    schoolId = saved.schoolId,
+                    module = "grading",
+                    aggregateType = "EvaluationSession",
+                    aggregateId = saved.id!!,
+                    eventType = "grading.session.schedule.changed",
+                    payload = mapOf(
+                        "sessionId" to saved.id,
+                        "academicYearId" to saved.academicYearId,
+                        "number" to saved.number,
+                        "termNumber" to saved.termNumber,
+                        "shortLabel" to saved.shortLabel,
+                        "examDate" to saved.examDate?.toString(),
+                        "startDate" to saved.startDate?.toString(),
+                        "endDate" to saved.endDate?.toString(),
+                        "entryDeadline" to saved.entryDeadline?.toString(),
+                        "status" to saved.status.name
+                    )
+                ).thenReturn(saved)
+            }
             .map { GradingMapper.toSessionResponse(it) }
     }
 

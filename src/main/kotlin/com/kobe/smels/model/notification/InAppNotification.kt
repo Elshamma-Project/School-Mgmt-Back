@@ -73,6 +73,8 @@ enum class NotificationCategory {
      * Destinataires : comptes pouvant éditer l’EDT.
      */
     TIMETABLE_UPDATE_NEEDED,
+    /** Calendrier de composition modifié (`grading.session.schedule.changed`). */
+    SESSION_SCHEDULE_CHANGED,
     SYSTEM
 }
 

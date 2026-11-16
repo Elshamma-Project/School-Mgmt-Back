@@ -60,6 +60,7 @@
 | Q-61 | Enseignant d’allemand 3ème / 1ère A imprimé « Mme … » | ❓ | Case sans `teacherId` (pas de fiche fantôme) |
 | Q-62 | Envoi e-mail automatique pour mot de passe oublié / invitation | ❓ | v1 : demande publique + notif admin ; reset manuel `POST /users/{id}/reset-password` |
 | Q-63 | Mapping EDT `FRANÇAIS` / `?FRANCAIS` → matières bulletin (`LANG_FR` vs `EXP_*`) | ❓ | Seed EDT mappe vers `LANG_FR` ; cases junior peuvent rester sans `classSubjectIds` |
+| Q-64 | Examens dans la grille semaine type vs calendrier sessions | 🟡 | **v1** : calendrier `EvaluationSession` synchronisé (onglet Examens + notif) ; pas de cases examen dans l’EDT hebdo |
 
 ## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
 
@@ -105,6 +106,7 @@
 | Q-61 | Enseignant d’**allemand** de la **3ème** et de la **1ère A** imprimé « Mme … » (inconnu) | ❓ | Créer la case EDT **sans** `teacherId` plutôt qu’une fiche fantôme | Chargeur EDT |
 | Q-62 | **Mot de passe oublié / invitation** : envoi automatique d’e-mail (lien ou MDP temporaire) ? Canal (SMTP école) ? | ❓ | **v1** : `POST /api/v1/auth/forgot-password` (réponse uniforme) + notif in-app admin/directeur ; réinitialisation manuelle via `POST /users/{id}/reset-password` | Auth publique |
 | Q-63 | **FRANÇAIS** imprimé sur l’EDT (`?FRANCAIS`) : une matière catalogue, ou répartition vers `EXP_ECR` / `EXP_ORA` / `CORR_ORTH` / `ETUDE_TXT` / `LANG_FR` selon le niveau ? (lié à Q-56) | ❓ | Seed EDT : code cible provisoire `LANG_FR` ; case créée même si aucun `ClassSubject` junior ne matche | Chargeur EDT |
+| Q-64 | **Examens dans l’EDT semaine type** : faut-il des cases `ACTIVITY` « composition » qui remplacent les cours la semaine d’examens, ou seulement le calendrier des `EvaluationSession.examDate` (synchro live) ? | 🟡 | **v1** : source unique = sessions (onglet Examens + notif `SESSION_SCHEDULE_CHANGED`) ; **pas** de cases examen dans la grille hebdo (cohérent Q-33 remplacements hors EDT annuel) | EDT ↔ grading |
 
 ## 3. Décisions provisoires (résumé)
 
