@@ -673,7 +673,7 @@ Catalogue : `08-architecture-modulaire.md` § 4.
 
 | BR | Résumé | Où |
 |---|---|---|
-| **BR-60** | Une fois / an ; semaine type ; une `PUBLISHED` / année ; modif → nouvelle révision ; **notif tous les comptes scolaires** à chaque publish | `TimetableService`, `TimetablePublishedNotificationHandler` |
+| **BR-60** | Une fois / an ; semaine type ; une `PUBLISHED` / année ; modif → nouvelle révision ; **notif tous** à chaque publish ; nouvelle classe sans cases → `TIMETABLE_UPDATE_NEEDED` aux éditeurs | `TimetableService`, `TimetablePublishedNotificationHandler`, `TimetableUpdateNeededNotificationHandler` |
 | **BR-61** | Structure d’une case | `TimetableEntry`, upsert |
 | **BR-62** | PDF 1 page A4 paysage / classe | `TimetablePdfService` |
 | **BR-09** | Conflits classe / enseignant / salle + options + `sessionGroupId` | `TimetableConflictEngine` |
