@@ -9,6 +9,7 @@ import com.kobe.smels.dto.staff.UpdateStaffRequest
 import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.exception.ForbiddenException
 import com.kobe.smels.exception.NotFoundException
+import com.kobe.smels.model.shared.ContactInfo
 import com.kobe.smels.model.staff.Staff
 import com.kobe.smels.model.staff.StaffFunction
 import com.kobe.smels.model.user.ProfileType
@@ -299,6 +300,37 @@ class StaffService(
                     pageResult.totalElements
                 )
             }
+    }
+
+    /**
+     * Q-60 : enregistre l’e-mail de connexion sur la fiche avant création du compte.
+     * Ne crée pas le UserAccount (fait dans le contrôleur via UserAccountApi).
+     */
+    fun applyLoginEmail(
+        currentUser: CurrentUser,
+        id: String,
+        email: String,
+        schoolIdOverride: String? = null
+    ): Mono<StaffResponse> {
+        assertCanManageRole(currentUser)
+        val schoolId = resolveSchoolId(currentUser, schoolIdOverride)
+        val normalized = email.trim().lowercase()
+        logSuperAdminTenantAction(currentUser, schoolId, "staff.applyLoginEmail")
+        return staffRepository.findByIdAndSchoolId(id, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STAFF_NOT_FOUND", "Staff member not found")))
+            .flatMap { staff ->
+                assertCanManageTarget(currentUser, staff)
+                val previous = staff.contact
+                staff.contact = ContactInfo(
+                    phones = previous.phones,
+                    email = normalized,
+                    address = previous.address,
+                    city = previous.city
+                )
+                stampActor(staff, currentUser)
+                staffRepository.save(staff)
+            }
+            .flatMap { saved -> emitChanged(saved).thenReturn(toResponse(currentUser, saved)) }
     }
 
     /** BR-42 : désactiver plutôt que supprimer. */

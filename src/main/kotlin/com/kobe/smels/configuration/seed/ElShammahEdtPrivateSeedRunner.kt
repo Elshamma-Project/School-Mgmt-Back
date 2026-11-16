@@ -25,6 +25,7 @@ import com.kobe.smels.repository.timetable.TimeSlotGridRepository
 import com.kobe.smels.repository.timetable.TimetableEntryRepository
 import com.kobe.smels.repository.timetable.TimetableRepository
 import com.kobe.smels.repository.timetable.TimetableSubjectAliasRepository
+import com.kobe.smels.service.timetable.TimetableConflictEngine
 import com.kobe.smels.service.timetable.TimetableConflictService
 import com.kobe.smels.service.timetable.TimetableSubjectAliasService
 import com.kobe.smels.shared.security.CurrentUser
@@ -88,11 +89,12 @@ class ElShammahEdtPrivateSeedRunner(
             seed(extraction)
                 .doOnNext { report ->
                     log.info(
-                        "El Shammah EDT private seed done schoolId={} teachersUpserted={} entriesUpserted={} jointGroups={} warnings={}",
+                        "El Shammah EDT private seed done schoolId={} teachersUpserted={} entriesUpserted={} jointGroups={} healedOverlaps={} remainingIssues={}",
                         properties.schoolId,
                         report.teachersUpserted,
                         report.entriesUpserted,
                         report.jointGroups,
+                        report.teacherOverlapsHealed,
                         report.warningCount
                     )
                 }
@@ -109,7 +111,8 @@ class ElShammahEdtPrivateSeedRunner(
         val teachersUpserted: Int,
         val entriesUpserted: Int,
         val jointGroups: Int,
-        val warningCount: Int
+        val warningCount: Int,
+        val teacherOverlapsHealed: Int = 0
     )
 
     private fun seed(extraction: EdtExtractionFile): Mono<SeedReport> {
@@ -143,14 +146,18 @@ class ElShammahEdtPrivateSeedRunner(
                                                 )
                                             )
                                             .flatMap { entryStats ->
-                                                runConflictReport(schoolId, timetableId)
-                                                    .map { warnings ->
-                                                        SeedReport(
-                                                            teachersUpserted = teacherIds.size,
-                                                            entriesUpserted = entryStats.first,
-                                                            jointGroups = entryStats.second,
-                                                            warningCount = warnings
-                                                        )
+                                                autoHealTeacherOverlaps(schoolId, timetableId, gridId)
+                                                    .flatMap { healed ->
+                                                        runConflictReport(schoolId, timetableId)
+                                                            .map { warnings ->
+                                                                SeedReport(
+                                                                    teachersUpserted = teacherIds.size,
+                                                                    entriesUpserted = entryStats.first,
+                                                                    jointGroups = entryStats.second,
+                                                                    warningCount = warnings,
+                                                                    teacherOverlapsHealed = healed
+                                                                )
+                                                            }
                                                     }
                                             }
                                     }
@@ -502,15 +509,7 @@ class ElShammahEdtPrivateSeedRunner(
         teacherIds: Map<String, String>,
         aliasCodes: Map<String, String>
     ): Mono<Pair<Int, Int>> {
-        val sessionGroupIds = mutableMapOf<String, String>()
-        fun groupIdFor(hints: List<String>): String? {
-            if (hints.isEmpty()) return null
-            val key = hints.sorted().joinToString("+")
-            return sessionGroupIds.getOrPut(key) {
-                "sg-" + UUID.nameUUIDFromBytes(key.toByteArray()).toString()
-            }
-        }
-
+        val jointIndex = EdtJointSessionIndex(extraction)
         val activityByAlias = mapOf(
             "CHINOIS" to ActivityType.CHINESE,
             "CNINOIS" to ActivityType.CHINESE,
@@ -529,6 +528,8 @@ class ElShammahEdtPrivateSeedRunner(
             "ART EDUC" to ActivityType.OTHER,
             "ART. EDUC" to ActivityType.OTHER
         )
+        // Anti-doublon mémoire dans le même run (même clé naturelle)
+        val seenKeys = mutableSetOf<String>()
 
         return schoolClassRepository.findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, yearId)
             .collectMap({ it.name }, { it.id!! })
@@ -562,6 +563,30 @@ class ElShammahEdtPrivateSeedRunner(
                                             .concatMap { item ->
                                                 val hints =
                                                     item.resolvedJointHints().ifEmpty { entry.resolvedJointHints() }
+                                                val teacherKey = item.resolvedTeacherKey()
+                                                    ?.takeUnless { isUnknownTeacherKey(it) }
+                                                val (_, optionCode) =
+                                                    resolveOptionCodes(item, item.printedAlias.orEmpty(), parallelOptions)
+                                                val dedupeKey =
+                                                    "$timetableId|$classId|$day|$slotKey|$optionCode"
+                                                if (!seenKeys.add(dedupeKey)) {
+                                                    log.warn(
+                                                        "EDT seed duplicate skipped classId={} day={} slotKey={}",
+                                                        classId,
+                                                        day,
+                                                        slotKey
+                                                    )
+                                                    return@concatMap Mono.empty()
+                                                }
+                                                val sessionGroupId = jointIndex.resolveGroupId(
+                                                    className = entry.`class`,
+                                                    day = entry.day,
+                                                    startPeriod = entry.startPeriod,
+                                                    periodCount = entry.periodCount,
+                                                    teacherKey = teacherKey,
+                                                    printedAlias = item.printedAlias,
+                                                    hints = hints
+                                                )
                                                 upsertOneEntry(
                                                     schoolId = schoolId,
                                                     yearId = yearId,
@@ -574,7 +599,7 @@ class ElShammahEdtPrivateSeedRunner(
                                                     customStart = entry.customStart,
                                                     customEnd = entry.customEnd,
                                                     item = item,
-                                                    sessionGroupId = groupIdFor(hints),
+                                                    sessionGroupId = sessionGroupId,
                                                     parallelOptions = parallelOptions,
                                                     teacherIds = teacherIds,
                                                     subjectByCode = subjectByCode,
@@ -595,13 +620,19 @@ class ElShammahEdtPrivateSeedRunner(
                                             teacherKey = matchTeacherKey(block.teacherPrinted, extraction.teachers),
                                             nature = if (printed.uppercase().startsWith("TD")) "TD" else "T"
                                         )
+                                        val slotKey = "T" + start.replace(":", "")
+                                        val dedupeKey =
+                                            "$timetableId|$classId|SATURDAY|$slotKey|"
+                                        if (!seenKeys.add(dedupeKey)) {
+                                            return@concatMap Mono.empty()
+                                        }
                                         upsertOneEntry(
                                             schoolId = schoolId,
                                             yearId = yearId,
                                             timetableId = timetableId,
                                             classId = classId,
                                             day = DayOfWeek.SATURDAY,
-                                            slotKey = "T" + start.replace(":", ""),
+                                            slotKey = slotKey,
                                             startPeriod = null,
                                             periodCount = (block.hours ?: 1).coerceAtLeast(1),
                                             customStart = start,
@@ -618,7 +649,7 @@ class ElShammahEdtPrivateSeedRunner(
                                     }
                                 Flux.concat(weekEntries, saturdayEntries)
                                     .count()
-                                    .map { count -> count.toInt() to sessionGroupIds.size }
+                                    .map { count -> count.toInt() to jointIndex.groupCount() }
                             }
                     }
             }
@@ -689,9 +720,7 @@ class ElShammahEdtPrivateSeedRunner(
                 optionCode
             )
             .flatMap { existing ->
-                if (!properties.overwriteExisting) {
-                    Mono.just(existing)
-                } else {
+                if (properties.overwriteExisting) {
                     applyEntry(
                         existing,
                         startPeriod,
@@ -708,6 +737,32 @@ class ElShammahEdtPrivateSeedRunner(
                         optionCode
                     )
                     timetableEntryRepository.save(existing)
+                } else {
+                    // Enrichissement anti-doublon : complète sans écraser les corrections manuelles.
+                    var dirty = false
+                    if (sessionGroupId != null &&
+                        existing.sessionGroupId.isNullOrBlank()
+                    ) {
+                        existing.sessionGroupId = sessionGroupId
+                        dirty = true
+                    }
+                    if (teacherId != null && existing.teacherId.isNullOrBlank()) {
+                        existing.teacherId = teacherId
+                        dirty = true
+                    }
+                    if (existing.classSubjectIds.isEmpty() && classSubjectIds.isNotEmpty()) {
+                        existing.classSubjectIds = classSubjectIds
+                        dirty = true
+                    }
+                    if (existing.subjectId.isNullOrBlank() && subject?.id != null) {
+                        existing.subjectId = subject.id
+                        dirty = true
+                    }
+                    if (existing.subjectLabel.isNullOrBlank() && printed.isNotBlank()) {
+                        existing.subjectLabel = subject?.name?.fr ?: printed
+                        dirty = true
+                    }
+                    if (dirty) timetableEntryRepository.save(existing) else Mono.just(existing)
                 }
             }
             .switchIfEmpty(
@@ -841,6 +896,133 @@ class ElShammahEdtPrivateSeedRunner(
                 "samedi", "sam" -> DayOfWeek.SATURDAY
                 else -> null
             }
+
+    /**
+     * Correction automatique : les TEACHER_OVERLAP entre classes distinctes
+     * sont traités comme séances jumelées (même sessionGroupId).
+     * Ne touche pas aux CLASS_OVERLAP (vrais doublons à corriger à la main).
+     */
+    private fun autoHealTeacherOverlaps(
+        schoolId: String,
+        timetableId: String,
+        gridId: String
+    ): Mono<Int> {
+        if (!properties.autoHealTeacherOverlaps) return Mono.just(0)
+        return timeSlotGridRepository.findByIdAndSchoolId(gridId, schoolId)
+            .switchIfEmpty(Mono.just(TimeSlotGrid(schoolId = schoolId, academicYearId = "", name = "")))
+            .flatMap { grid ->
+                if (grid.id == null || grid.periods.isEmpty()) {
+                    return@flatMap Mono.just(0)
+                }
+                timetableEntryRepository.findBySchoolIdAndTimetableId(schoolId, timetableId)
+                    .collectList()
+                    .flatMap { entries ->
+                        if (entries.size < 2) return@flatMap Mono.just(0)
+                        val byId = entries.associateBy { it.id }
+                        val candidates = entries.mapNotNull { entry ->
+                            runCatching {
+                                val (start, end) = TimetableConflictEngine.resolveInterval(
+                                    startPeriod = entry.startPeriod,
+                                    periodCount = entry.periodCount,
+                                    customStart = entry.customStart,
+                                    customEnd = entry.customEnd,
+                                    periods = grid.periods
+                                )
+                                TimetableConflictEngine.Candidate(
+                                    id = entry.id,
+                                    classId = entry.classId,
+                                    day = entry.day,
+                                    start = start,
+                                    end = end,
+                                    kind = entry.kind,
+                                    teacherId = entry.teacherId,
+                                    roomId = entry.roomId,
+                                    sessionGroupId = entry.sessionGroupId,
+                                    optionGroupCode = entry.optionGroupCode,
+                                    optionCode = entry.optionCode,
+                                    classSubjectIds = entry.classSubjectIds,
+                                    periodCount = entry.periodCount
+                                )
+                            }.getOrNull()
+                        }
+                        val issues = TimetableConflictEngine.findAllBlocking(candidates)
+                            .filter { it.code == "TEACHER_OVERLAP" }
+                        if (issues.isEmpty()) return@flatMap Mono.just(0)
+
+                        val parent = linkedMapOf<String, String>()
+                        fun find(id: String): String {
+                            parent.putIfAbsent(id, id)
+                            var cur = id
+                            while (parent[cur] != cur) {
+                                parent[cur] = parent[parent[cur]] ?: parent[cur]!!
+                                cur = parent[cur]!!
+                            }
+                            return cur
+                        }
+                        fun union(a: String, b: String) {
+                            val ra = find(a)
+                            val rb = find(b)
+                            if (ra != rb) parent[ra] = rb
+                        }
+                        for (issue in issues) {
+                            val a = issue.entryId ?: continue
+                            val b = issue.otherEntryId ?: continue
+                            if (a == b) continue
+                            val ea = byId[a] ?: continue
+                            val eb = byId[b] ?: continue
+                            // Séance jumelée = au moins 2 classes ; sinon doublon suspect
+                            if (ea.classId == eb.classId) continue
+                            union(a, b)
+                        }
+                        val groups = linkedMapOf<String, MutableList<String>>()
+                        for (id in parent.keys) {
+                            groups.getOrPut(find(id)) { mutableListOf() }.add(id)
+                        }
+                        val components = groups.values
+                            .map { it.distinct() }
+                            .filter { ids ->
+                                ids.size >= 2 &&
+                                    ids.mapNotNull { byId[it]?.classId }.toSet().size >= 2
+                            }
+                        if (components.isEmpty()) return@flatMap Mono.just(0)
+
+                        Flux.fromIterable(components)
+                            .concatMap { ids ->
+                                val existingGroup = ids
+                                    .mapNotNull { byId[it]?.sessionGroupId?.takeIf { g -> g.isNotBlank() } }
+                                    .firstOrNull()
+                                val groupId = existingGroup
+                                    ?: ("sg-heal-" + UUID.nameUUIDFromBytes(
+                                        ids.sorted().joinToString("|").toByteArray()
+                                    ).toString())
+                                Flux.fromIterable(ids)
+                                    .concatMap { id ->
+                                        val entry = byId[id] ?: return@concatMap Mono.empty()
+                                        if (entry.sessionGroupId == groupId) {
+                                            Mono.just(entry)
+                                        } else {
+                                            entry.sessionGroupId = groupId
+                                            timetableEntryRepository.save(entry)
+                                        }
+                                    }
+                                    .then(Mono.just(ids.size))
+                            }
+                            .reduce(0) { acc, n -> acc + n }
+                            .doOnNext { healed ->
+                                log.info(
+                                    "EDT seed auto-heal teacher overlaps timetableId={} linkedEntryTouches={} groups={}",
+                                    timetableId,
+                                    healed,
+                                    components.size
+                                )
+                            }
+                    }
+            }
+            .onErrorResume { err ->
+                log.warn("EDT seed auto-heal skipped: {}", err.message)
+                Mono.just(0)
+            }
+    }
 
     private fun runConflictReport(schoolId: String, timetableId: String): Mono<Int> {
         val seedUser = CurrentUser(

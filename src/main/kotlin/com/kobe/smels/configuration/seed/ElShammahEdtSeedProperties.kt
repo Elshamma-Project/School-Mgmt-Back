@@ -20,5 +20,10 @@ data class ElShammahEdtSeedProperties(
     val resource: String = "file:docs/seed-private/edt-2026-2027-extraction.json",
     val gridResource: String = "file:docs/fixtures/timetable-grid.json",
     /** false = upsert insert-if-absent / enrichissement ; true = réapplique les champs seed. */
-    val overwriteExisting: Boolean = false
+    val overwriteExisting: Boolean = false,
+    /**
+     * Après import : lie automatiquement les TEACHER_OVERLAP multi-classes
+     * (séances jumelées manquantes) — BR-09 / Q-55.
+     */
+    val autoHealTeacherOverlaps: Boolean = true
 )

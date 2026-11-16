@@ -92,7 +92,7 @@ Index : `uk_class_slot_option`, `idx_teacher_day`, `idx_room_day`, `idx_classsub
 - **BR-64** Enseignant hors `ClassSubject.teacherId` → avertissement (remplacement ?).
 - **BR-65** `ACTIVITY` : pas de `classSubjectIds` obligatoires ; pas d’obligation d’enseignant pour le conflit.
 - **BR-66** Case hors pause / nettoyage (sauf hors grille explicite).
-- **BR-67** Demande de modification de créneau par l’enseignant (miroir BR-80 notes) : `PENDING` → approbation admin/directeur (applique sur DRAFT / revise) ou refus avec motif.
+- **BR-67** Demande de modification de créneau par l’enseignant (miroir BR-80 notes) : `PENDING` → approbation admin/directeur (applique sur DRAFT / revise) ou refus avec motif. Parcours UI enseignant : ouvrir le détail d’une de ses cases → **Demander une modification** (aide in-app `docs/rag/timetable.md`).
 
 ## 4. Génération, édition, impression
 
@@ -129,7 +129,7 @@ Publie `timetable.published`, `timetable.change.requested` / `.approved` / `.rej
 | **F** | Front enseignant (lecture) | ✅ |
 | **G** | Demandes de modif de créneau (BR-67, miroir corrections notes) | ✅ |
 | **H** | Front parent / élève / SG (lecture + PDF) | ✅ |
-| **I** | Seed privé EDT 2026-2027 (enseignants + cases → DRAFT) | ⏳ fichier `docs/seed-private/edt-2026-2027-extraction.json` requis |
+| **I** | Seed privé EDT 2026-2027 (enseignants + cases → DRAFT) | ✅ extraction privée + `EdtJointSessionIndex` + auto-heal `TEACHER_OVERLAP` |
 
 Ordre : **0 → A → B → C → D → E → F → G** (B avant E).
 

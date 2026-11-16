@@ -144,25 +144,29 @@ class StaffController(
                     }
                     val email = request.email.trim().lowercase()
                     val temporaryPassword = securityProperties.provisioning.temporaryPassword
-                    userAccountApi
-                        .createAccount(
-                            currentUser,
-                            CreateUserAccountRequest(
-                                username = email,
-                                password = temporaryPassword,
-                                schoolId = staff.schoolId,
-                                roles = StaffLoginRoles.fromFunctions(staff.functions),
-                                profileType = ProfileType.STAFF,
-                                profileId = staff.id,
-                                mustChangePassword = true
-                            )
-                        )
-                        .map { account ->
-                            staff.copy(
-                                hasLoginAccount = true,
-                                loginUsername = account.username,
-                                temporaryPassword = temporaryPassword
-                            )
+                    staffService
+                        .applyLoginEmail(currentUser, id, email, schoolId)
+                        .flatMap { updatedStaff ->
+                            userAccountApi
+                                .createAccount(
+                                    currentUser,
+                                    CreateUserAccountRequest(
+                                        username = email,
+                                        password = temporaryPassword,
+                                        schoolId = updatedStaff.schoolId,
+                                        roles = StaffLoginRoles.fromFunctions(updatedStaff.functions),
+                                        profileType = ProfileType.STAFF,
+                                        profileId = updatedStaff.id,
+                                        mustChangePassword = true
+                                    )
+                                )
+                                .map { account ->
+                                    updatedStaff.copy(
+                                        hasLoginAccount = true,
+                                        loginUsername = account.username,
+                                        temporaryPassword = temporaryPassword
+                                    )
+                                }
                         }
                 }
             }
