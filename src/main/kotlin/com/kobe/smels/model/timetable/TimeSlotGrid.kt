@@ -19,8 +19,8 @@ import java.time.LocalTime
  *   P7 13:20-14:20 · P8 14:20-15:10 · NETTOYAGE GÉNÉRAL 15:10-15:30 · RENTRÉE (sortie).
  *
  * Une période de cours dure en général 50 minutes ; P7 en dure 60. Les heures ne sont donc pas calculables :
- * elles sont stockées. Des cours hors grille (ex. samedi 8h-10h, observé en 1ère C/D) sont possibles dans
- * [TimetableEntry] via customStart / customEnd.
+ * elles sont stockées. Des cours hors grille (samedi inclus, Q-33) sont dans [TimetableEntry] via
+ * customStart / customEnd — [days] reste lun–ven ; le samedi n’est pas une colonne de la grille type.
  */
 @Document(collection = "timetable_grids")
 @CompoundIndexes(

@@ -1,14 +1,16 @@
 # 09 — Emploi du temps (module `timetable`)
 
-> Source : « EMPLOIS DU TEMPS ANNÉE SCOLAIRE 2026/2027 », 12 pages A4 paysage (une par classe).
-> Réponse de Ben : il se génère **une seule fois par an**. Exigence : **une seule page A4** par document imprimé (emploi du temps). Exception documentée ailleurs : fiche de report de notes (`GradeReportSheet`) peut dépasser une page (AGENTS.md règle 9, Q-35).
-> Modèle : `model/timetable/` (`TimeSlotGrid`, `Timetable`, `TimetableEntry`). Données de test anonymisées : `fixtures/timetable-*.json`.
+> Source : « EMPLOIS DU TEMPS ANNÉE SCOLAIRE 2026/2027 », **12 pages** A4 paysage (une par classe, **40 cases** chacune, aucune vide).
+> Classes : 7 francophones (6ème, 5ème, 4ème, 3ème, 2nde C, 1ère A, 1ère C/D) + 5 anglophones (Form 1, 2, 3, 4 ARTS, 4 SC).
+> Réponse de Ben : généré **une seule fois par an**. Exigence PDF : **une seule page A4 paysage** par classe.
+> Modèle : `model/timetable/` (`TimeSlotGrid`, `Timetable`, `TimetableEntry`, `TimetableSubjectAlias`).
+> Données de test : `fixtures/timetable-*.json`. Décisions v1 : Q-32 (saisie manuelle), Q-33 (samedi hors grille), Q-47 (activités).
 
 ## 1. Ce que montre le document
 
-**Pages** : 7 classes francophones (6ème, 5ème, 4ème, 3ème, 2nde C, 1ère A, 1ère C/D) en français (« EMPLOIS DU TEMPS ANNÉE SCOLAIRE 2026/2027 », LUNDI à VENDREDI, HEURES / JOURS) et 5 classes anglophones (Form 1, 2, 3, 4 Arts, 4 Science) en anglais (« 2026/2027 SCHOOL YEAR CLASS TIME TABLE », MONDAY to FRIDAY, PERIODS / DAYS). Même en-tête bilingue que les bulletins (logo, ministère, délégations), signature « L'Administration » en bas.
+**En-tête** : bilingue (logo, ministère, délégations) ; **contacts propres au PDF EDT** (`Timetable.headerContact`, Q-45 — téléphones souvent différents des bulletins). Titre selon la langue de la classe. Nom de classe **complet** (« FORM 4 ARTS » / « FORM 4 SC », pas seulement « FORM 4 »).
 
-**Grille horaire** (identique du lundi au vendredi, pour toutes les classes) :
+**Grille horaire** (lun–ven, toutes classes) :
 
 | N° | Horaire | | N° | Horaire |
 |---|---|---|---|---|
@@ -19,65 +21,110 @@
 | 4 | 10:20 – 11:10 | | — | 15:10 – 15:30 NETTOYAGE GÉNÉRAL / GENERAL CLEAN UP |
 | 5 | 11:10 – 12:00 | | — | RENTRÉE / CLOSING |
 
-→ `TimeSlotGrid` : les heures sont **stockées** (la période 7 dure 60 min, les autres 50), pas calculées. Les horaires s'écrivent différemment en anglais (« 1 : 20 – 2 : 20 » pour 13:20 – 14:20) : c'est du format d'impression, pas de la donnée.
+→ `TimeSlotGrid` : heures **stockées**. Format d’impression EN (« 1 : 20 – 2 : 20 ») ≠ donnée.
 
-**Cases** : chaque case = **matière + enseignant** (« FRANÇAIS (Mme X) »). Un cours de 2 périodes occupe 2 lignes (la même case répétée) ; certains cours font 3 périodes (Biology, Geography en Form 4 ARTS).
+**Cases** : matière + enseignant. Double / triple période = `periodCount`.
 
-**Cas particuliers observés** :
+### 1.1 Séances communes (cours groupés) — phase 0
 
-| Observé | Traitement |
-|---|---|
-| CLUB, BIBLIOTHÈQUE / LIBRARY, MUSIQUE, ÉDUC. ART, MÉNAGE GÉNÉRAL / GENERAL CLEAN UP (« Délégué ») | `EntryKind.ACTIVITY` + `ActivityType` ; `Subject.kind = ACTIVITY` pour celles qui sont des matières sans note |
-| « CLUB / MATHS / SVT » | une case, libellé libre dans `note` |
-| « TD CHIMIE », « H.BIOLOGY », « A.MATHS », « F/N » | matière ou libellé abrégé : `Subject.timetableAlias` ; `F/N` à clarifier (Q-30) |
-| « SAMEDI : CHIMIE 2H, 8h00 – 10h00 » (1ère C/D) | cours **hors grille** : `customStart` / `customEnd` |
-| Case mise en couleur (orange, vert) | purement visuel (non repris) |
-| Abréviations de matières : SVTEEHB, PCT, LCN, ECM, TM, EPS | `Subject.timetableAlias` |
-| Même enseignant dans plusieurs classes et plusieurs matières | `Staff` unique ; le contrôle de conflits porte sur le créneau |
-| Une matière en 2 groupes de la même classe | non observé (à ne pas supposer) |
-| Fautes de frappe (« CNINOIS », « ECM (Mme BATOUM)) ») | l'import / la saisie utilise les identifiants, pas le texte |
+Le même enseignant apparaît dans **plusieurs classes au même créneau** :
+- 6ème + 5ème (LCN, Chinois, EPS)
+- 1ère A + 1ère C/D (Anglais, Histoire, ECM, EPS, TM, Chinois)
+- Form 1 + Form 2 ; Form 4 ARTS + Form 4 SC
+- 3ème + Form 4 (EPS, sections différentes)
+- Bibliothèque / Ménage général (plusieurs classes, délégué ou surveillant)
+
+→ `TimetableEntry.sessionGroupId` (String?). Deux cases de classes différentes avec le **même** `sessionGroupId` **peuvent** partager enseignant et salle. L’éditeur et le PDF doivent pouvoir **créer / défaire** une séance commune (Q-55).
+
+### 1.2 Options LV2 en parallèle — phase 0
+
+En 4ème, 3ème et 1ère A : case « ALL (prof. A) / ESP (prof. B) » = **deux cours** pour la même classe au même créneau.
+
+→ `optionGroupCode` (ex. `"LV2"`) + `optionCode` (ex. `"ALL"`, `"ESP"`). Index unique `uk_class_slot_option` inclut `optionCode` (`""` si pas d’option).
+
+**Q-41** : l’EDT 2026-2027 **suggère** une seule classe avec options parallèles. On **ne tranche pas** ici le modèle notes (`ClassSubject` / `Enrollment`) — seulement le modèle EDT.
+
+### 1.3 Libellés ≠ matières de bulletin — phase 0
+
+« FRANÇAIS » / « LITTÉRATURE » (6ème–3ème) recouvrent expression écrite, orale, correction orthographique, étude de texte ; « TM » ≈ Travail manuel + ESF (absente de l’EDT). Heures EDT souvent = coefficient (maths 4, anglais 3…).
+
+→ Collection `TimetableSubjectAlias` : alias (variantes fautées incluses) → `classSubjectIds[]`.  
+`TimetableEntry.classSubjectIds` ; **jamais** de saisie par texte libre (~59 libellés). Chargeur : remplit `ClassSubject.weeklyHours` si correspondance 1→1 ; rapport des non résolus (Q-30, Q-56).
+
+### 1.4 Samedi / hors grille — phase 0
+
+Trois cours du samedi (blocs multi-heures), **pas seulement 1ère C/D** (Q-33) :
+
+| Classe | Cours | Horaires |
+|---|---|---|
+| 3ème | Allemand 3 h | 7h30 – 10h30 |
+| 1ère A | Allemand 3 h | 10h30 – 13h30 |
+| 1ère C/D | TD Chimie 2 h | 8h00 – 10h00 |
+
+→ `DayOfWeek.SATURDAY` + `customStart` / `customEnd` ; conflits sur **heures réelles**.
+
+### 1.5 Activités sans note (v1, Q-47)
+
+CHINOIS, MUSIQUE, CLUB, BIBLIOTHÈQUE, MÉNAGE GÉNÉRAL / GENERAL CLEAN UP → `EntryKind.ACTIVITY`, `Subject.kind = ACTIVITY` si catalogue, **aucun** `ClassSubject`. Une case ACTIVITY **n’engage pas** l’enseignant pour les conflits (surveillance). Si l’école les note plus tard : changement de type.
+
+Autres cas : « CLUB / MATHS / SVT » → `note` ; couleurs de case = purement visuel (non repris).
 
 ## 2. Modèle
 
 | Document | Rôle |
 |---|---|
-| `TimeSlotGrid` | La journée type : périodes de cours numérotées, pauses, nettoyage, fermeture ; jours de cours (lundi-vendredi). Une par année scolaire (copiable d'une année à l'autre) |
-| `Timetable` | L'emploi du temps d'une année : grille utilisée, `revision`, statut `DRAFT` → `PUBLISHED` → `ARCHIVED`. Une seule révision `PUBLISHED` à la fois |
-| `TimetableEntry` | Une case d'une classe : jour, période de départ, nombre de périodes, `slotKey` (« P4 » ou « T0800 »), matière de classe, enseignant, salle, activité, libellé, copies d'impression (`subjectLabel`, `teacherLabel`) |
+| `TimeSlotGrid` | Journée type lun–ven ; périodes, pauses, nettoyage |
+| `Timetable` | EDT d’une année ; `revision` ; `DRAFT` → `PUBLISHED` → `ARCHIVED` ; `headerContact` (PDF) |
+| `TimetableEntry` | Case : jour, période / hors grille, `slotKey`, `classSubjectIds`, enseignant, salle, `sessionGroupId`, options LV2, libellés figés |
+| `TimetableSubjectAlias` | Alias imprimé → `classSubjectIds` (par année / section) |
 
-Liens par **identifiants** vers `academic` (classe, `ClassSubject`, salle) et `staff` (enseignant) ; le module `timetable` ne lit jamais leurs bases (voir `08-architecture-modulaire.md`). Les libellés copiés permettent d'imprimer sans appeler d'autre module ; ils sont rafraîchis par les événements `academic.subject.renamed` et `staff.member.changed` et à la publication.
-
-Index clés : `uk_class_slot` (une case par classe, jour et créneau), `idx_teacher_day`, `idx_room_day` (contrôle de conflits), `idx_classsubject` (comptage des heures).
+Index : `uk_class_slot_option`, `idx_teacher_day`, `idx_room_day`, `idx_classsubjects`, `idx_session_group`, `uk_alias_year_section`.
 
 ## 3. Règles
 
-- **BR-60** Généré **une fois par an** ; semaine type répétée ; une révision publiée par année. Une modification en cours d'année crée une nouvelle révision (l'ancienne passe en `ARCHIVED`).
-- **BR-61** Une case = classe + jour + créneau + matière + enseignant (+ salle).
-- **BR-09** Conflits : un enseignant, une salle ou une classe ne peut pas être sur deux cases qui se chevauchent. Le contrôle se fait dans le service (MongoDB ne peut pas l'exprimer) sur les cases de la même révision, en tenant compte de `periodCount` et des cours hors grille.
-- **BR-63** Le nombre de périodes d'une matière dans la semaine doit correspondre à `ClassSubject.weeklyHours` : écart = avertissement (pas de blocage).
-- **BR-64** Un enseignant ne peut être placé que sur un `ClassSubject` dont il est `teacherId` (sinon avertissement : remplacement ?).
-- **BR-65** Une case `ACTIVITY` n'a ni `classSubjectId` ni obligation d'enseignant.
-- **BR-66** Une case ne peut tomber sur une pause ni sur le nettoyage (sauf cours hors grille explicite).
+- **BR-60** Une fois par an ; semaine type ; une révision `PUBLISHED` par année ; modif → nouvelle révision.
+- **BR-61** Une case = classe + jour + créneau (+ option) + matière(s) + enseignant (+ salle) ; ou ACTIVITY.
+- **BR-09** (réécrit phase 0) :
+  - **Classe** : pas deux cases qui se chevauchent pour la même classe **sauf** options parallèles distinctes (`optionCode` différent dans le même `optionGroupCode`).
+  - **Enseignant / salle** : conflit seulement entre cases qui **n’ont pas** le même `sessionGroupId` ; une case `ACTIVITY` n’engage pas l’enseignant.
+  - Doublons apparents du PDF source (ex. mardi P6 Mme Batoum en 6ème et 4ème) → **avertissement**, pas blocage au chargement (Q-58).
+- **BR-63** Périodes EDT d’une matière (somme des cases liées) ↔ **somme** des `weeklyHours` des `classSubjectIds` : écart = avertissement.
+- **BR-64** Enseignant hors `ClassSubject.teacherId` → avertissement (remplacement ?).
+- **BR-65** `ACTIVITY` : pas de `classSubjectIds` obligatoires ; pas d’obligation d’enseignant pour le conflit.
+- **BR-66** Case hors pause / nettoyage (sauf hors grille explicite).
 
-## 4. Génération et impression : UNE page A4
+## 4. Génération, édition, impression
 
-1. **Génération (une fois par an)** : à partir de `ClassSubject.weeklyHours` et des enseignants. Deux modes, à décider (Q-32) : **saisie manuelle** guidée par l'interface (glisser-déposer matière → créneau, contrôle de conflits en direct) ou **génération automatique** par un solveur de contraintes (non prévu à ce stade). La première version du logiciel doit au minimum permettre la **saisie manuelle avec contrôle de conflits** et la **duplication d'une année sur l'autre**.
-2. **Vues** : par classe (page principale), par enseignant (tous ses créneaux, toutes classes), par salle.
-3. **PDF** : A4 **paysage**, une page par vue (`PageFormat.A4_LANDSCAPE`) ; en-tête bilingue, titre selon la langue de la classe (`SchoolClass.defaultLanguage`) ; 5 colonnes (jours) × 8 lignes + pauses ; la hauteur des lignes et la taille de police s'ajustent pour tenir sur une page (un cours à nom long passe sur 2 lignes comme dans l'original) ; signature « L'Administration » / « Administration ».
-4. **Langues** : français ou anglais pour chaque classe ; une classe bilingue doit pouvoir être imprimée dans les deux (Q-01). Les noms de matières viennent de `Subject.name` / `timetableAlias`, les jours et libellés de pause de `LocalizedText`.
-5. **Lots** : un PDF par classe, ou un lot de toutes les classes (une page par classe, pas de page vide).
+1. **v1 (Q-32)** : saisie manuelle + conflits + duplication d’année ; pas de solveur. Droit SG modifiable : `School.timetableSurveillantCanEdit` (défaut **false**).
+2. **Vues** : par classe (page principale), par enseignant, par salle.
+3. **PDF** : A4 paysage, **1 page / classe** ; en-tête + `headerContact` ; 5 colonnes × 8 lignes + pauses ; signature Administration.
+4. **Test de référence** : charger le PDF 12 × 40 cases → 0 conflit **bloquant** ; régénérer 12 pages ; avertissements pour doublons réels signalés.
 
 ## 5. Événements
 
-Publie `timetable.published`. Consomme `academic.class-subject.changed` (heures, enseignant), `academic.class.changed`, `academic.subject.renamed`, `staff.member.changed` (voir § 4 du doc 08).
+Publie `timetable.published`. Consomme `academic.class-subject.changed`, `academic.class.changed`, `academic.subject.renamed`, `staff.member.changed` (doc 08). Alias : mise à jour manuelle / chargeur (pas d’événement dédié en v1).
 
 ## 6. Permissions (conception)
 
-| Action | Enseignant | Administration | Directeur |
-|---|---|---|---|
-| Lire l'emploi du temps de sa classe / de ses cours | ses cours | tout | tout |
-| Modifier / publier | non | oui | oui |
-| Élève et parent | lecture de la classe de l'élève (parent : classes de ses enfants) | | |
+| Action | Ens. | SG | Admin. | Dir. |
+|---|---|---|---|---|
+| Lire (ses cours / tout) | ses cours | lecture | tout | tout |
+| Modifier / publier | non | si `timetableSurveillantCanEdit` | oui | oui |
+| Élève / parent | lecture classe / enfants (plus tard) | | | |
 
-## 7. Questions ouvertes
-Q-30 (matière « F/N »), Q-32 (génération manuelle ou automatique, contraintes de disponibilité des enseignants), Q-33 (cours du samedi, remplacements ponctuels d'enseignants absents : modifient-ils l'emploi du temps annuel ?). Voir `07-questions-ouvertes.md`.
+## 7. Plan d’implémentation
+
+| Phase | Contenu |
+|---|---|
+| **0** | Modèle : séances communes, options LV2, alias, samedi, activités ; docs 03/08/09/07 |
+| **A** | API lecture + grille + brouillon |
+| **B** | Saisie + conflits (BR-09) + séances communes / options |
+| **C** | Publier + dupliquer + événement |
+| **D** | PDF 1 page + `headerContact` |
+| **E** | Front admin/dir (éditeur) |
+| **F** | Front enseignant (lecture) |
+
+Ordre : **0 → A → B → C → D → E → F** (B avant E).
+
+## 8. Questions ouvertes liées
+Q-30, Q-32, Q-33, Q-41, Q-45, Q-47, Q-55 (cours groupés), Q-56 (alias FRANÇAIS/TM), Q-57 (bibliothèque / surveillance), Q-58 (doublons PDF). Voir `07-questions-ouvertes.md`.

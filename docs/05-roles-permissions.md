@@ -56,7 +56,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Générer, valider, publier, imprimer des bulletins | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Télécharger le bulletin annuel** | ◐ | ◐ | ✖ | ✔ | ✔ | ◐ | `PUBLISHED`, période `ANNUAL`, élève concerné (parent : tous ses enfants) |
 | Journal d'audit des notes | ✖ | ✖ | ✖ | ✔ | ✔ | ◐ | |
-| **Emploi du temps** : créer, modifier, publier (timetable) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
+| **Emploi du temps** : créer, modifier, publier (timetable) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | SG : si `School.timetableSurveillantCanEdit` (défaut false, Q-32) |
 | Emploi du temps : consulter | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | élève : sa classe ; parent : classes de ses enfants ; enseignant : ses cours |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Plusieurs établissements, support | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | accès journalisé |

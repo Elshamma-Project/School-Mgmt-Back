@@ -14,7 +14,7 @@
 | `staff` | enseignants et administration | `staff_members` | rien |
 | `grading` | séquences, fiches de notes, notes, notes de séquence, audit, barèmes | `grading_sessions`, `grading_sheets`, `grading_assessments`, `grading_grades`, `grading_sequence_marks`, `grading_audit_entries`, `grading_schemes` | `academic`, `student`, `staff` (ids) |
 | `reporting` | gabarits, bulletins, absences/sanctions/décisions | `reporting_templates`, `reporting_report_cards`, `reporting_period_reviews` | `grading`, `academic`, `student`, `staff` |
-| `timetable` | grille horaire, emplois du temps, cases | `timetable_grids`, `timetable_timetables`, `timetable_entries` | `academic`, `staff` (ids) |
+| `timetable` | grille, EDT, cases, alias matières | `timetable_grids`, `timetable_timetables`, `timetable_entries`, `timetable_subject_aliases` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 | `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
 
@@ -88,7 +88,8 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `grading.correction.requested` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `studentLabel`, `classLabel`, `teacherLabel` |
 | `grading.correction.approved` / `grading.correction.rejected` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `requestedBy`, `teacherId`, `studentLabel`, `decision` ; rejet : `reviewNote` |
 | `reporting.report-card.published` | reporting | notification, student portal | `reportCardId`, `studentId`, période |
-| `timetable.published` | timetable | notification | `timetableId`, `academicYearId` |
+| `timetable.published` | timetable | notification | `timetableId`, `academicYearId`, `revision` |
+| *(alias EDT)* | — | — | `TimetableSubjectAlias` tenu à jour par chargeur / admin ; pas d’événement dédié en v1 (rafraîchissement des libellés d’entrée via `academic.subject.renamed` + republish) |
 
 Versionner chaque charge utile (`schemaVersion`) ; n'y mettre que des identifiants et les valeurs nécessaires.
 

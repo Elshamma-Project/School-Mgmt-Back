@@ -108,7 +108,7 @@ Lecture clé : **`ClassSubject` est le pivot** (qui enseigne quoi, à quelle cla
 - **BR-06** Une classe a au plus un professeur principal ; une même personne peut être professeur principal de plusieurs classes (observé : 2NDE C et 2NDE ALL).
 - **BR-07** Une personne peut cumuler les fonctions (enseignant + chef d'établissement). Une seule fiche `Staff`.
 - **BR-08** Enseignant remplacé : on change `ClassSubject.teacherId`. Les bulletins déjà générés gardent le nom figé. (Q-22)
-- **BR-09** Un enseignant, une salle et une classe ne peuvent pas être dans deux créneaux simultanés de l'emploi du temps (module timetable, voir `09-emploi-du-temps.md`).
+- **BR-09** Emploi du temps (détail `09`) : une **classe** n’a pas deux cases qui se chevauchent sauf **options parallèles** (`optionCode` distincts) ; un **enseignant** / une **salle** ne se chevauchent pas sauf cases partageant le même `sessionGroupId` ; une case `ACTIVITY` n’engage pas l’enseignant.
 - **BR-10** Une matière `kind = ACTIVITY` (club, bibliothèque, musique, ménage général) n'est jamais notée ni imprimée sur un bulletin.
 
 ### 5.2 Fiches de notes et notes (réponse Q-02)
@@ -181,9 +181,9 @@ stateDiagram-v2
 
 ### 5.7 Emploi du temps (une seule page A4)
 - **BR-60** L'emploi du temps est **généré une seule fois par an** (`Timetable`, une version publiée par année) ; semaine type répétée toute l'année.
-- **BR-61** Une case = classe + jour + période de départ (+ nombre de périodes) + matière + enseignant (+ salle). Cases spéciales : activité sans note, case mixte, TD, cours hors grille (samedi).
+- **BR-61** Une case = classe + jour + période (+ option LV2) + `classSubjectIds` + enseignant (+ salle) ; ou `ACTIVITY`. Hors grille / samedi : `customStart`/`customEnd`.
 - **BR-62** **Impression : une seule page A4 paysage par classe** (et par enseignant ou par salle sur demande), jamais de seconde page.
-- **BR-63** Le nombre de périodes d'une matière doit correspondre à `ClassSubject.weeklyHours` (avertissement, pas blocage).
+- **BR-63** Périodes EDT ↔ **somme** des `weeklyHours` des `classSubjectIds` liés (avertissement) ; résolution des libellés via `TimetableSubjectAlias`.
 
 ## 6. Parcours principal : de la saisie au bulletin
 

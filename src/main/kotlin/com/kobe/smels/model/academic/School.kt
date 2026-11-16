@@ -32,6 +32,12 @@ data class School(
     var contact: ContactInfo = ContactInfo(),
     var postalBox: String? = null,
 
+    /**
+     * Si true, le rôle [com.kobe.smels.model.user.Role.SURVEILLANT_GENERAL] peut modifier l’EDT.
+     * Défaut false (Q-32) — activable depuis les paramètres école.
+     */
+    var timetableSurveillantCanEdit: Boolean = false,
+
     /** Ville imprimée à côté de la date de signature (« YAOUNDE, le 26 Mai 2026 »). */
     var signaturePlace: String? = null,
 

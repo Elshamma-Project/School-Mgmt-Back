@@ -57,9 +57,10 @@
 | reporting | `reporting_templates` | `ReportTemplate` | Gabarits de bulletin (annuel, trimestre) |
 | reporting | `reporting_report_cards` | `ReportCard` (+ blocs embarqués) | Bulletins générés, figés |
 | reporting | `reporting_period_reviews` | `StudentPeriodReview` | Absences, retards, sanctions, distinctions, décision du conseil |
-| timetable | `timetable_grids` | `TimeSlotGrid` (+ `GridPeriod`) | Grille horaire de la journée |
-| timetable | `timetable_timetables` | `Timetable` | Emploi du temps d'une année (révisions) |
-| timetable | `timetable_entries` | `TimetableEntry` | Cases de l'emploi du temps |
+| timetable | `timetable_grids` | `TimeSlotGrid` (+ `GridPeriod`) | Grille horaire de la journée (lun–ven) |
+| timetable | `timetable_timetables` | `Timetable` | Emploi du temps d'une année (révisions) + `headerContact` PDF |
+| timetable | `timetable_entries` | `TimetableEntry` | Cases (options LV2, `sessionGroupId`, `classSubjectIds`) |
+| timetable | `timetable_subject_aliases` | `TimetableSubjectAlias` | Alias libellé EDT → ClassSubject(s) |
 | notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) |
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
 
@@ -83,9 +84,10 @@
 | Contrôle d'authenticité | `reporting_report_cards` par `verificationCode` | unique |
 | Historique d'une note ou d'une note de séquence | `grading_audit_entries` | `idx_grade_time`, `idx_mark_time` |
 | Corrections après clôture | `grading_audit_entries` | `idx_session_closed` |
-| Cases d'une classe | `timetable_entries` | `uk_class_slot` (unique, `slotKey`) |
-| Conflits enseignant / salle | `timetable_entries` | `idx_teacher_day`, `idx_room_day` |
-| Heures hebdomadaires d'une matière | `timetable_entries` par `classSubjectId` | `idx_classsubject` |
+| Cases d'une classe (+ option LV2) | `timetable_entries` | `uk_class_slot_option` (unique : `slotKey` + `optionCode`) |
+| Conflits enseignant / salle | `timetable_entries` | `idx_teacher_day`, `idx_room_day` ; séances communes : `idx_session_group` |
+| Heures hebdomadaires | `timetable_entries` par `classSubjectIds` | `idx_classsubjects` |
+| Alias libellé EDT | `timetable_subject_aliases` | `uk_alias_year_section` |
 | Événements à publier | `shared_outbox_events` par `status` + `occurredAt` | `idx_status_time` |
 
 Création automatique des index : désactivée par défaut avec Spring Data MongoDB 3+ : `spring.data.mongodb.auto-index-creation=true` en développement ; script de migration en production.
@@ -168,14 +170,21 @@ Créées avec l'année (statut `PLANNED`). Sur le bulletin de trimestre, les deu
 
 Quel gabarit pour quels niveaux : Q-26.
 
-### 5.6 Grille horaire (`timetable_grids`)
-Voir `fixtures/timetable-grid.json` : 8 périodes (7:35 → 15:10), 2 pauses, nettoyage général, fermeture ; lundi-vendredi.
+### 5.6 Emploi du temps (`timetable_*`) — phase 0
+- **Grille** (`timetable_grids`) : voir `fixtures/timetable-grid.json` — 8 périodes, pauses, nettoyage ; lun–ven.
+- **Timetable** : `headerContact` (contacts PDF EDT, Q-45) ; une révision `PUBLISHED` / année.
+- **TimetableEntry** : `classSubjectIds[]` ; `sessionGroupId` (cours groupés) ; `optionGroupCode` / `optionCode` (LV2) ; samedi hors grille via `customStart`/`customEnd` (Q-33).
+- **TimetableSubjectAlias** : variantes d’impression → `classSubjectIds` ; jamais de match texte libre (Q-30 / Q-56).
+- **School** : `timetableSurveillantCanEdit` (défaut `false`, Q-32).
+
+Détail métier et BR-09 : `09-emploi-du-temps.md`.
 
 ## 6. Ce qui n'est volontairement pas dans le modèle
 
 | Sujet | Traitement |
 |---|---|
-| Disponibilités des enseignants, contraintes de génération automatique de l'emploi du temps | module `timetable`, évolution (Q-32) |
+| Disponibilités des enseignants, solveur automatique | module `timetable`, évolution (Q-32) ; v1 = saisie manuelle |
+| Options LV2 côté notes / Enrollment | hors modèle EDT ; Q-41 ouverte côté academic |
 | Cartes d'élèves, frais, notifications | modules futurs ; fichiers déjà gérés : `StudentSchoolPhoto` (`photoFileId`), `SchoolLogo` (`logoFileId`), `UserAvatar` (`avatarFileId`) ; PDF bulletin via `pdfFileId` |
 | Détail de chaque absence | compteurs seulement (`StudentPeriodReview`) |
 | Authentification et autorisations | `UserAccount` + `UserSession` (max 2 sessions) ; voir `05-roles-permissions.md` |

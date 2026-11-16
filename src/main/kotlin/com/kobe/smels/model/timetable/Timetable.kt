@@ -1,5 +1,6 @@
 package com.kobe.smels.model.timetable
 
+import com.kobe.smels.model.shared.ContactInfo
 import com.kobe.smels.model.shared.TenantDocument
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.index.CompoundIndex
@@ -11,12 +12,12 @@ import java.time.Instant
  * Emploi du temps d'une année scolaire : généré UNE SEULE FOIS par an (réponse de l'école), valable toute
  * l'année, sous forme de semaine type répétée. Il ne s'agit pas d'un calendrier semaine par semaine.
  *
- * Les lignes d'emploi du temps (une par créneau et par classe) sont dans [TimetableEntry]. Les rares
- * modifications en cours d'année créent une nouvelle `revision` (l'ancienne passe en ARCHIVED) pour garder
- * l'historique ; une seule version PUBLISHED par année à la fois.
+ * Les lignes (une par créneau et par classe / option) sont dans [TimetableEntry]. Les rares
+ * modifications en cours d'année créent une nouvelle `revision` (l'ancienne passe en ARCHIVED) ;
+ * une seule version PUBLISHED par année à la fois.
  *
- * Impression : une page A4 PAYSAGE par classe (et sur demande une page par enseignant et par salle).
- * Le rendu ne dépasse jamais une page.
+ * Impression : une page A4 PAYSAGE par classe (nom complet de classe, ex. « FORM 4 ARTS ») ;
+ * [headerContact] = téléphones / e-mail propres au PDF EDT (distincts des bulletins, Q-45).
  */
 @Document(collection = "timetable_timetables")
 @CompoundIndexes(
@@ -36,6 +37,13 @@ data class Timetable(
     var generatedBy: String? = null,
     var publishedAt: Instant? = null,
     var publishedBy: String? = null,
+
+    /**
+     * Coordonnées imprimées sur l’en-tête du PDF EDT (peuvent différer de [com.kobe.smels.model.academic.School.contact]).
+     * Ne change pas le modèle visuel original — seulement les numéros / e-mail du document (Q-45).
+     */
+    var headerContact: ContactInfo? = null,
+
     var note: String? = null
 ) : TenantDocument()
 
