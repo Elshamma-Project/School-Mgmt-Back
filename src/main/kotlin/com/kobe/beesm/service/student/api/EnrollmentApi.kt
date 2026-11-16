@@ -1,0 +1,39 @@
+package com.kobe.beesm.service.student.api
+
+import com.kobe.beesm.dto.student.EnrollmentSummaryDto
+import com.kobe.beesm.dto.student.LevelEnrollmentCountDto
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+
+/**
+ * Interface publique des inscriptions (docs/06, docs/08).
+ * grading / reporting passent par ici pour vérifier ENROLLED (BR-15).
+ */
+interface EnrollmentApi {
+    fun getSummary(schoolId: String, enrollmentId: String): Mono<EnrollmentSummaryDto>
+    fun findByStudentAndYear(
+        schoolId: String,
+        studentId: String,
+        academicYearId: String
+    ): Mono<EnrollmentSummaryDto>
+
+    /** Toutes les inscriptions d'un élève (parcours multi-années). */
+    fun findByStudent(schoolId: String, studentId: String): Flux<EnrollmentSummaryDto>
+
+    fun findEnrolledByClass(schoolId: String, classId: String): Flux<EnrollmentSummaryDto>
+    fun isEnrolled(
+        schoolId: String,
+        studentId: String,
+        classId: String,
+        academicYearId: String
+    ): Mono<Boolean>
+
+    /** Effectif ENROLLED de l’année (tableau de bord). */
+    fun countEnrolledByYear(schoolId: String, academicYearId: String): Mono<Long>
+
+    /** Effectifs ENROLLED regroupés par niveau (tableau de bord). */
+    fun countEnrolledByLevelForYear(
+        schoolId: String,
+        academicYearId: String
+    ): Flux<LevelEnrollmentCountDto>
+}

@@ -1,1 +1,1 @@
-rootProject.name = "smels"
+rootProject.name = "bee-sm"

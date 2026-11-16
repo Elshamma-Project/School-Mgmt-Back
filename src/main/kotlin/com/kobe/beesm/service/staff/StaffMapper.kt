@@ -1,0 +1,67 @@
+package com.kobe.beesm.service.staff
+
+import com.kobe.beesm.dto.staff.ContactInfoDto
+import com.kobe.beesm.dto.staff.StaffResponse
+import com.kobe.beesm.dto.staff.StaffSummaryDto
+import com.kobe.beesm.model.shared.ContactInfo
+import com.kobe.beesm.model.staff.Staff
+import java.time.Instant
+
+object StaffMapper {
+    fun toContact(dto: ContactInfoDto): ContactInfo =
+        ContactInfo(
+            phones = dto.phones.map { it.trim() }.filter { it.isNotBlank() },
+            email = dto.email?.trim()?.ifBlank { null },
+            address = dto.address?.trim()?.ifBlank { null },
+            city = dto.city?.trim()?.ifBlank { null }
+        )
+
+    fun toContactDto(contact: ContactInfo): ContactInfoDto =
+        ContactInfoDto(
+            phones = contact.phones,
+            email = contact.email,
+            address = contact.address,
+            city = contact.city
+        )
+
+    fun toResponse(
+        staff: Staff,
+        lastLoginAt: Instant? = null,
+        canManage: Boolean = true
+    ): StaffResponse =
+        StaffResponse(
+            id = staff.id!!,
+            schoolId = staff.schoolId,
+            staffNumber = staff.staffNumber,
+            lastName = staff.lastName,
+            firstName = staff.firstName,
+            fullName = staff.fullName(),
+            civility = staff.civility,
+            sex = staff.sex,
+            dateOfBirth = staff.dateOfBirth,
+            contact = toContactDto(staff.contact),
+            functions = staff.functions,
+            employmentStatus = staff.employmentStatus,
+            teachableSubjectIds = staff.teachableSubjectIds,
+            hireDate = staff.hireDate,
+            seedKey = staff.seedKey,
+            source = staff.source,
+            needsCompletion = staff.needsCompletion,
+            active = staff.active,
+            lastLoginAt = lastLoginAt,
+            canManage = canManage,
+            createdBy = staff.createdBy,
+            updatedBy = staff.updatedBy,
+            updatedAt = staff.updatedAt
+        )
+
+    fun toSummary(staff: Staff): StaffSummaryDto =
+        StaffSummaryDto(
+            id = staff.id!!,
+            schoolId = staff.schoolId,
+            displayName = staff.fullName(),
+            civility = staff.civility,
+            functions = staff.functions,
+            active = staff.active
+        )
+}

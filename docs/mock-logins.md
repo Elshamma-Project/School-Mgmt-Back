@@ -1,6 +1,6 @@
 # Comptes mock (développement)
 
-> **DEV uniquement.** Créés au démarrage si `smels.security.mock-users.enabled=true`  
+> **DEV uniquement.** Créés au démarrage si `beesm.security.mock-users.enabled=true`  
 > (défaut local). Désactivés en prod (`application-prod.properties`).  
 > Aucune donnée réelle d’élève / enseignant (BR-43).
 
@@ -32,7 +32,7 @@ Ce fichier mock **ne crée plus** d’années / classes / notes fictives.
 
 | Rôle | E-mail | schoolId dans le body* | Profil lié |
 |---|---|---|---|
-| SUPER_ADMIN | `superadmin@smels.local` | auto (repli plateforme) | — |
+| SUPER_ADMIN | `superadmin@bee-sm.local` | auto (repli plateforme) | — |
 | DIRECTOR (Principal) | `directeur@elshammah.demo` | `school-elshammah` | `staff-demo-director` |
 | ADMINISTRATION | `admin@elshammah.demo` | `school-elshammah` | `staff-demo-admin` |
 | SURVEILLANT_GENERAL | `surveillant@elshammah.demo` | `school-elshammah` | `staff-demo-sg` (UI `/surveillant-general`) |
@@ -58,13 +58,13 @@ Content-Type: application/json
 ## Configuration
 
 ```properties
-smels.security.mock-users.enabled=true
-smels.security.mock-users.password=DemoPass123!
-smels.security.mock-users.school-id=school-elshammah
-smels.security.mock-users.school-code=ELSHAMMAH
-smels.seed.el-shammah.enabled=true
-smels.seed.el-shammah.school-id=school-elshammah
-smels.security.bootstrap.username=superadmin@smels.local
+beesm.security.mock-users.enabled=true
+beesm.security.mock-users.password=DemoPass123!
+beesm.security.mock-users.school-id=school-elshammah
+beesm.security.mock-users.school-code=ELSHAMMAH
+beesm.seed.el-shammah.enabled=true
+beesm.seed.el-shammah.school-id=school-elshammah
+beesm.security.bootstrap.username=superadmin@bee-sm.local
 ```
 
 ## Notes
@@ -77,7 +77,7 @@ smels.security.bootstrap.username=superadmin@smels.local
 
 ### Jeu de démo enseignant (`TeacherDemoSeedRunner`, @Order 25)
 
-Actif si `smels.security.mock-users.enabled=true` (insert-if-absent, ne réécrit jamais une saisie UI).
+Actif si `beesm.security.mock-users.enabled=true` (insert-if-absent, ne réécrit jamais une saisie UI).
 
 - `enseignant@elshammah.demo` peut ouvrir **`/teacher/grades`** et **`/teacher/classes`** après le seed.
 - Classe : **6ème** francophone de l’année courante (copie de structure depuis la 6ème d’une autre année si elle n’existe pas encore pour l’année courante).
@@ -90,6 +90,6 @@ Actif si `smels.security.mock-users.enabled=true` (insert-if-absent, ne réécri
 
 ```bash
 # Vider la base puis relancer le back (recrée le tenant propre)
-mongosh --eval 'db.getSiblingDB("smels-db").dropDatabase()'
+mongosh --eval 'db.getSiblingDB("bee-sm-db").dropDatabase()'
 ./gradlew bootRun
 ```

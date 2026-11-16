@@ -1,4 +1,4 @@
-# Documentation du projet SMELS : bulletins, notes, emploi du temps
+# Documentation du projet Bee SM : bulletins, notes, emploi du temps
 
 Dossier de conception : **notes, bulletins (une page A4) et emploi du temps (une page A4)** d'une école bilingue du Cameroun (API Spring Boot / Kotlin / MongoDB), organisé en **modules qui deviendront des microservices**.
 L'authentification, les services, la configuration et les modules suivants viennent ensuite (voir `06-feuille-de-route.md`).
@@ -21,7 +21,7 @@ back-office/
 ├── CLAUDE.md                       importe AGENTS.md (Claude Code)
 ├── docs/                           ce dossier
 │   └── fixtures/                   7 bulletins + grille et 2 emplois du temps anonymisés (tests)
-└── src/main/kotlin/com/kobe/smels/
+└── src/main/kotlin/com/kobe/beesm/
     ├── model/<module>/             documents (écrits)
     ├── repository/<module>/        (vide : .gitkeep)
     ├── service/<module>/           (vide : .gitkeep) ; y mettre api/ pour l'interface publique du module
@@ -32,7 +32,7 @@ back-office/
 ```
 
 ## Intégration dans votre projet
-1. Copier `src/main/kotlin/com/kobe/smels/` dans le projet (en remplaçant le dossier `model` vide).
+1. Copier `src/main/kotlin/com/kobe/beesm/` dans le projet (en remplaçant le dossier `model` vide).
 2. Copier `docs/`, `AGENTS.md` et `CLAUDE.md` à la racine du dépôt.
 3. Ajouter les dépendances de `03-modele-de-donnees.md` § 4 puis lancer `./gradlew compileKotlin`.
 

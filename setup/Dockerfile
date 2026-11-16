@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Image de l'API SMELS (Gradle + Kotlin + Spring Boot).
+# Image de l'API Bee SM (Gradle + Kotlin + Spring Boot).
 # Contexte de build = racine du dépôt (voir compose.prod.yaml).
 
 ################################################################################

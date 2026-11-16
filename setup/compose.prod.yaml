@@ -1,51 +1,59 @@
-# SMELS — environnement de production
+# Bee SM — environnement de production
 # Usage (depuis setup/) :
 #   docker compose -f compose.prod.yaml --env-file .env up -d --build
 # Prérequis : renseigner setup/.env (voir .env.example).
+#
+# Noms Docker :
+#   projet  : bee-sm-prod
+#   conteneur : bee-sm-db, bee-sm-api
+#   image   : bee-sm-api
+#   volume / réseau : bee-sm-db-data, bee-sm-network
+# Base Mongo : bee-sm-db (user bee_sm_admin)
 
-name: smels-prod
+name: bee-sm-prod
 
 services:
-  smels-db:
+  bee-sm-db:
     image: mongo:7.0
-    container_name: smels-db
+    container_name: bee-sm-db
     restart: unless-stopped
     command: ["--replSet", "rs0", "--bind_ip_all"]
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-smels-db}
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE:-bee-sm-db}
     ports:
       - "${MONGO_HOST_PORT:-27017}:27017"
     volumes:
-      - smels-db-data:/data/db
+      - bee-sm-db-data:/data/db
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "mongosh --quiet -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"try { rs.status().ok } catch(e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'smels-db:27017'}]}).ok }\" | grep 1",
+          "mongosh --quiet -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"try { rs.status().ok } catch(e) { rs.initiate({_id:'rs0', members:[{_id:0, host:'bee-sm-db:27017'}]}).ok }\" | grep 1",
         ]
       interval: 5s
       timeout: 15s
       retries: 12
       start_period: 20s
     networks:
-      - smels-network
+      - bee-sm-network
 
-  smels-api:
-    container_name: smels-api
+  bee-sm-api:
+    container_name: bee-sm-api
     build:
       context: ..
       dockerfile: setup/Dockerfile
-    image: smels-api:${APP_VERSION:-latest}
+    image: bee-sm-api:${APP_VERSION:-latest}
     restart: unless-stopped
     depends_on:
-      smels-db:
+      bee-sm-db:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SERVER_PORT: ${SERVER_PORT:-8090}
       MONGODB_URI: ${MONGODB_URI}
+      MONGO_DATABASE: ${MONGO_DATABASE:-bee-sm-db}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ACCESS_TOKEN_VALIDITY_MS: ${JWT_ACCESS_TOKEN_VALIDITY_MS:-900000}
       JWT_REFRESH_TOKEN_VALIDITY_MS: ${JWT_REFRESH_TOKEN_VALIDITY_MS:-604800000}
@@ -57,13 +65,13 @@ services:
     ports:
       - "${SERVER_HOST_PORT:-8090}:${SERVER_PORT:-8090}"
     networks:
-      - smels-network
+      - bee-sm-network
 
 networks:
-  smels-network:
-    name: smels-network
+  bee-sm-network:
+    name: bee-sm-network
     driver: bridge
 
 volumes:
-  smels-db-data:
-    name: smels-db-data
+  bee-sm-db-data:
+    name: bee-sm-db-data

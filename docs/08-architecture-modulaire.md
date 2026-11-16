@@ -40,7 +40,7 @@ Les flèches vont du module qui **consomme** vers celui qui **fournit**. **Aucun
 Ben a déjà les dossiers par couche (`configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`). On garde cette organisation et on crée **le même sous-dossier de module dans chaque couche** :
 
 ```
-com.kobe.smels
+com.kobe.beesm
 ├── configuration/              socle technique (Mongo, Jackson, OpenAPI...) – commun
 ├── exception/                  exceptions et ProblemDetail – commun
 ├── shared/                     utilitaires communs (identité, tenant, événements) – commun
@@ -64,7 +64,7 @@ Pour extraire un module en microservice : on prend ses 5 dossiers (`model`, `rep
 7. **`schoolId` partout** (multi-établissement) ; il sert aussi de clé de partage (sharding) si un module grossit.
 8. **Les identifiants sont des `String`** (ObjectId hexadécimal) uniques à l'échelle de la plateforme ; aucun identifiant séquentiel à base de compteur global.
 9. **Sécurité par module** : chaque module contrôle lui-même les droits sur ses ressources à partir du jeton (qui reste le même partout : identité, rôles, `schoolId`, profil).
-10. **Config et secrets par module** : un préfixe de configuration par module (`smels.grading.*`) ; une base Mongo par module en production (même cluster au début), nom `smels_<module>`.
+10. **Config et secrets par module** : un préfixe de configuration par module (`beesm.grading.*`) ; une base Mongo par module en production (même cluster au début), nom `beesm_<module>`.
 
 Vérification automatique : test **ArchUnit** `ModuleBoundariesArchTest` (exécuté par `./gradlew test` et CI) — échoue si une classe de `service.<A>` importe `repository.<B>` ou `model.<B>` pour B ≠ A (et B ≠ `shared`). Le module `portal` n’a pas de `model`/`repository` propres.
 

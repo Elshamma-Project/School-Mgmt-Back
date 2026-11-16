@@ -1,19 +1,26 @@
-# SMELS — environnement local
-# Usage (depuis setup/) : docker compose up -d
+# Bee SM — environnement local
+# Usage :
+#   depuis la racine : docker compose up -d
+#   depuis setup/    : docker compose up -d
 # Ne lance QUE MongoDB. L'API tourne sur la machine hôte (./gradlew bootRun).
+#
+# Noms Docker (après suppression des anciens smels-*) :
+#   projet  : bee-sm
+#   conteneur / volume / réseau : bee-sm-db, bee-sm-db-data, bee-sm-network
+# Base Spring : bee-sm-db (voir application.properties / MONGODB_URI)
 
-name: smels
+name: bee-sm
 
 services:
-  smels-db:
+  bee-sm-db:
     image: mongo:7.0
-    container_name: smels-db
+    container_name: bee-sm-db
     restart: unless-stopped
     command: ["--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
-      - smels-db-data:/data/db
+      - bee-sm-db-data:/data/db
     healthcheck:
       # Initialise le replica set mono-nœud au premier démarrage (transactions Mongo).
       test:
@@ -26,13 +33,13 @@ services:
       retries: 12
       start_period: 15s
     networks:
-      - smels-network
+      - bee-sm-network
 
 networks:
-  smels-network:
-    name: smels-network
+  bee-sm-network:
+    name: bee-sm-network
     driver: bridge
 
 volumes:
-  smels-db-data:
-    name: smels-db-data
+  bee-sm-db-data:
+    name: bee-sm-db-data

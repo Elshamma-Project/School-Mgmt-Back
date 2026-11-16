@@ -1,6 +1,6 @@
 # 03 — Modèle de données (MongoDB)
 
-> **Source de vérité des champs : le code Kotlin** dans `src/main/kotlin/com/kobe/smels/model/<module>/`. Chaque classe est commentée (KDoc).
+> **Source de vérité des champs : le code Kotlin** dans `src/main/kotlin/com/kobe/beesm/model/<module>/`. Chaque classe est commentée (KDoc).
 > Ce document explique les choix, les index et les données de référence.
 > État : 8 sous-packages, **106 classes compilées** contre des annotations Spring simulées (pas d'accès à Maven Central dans l'environnement de rédaction). **À recompiler chez vous** avec `./gradlew compileKotlin`.
 > Découpage en modules (futurs microservices) : `08-architecture-modulaire.md`.

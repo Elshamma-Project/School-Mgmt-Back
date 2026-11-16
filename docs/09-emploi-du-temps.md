@@ -630,9 +630,9 @@ Runner : `ElShammahEdtPrivateSeedRunner` (`@Order(16)`).
 
 | Propriété | Défaut | Effet |
 |---|---|---|
-| `smels.seed.el-shammah-edt.enabled` | `true` | Active |
-| `smels.seed.el-shammah-edt.resource` | fichier seed-private | Extraction |
-| `smels.seed.el-shammah-edt.grid-resource` | `docs/fixtures/timetable-grid.json` | Grille |
+| `beesm.seed.el-shammah-edt.enabled` | `true` | Active |
+| `beesm.seed.el-shammah-edt.resource` | fichier seed-private | Extraction |
+| `beesm.seed.el-shammah-edt.grid-resource` | `docs/fixtures/timetable-grid.json` | Grille |
 | `overwrite-existing` | `false` | Insert-if-absent vs réécriture |
 | `auto-heal-teacher-overlaps` | `true` | Lie les TEACHER_OVERLAP multi-classes |
 

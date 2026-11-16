@@ -1,0 +1,114 @@
+package com.kobe.beesm.controller.student
+
+import com.kobe.beesm.dto.student.CreateStudentRequest
+import com.kobe.beesm.dto.student.PageResponse
+import com.kobe.beesm.dto.student.StudentResponse
+import com.kobe.beesm.dto.student.UpdateStudentRequest
+import com.kobe.beesm.service.student.StudentService
+import com.kobe.beesm.shared.security.SecuritySupport
+import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
+import org.springframework.http.codec.multipart.FilePart
+import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RequestPart
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
+
+@RestController
+@RequestMapping("/api/v1/students")
+class StudentController(
+    private val studentService: StudentService
+) {
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    fun create(@Valid @RequestBody request: CreateStudentRequest): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.create(it, request) }
+
+    @GetMapping("/my-children")
+    fun myChildren(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMapMany { studentService.listMyChildren(it, schoolId) }
+
+    @GetMapping("/{id}/academic-record")
+    fun academicRecord(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { studentService.getAcademicRecord(it, id, schoolId) }
+
+    @GetMapping("/{id}")
+    fun get(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.getById(it, id, schoolId) }
+
+    @GetMapping
+    fun list(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) active: Boolean?,
+        @RequestParam(required = false) q: String?,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<PageResponse<StudentResponse>> =
+        SecuritySupport.currentUser().flatMap { studentService.list(it, page, size, active, q, schoolId) }
+
+    @PutMapping("/{id}")
+    fun update(
+        @PathVariable id: String,
+        @Valid @RequestBody request: UpdateStudentRequest,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.update(it, id, request, schoolId) }
+
+    /** Photo scolaire (bulletin) — distincte de l’avatar compte `/auth/me/avatar`. */
+    @PutMapping("/{id}/school-photo", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    fun uploadSchoolPhoto(
+        @PathVariable id: String,
+        @RequestPart("file") file: FilePart,
+        @RequestParam(required = false) schoolId: String?,
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.uploadSchoolPhoto(it, id, file, schoolId) }
+
+    @GetMapping("/{id}/school-photo")
+    fun schoolPhoto(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?,
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser()
+            .flatMap { studentService.getSchoolPhoto(it, id, schoolId) }
+            .map { photo ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(photo.contentType))
+                    .body(photo.data.data)
+            }
+
+    @DeleteMapping("/{id}/school-photo")
+    fun deleteSchoolPhoto(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?,
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.deleteSchoolPhoto(it, id, schoolId) }
+
+    @PostMapping("/{id}/deactivate")
+    fun deactivate(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.deactivate(it, id, schoolId) }
+
+    @PostMapping("/{id}/reactivate")
+    fun reactivate(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<StudentResponse> =
+        SecuritySupport.currentUser().flatMap { studentService.reactivate(it, id, schoolId) }
+}

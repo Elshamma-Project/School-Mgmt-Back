@@ -1,4 +1,4 @@
-# SMELS back-office : instructions pour les assistants IA
+# Bee SM back-office : instructions pour les assistants IA
 
 > Lu par Cursor (`AGENTS.md`) et importé par Claude Code (`CLAUDE.md`).
 > Lis-le en entier avant toute tâche, puis les documents de `../../Docs/back-office/docs` cités plus bas.
@@ -11,7 +11,7 @@ Utilisateurs non techniques ; données de **mineurs**. **Tout doit être paramé
 - Kotlin + Spring Boot, Java 21, Gradle Kotlin DSL ; MongoDB (replica set, même à un nœud) ; Spring Data MongoDB
 - **Monolithe modulaire aujourd'hui, microservices demain** (voir `docs/08-architecture-modulaire.md`)
 - Front séparé en Next.js (hors dépôt) ; Docker, Nginx, GitHub Actions ; déploiement sur VPS
-- Package racine : `com.kobe.smels` ; couches : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`, `shared`
+- Package racine : `com.kobe.beesm` ; couches : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`, `shared`
 
 ## Modules (même sous-dossier dans chaque couche)
 `user` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · `notification` · `portal` · (`shared` : noyau commun)
