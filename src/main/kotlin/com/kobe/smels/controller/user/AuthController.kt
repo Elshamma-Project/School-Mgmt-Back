@@ -2,6 +2,8 @@ package com.kobe.smels.controller.user
 
 import com.kobe.smels.dto.user.AuthTokensResponse
 import com.kobe.smels.dto.user.ChangePasswordRequest
+import com.kobe.smels.dto.user.ForgotPasswordRequest
+import com.kobe.smels.dto.user.ForgotPasswordResponse
 import com.kobe.smels.dto.user.LoginRequest
 import com.kobe.smels.dto.user.RefreshTokenRequest
 import com.kobe.smels.dto.user.SessionResponse
@@ -42,6 +44,17 @@ class AuthController(
         val ip = clientIp(httpRequest)
         loginRateLimiter.check(ip)
         return authService.login(request, userAgent(httpRequest), ip)
+    }
+
+    /** Public — même réponse que le compte existe ou non (anti-énumération). */
+    @PostMapping("/forgot-password")
+    fun forgotPassword(
+        @Valid @RequestBody request: ForgotPasswordRequest,
+        httpRequest: ServerHttpRequest
+    ): Mono<ForgotPasswordResponse> {
+        val ip = clientIp(httpRequest)
+        loginRateLimiter.check(ip)
+        return authService.requestPasswordReset(request)
     }
 
     @PostMapping("/refresh")

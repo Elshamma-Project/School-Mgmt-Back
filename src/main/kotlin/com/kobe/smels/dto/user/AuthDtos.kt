@@ -35,6 +35,23 @@ data class ChangePasswordRequest(
     val confirmPassword: String
 )
 
+/**
+ * Demande publique « mot de passe oublié ».
+ * Toujours la même réponse (anti-énumération) ; l’envoi d’e-mail automatique = feature future (Q-62).
+ */
+data class ForgotPasswordRequest(
+    @field:NotBlank
+    @field:Email
+    val email: String,
+    /** Requis pour les comptes d’établissement. */
+    @field:NotBlank
+    val schoolId: String
+)
+
+data class ForgotPasswordResponse(
+    val accepted: Boolean = true
+)
+
 data class CreateUserAccountRequest(
     @field:NotBlank
     val username: String,

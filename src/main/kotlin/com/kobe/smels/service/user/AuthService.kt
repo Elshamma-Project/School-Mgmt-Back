@@ -3,6 +3,8 @@ package com.kobe.smels.service.user
 import com.kobe.smels.configuration.SecurityProperties
 import com.kobe.smels.dto.user.AuthTokensResponse
 import com.kobe.smels.dto.user.ChangePasswordRequest
+import com.kobe.smels.dto.user.ForgotPasswordRequest
+import com.kobe.smels.dto.user.ForgotPasswordResponse
 import com.kobe.smels.dto.user.LoginRequest
 import com.kobe.smels.dto.user.SessionResponse
 import com.kobe.smels.dto.user.UserAccountResponse
@@ -15,6 +17,7 @@ import com.kobe.smels.model.user.UserAccount
 import com.kobe.smels.model.user.UserAvatar
 import com.kobe.smels.repository.user.UserAccountRepository
 import com.kobe.smels.repository.user.UserAvatarRepository
+import com.kobe.smels.shared.outbox.OutboxWriter
 import com.kobe.smels.shared.security.CurrentUser
 import org.bson.types.Binary
 import org.slf4j.LoggerFactory
@@ -25,6 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -35,7 +39,8 @@ class AuthService(
     private val userSessionService: UserSessionService,
     private val jwtService: JwtService,
     private val passwordEncoder: PasswordEncoder,
-    private val securityProperties: SecurityProperties
+    private val securityProperties: SecurityProperties,
+    private val outboxWriter: OutboxWriter
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -134,6 +139,45 @@ class AuthService(
                     currentUser.sessionId
                 )
             }
+    }
+
+    /**
+     * Mot de passe oublié (public) : réponse uniforme ; si un compte existe, notifie l’admin via outbox.
+     * Pas d’e-mail automatique en v1 (Q-62) — l’administration réinitialise via `POST /users/{id}/reset-password`.
+     */
+    fun requestPasswordReset(request: ForgotPasswordRequest): Mono<ForgotPasswordResponse> {
+        val email = request.email.trim().lowercase()
+        val schoolId = request.schoolId.trim()
+        val accepted = ForgotPasswordResponse(accepted = true)
+        return userAccountRepository.findBySchoolIdAndUsername(schoolId, email)
+            .flatMap { account ->
+                val accountId = account.id ?: return@flatMap Mono.just(accepted)
+                if (account.status == AccountStatus.DISABLED) {
+                    return@flatMap Mono.just(accepted)
+                }
+                log.info("auth.forgotPassword accepted accountId={} schoolId={}", accountId, schoolId)
+                outboxWriter
+                    .append(
+                        schoolId = schoolId,
+                        module = "user",
+                        aggregateType = "UserAccount",
+                        aggregateId = accountId,
+                        eventType = "user.password.reset.requested",
+                        payload = mapOf(
+                            "accountId" to accountId,
+                            "username" to account.username
+                        )
+                    )
+                    .thenReturn(accepted)
+            }
+            .switchIfEmpty(
+                Mono.fromCallable {
+                    log.info("auth.forgotPassword no-match schoolId={}", schoolId)
+                    accepted
+                }
+            )
+            // Délai constant léger : limite les fuites de timing.
+            .delayElement(Duration.ofMillis(180))
     }
 
     fun me(currentUser: CurrentUser): Mono<UserAccountResponse> {

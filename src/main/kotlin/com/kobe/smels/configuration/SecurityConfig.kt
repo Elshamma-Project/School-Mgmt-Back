@@ -43,6 +43,7 @@ class SecurityConfig(
                     .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     .pathMatchers(
                         "/api/v1/auth/login",
+                        "/api/v1/auth/forgot-password",
                         "/api/v1/auth/refresh",
                         "/api/v1/public/report-cards/**",
                         "/api/v1/public/schools/**",

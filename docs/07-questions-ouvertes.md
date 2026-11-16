@@ -58,6 +58,7 @@
 | Q-59 | Identité enseignants EDT (prénoms, sexe, contact, homonymes FOYEH / MASSAH / NONO / JOSEPH) | ❓ | Fiches `needsCompletion=true`, `source=EDT_2026_2027` ; pas de trancher |
 | Q-60 | Accès enseignants : e-mail réel, invitation, pas de changement d’e-mail | 🟡 | **Option A** : Staff sans compte ; `POST /staff/{id}/login-access` saisit l’e-mail une fois |
 | Q-61 | Enseignant d’allemand 3ème / 1ère A imprimé « Mme … » | ❓ | Case sans `teacherId` (pas de fiche fantôme) |
+| Q-62 | Envoi e-mail automatique pour mot de passe oublié / invitation | ❓ | v1 : demande publique + notif admin ; reset manuel `POST /users/{id}/reset-password` |
 
 ## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
 
@@ -101,6 +102,7 @@
 | Q-59 | **Identité des enseignants** issus du PDF EDT : prénoms, sexe, date de naissance, contact, matricule ; homonymes / ambiguïtés **FOYEH** (Mme Biologie vs Mr English), **MASSAH** (Fabiola vs Jenny sur bulletins 2025-2026), **NONO** (Mr vs Shekina), **JOSEPH** (Maths Form 4) | ❓ | Fiches minimales `needsCompletion=true`, `source=EDT_2026_2027`, `seedKey` ; **ne pas inventer** ; signaler sans trancher | RH + seed privé |
 | Q-60 | **Quand et comment** les enseignants reçoivent un accès : e-mail réel, invitation, activation ; la règle « e-mail de login non modifiable » doit rester vraie pour les vrais e-mails | 🟡 | **Option A (retenue)** : fiche `Staff` **sans** `UserAccount` ; action admin `POST /api/v1/staff/{id}/login-access` saisit le vrai e-mail et crée un compte `PENDING` (une seule fois). Pas d’e-mail `@…invalid`. Option B (e-mail réservé + réclamation) rejetée tant que A suffit. | Auth + onboarding enseignants |
 | Q-61 | Enseignant d’**allemand** de la **3ème** et de la **1ère A** imprimé « Mme … » (inconnu) | ❓ | Créer la case EDT **sans** `teacherId` plutôt qu’une fiche fantôme | Chargeur EDT |
+| Q-62 | **Mot de passe oublié / invitation** : envoi automatique d’e-mail (lien ou MDP temporaire) ? Canal (SMTP école) ? | ❓ | **v1** : `POST /api/v1/auth/forgot-password` (réponse uniforme) + notif in-app admin/directeur ; réinitialisation manuelle via `POST /users/{id}/reset-password` | Auth publique |
 
 ## 3. Décisions provisoires (résumé)
 
