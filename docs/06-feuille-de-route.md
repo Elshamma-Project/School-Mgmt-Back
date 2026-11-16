@@ -10,7 +10,7 @@
 | 3 | Fiches de notes, notes de séquence, clôture, audit, **fiche de report** (`grading`) | ✅ services + visas SG/directeur + corrections ; PDF GradeSheet multi-pages encore à peaufiner |
 | 4 | Calculs dans les services (`reporting`) + tests sur `docs/fixtures/` | ✅ `GradeCalculationEngine` + `GradeCalculationService` + tests fixtures docs/04 §6 |
 | 5 | Bulletins : gabarits, génération, publication, PDF une page A4 | ✅ templates seed, `ReportCardService`, PDF Z1–Z10 1 page FR/EN (annuel + TERM_COMPETENCY) |
-| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | ✅ **phases 0–H** + charge **I** seed privé 2026-2027 (DRAFT, hors Git) — voir `09` § 7 ; Q-59/60/61 |
+| 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | ✅ **phases 0–J** (dont seed privé + notif broadcast publish) — doc de référence `09-emploi-du-temps.md` ; Q-59/60/61 |
 | 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | ✅ auth/JWT/sessions/lockout ; appartenance colmatée sur grading/reporting/student ; portail élève prod encore hors scope |
 | 8 | Notifications, dashboard (`portal`), signalements | ✅ inbox + outbox handlers + `GET /api/v1/dashboard/summary` |
 | 9 | Modules suivants : cartes, frais, import massif, file-storage | ❌ non démarré |

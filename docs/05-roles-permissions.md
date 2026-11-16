@@ -42,7 +42,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Fiche de notes** : notes, bonus, malus (grading) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : `ClassSubject.teacherId` = lui **et** séquence `OPEN` |
 | **Proposer correction après clôture** | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant titulaire ; motif + preuves (BR-80) |
 | **Approuver / rejeter correction** | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | directeur seul ; seule voie de modification persistante post-clôture |
-| **Notifications in-app** (lire / accuser) | ◐ | ◐ | ✔ | ✔ | ✔ | ✔ | destinataire = compte ; clôture séquence → enseignants (BR-81) |
+| **Notifications in-app** (lire / accuser) | ◐ | ◐ | ✔ | ✔ | ✔ | ✔ | destinataire = compte ; clôture séquence → enseignants (BR-81) ; publication EDT → **tous** les comptes scolaires (BR-60) |
 | **Signalement officiel** enseignant → admin | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | BR-82 ; pas de chat |
 | **Traiter signalements** (accusé / clôture) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration + directeur |
 | Consulter les notes de séquence | ◐ | ◐ | ◐ | ✔ | ✔ | ◐ | élève : les siennes ; parent : ses enfants (`canViewGrades`) ; enseignant : ses matières |

@@ -33,13 +33,15 @@ class AuthLockoutTest {
         lockout = SecurityProperties.Lockout(maxFailedAttempts = 3, lockDurationMinutes = 15)
     )
 
+    private val outboxWriter: com.kobe.smels.shared.outbox.OutboxWriter = mock()
     private val service = AuthService(
         userAccountRepository,
         userAvatarRepository,
         userSessionService,
         jwtService,
         passwordEncoder,
-        securityProperties
+        securityProperties,
+        outboxWriter
     )
 
     @Test

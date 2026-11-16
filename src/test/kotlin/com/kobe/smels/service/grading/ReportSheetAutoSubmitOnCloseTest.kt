@@ -75,7 +75,8 @@ class ReportSheetAutoSubmitOnCloseTest {
                         aggregateType = "GradeReportSheet",
                         aggregateId = "x",
                         eventType = "grading.report-sheet.submitted",
-                        payload = emptyMap()
+                        payload = emptyMap(),
+                        occurredAt = java.time.Instant.parse("2026-01-15T10:00:00Z")
                     )
                 )
             )

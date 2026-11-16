@@ -37,12 +37,14 @@ class EnrollmentServiceTest {
     private val academicYearApi: AcademicYearApi = mock()
     private val schoolClassApi: SchoolClassApi = mock()
     private val outboxWriter: OutboxWriter = mock()
+    private val mongoTemplate: org.springframework.data.mongodb.core.ReactiveMongoTemplate = mock()
     private val service = EnrollmentService(
         enrollmentRepository,
         studentRepository,
         academicYearApi,
         schoolClassApi,
-        outboxWriter
+        outboxWriter,
+        mongoTemplate
     )
 
     @Test

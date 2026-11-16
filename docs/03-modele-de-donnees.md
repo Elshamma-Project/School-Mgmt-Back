@@ -172,14 +172,23 @@ Créées avec l'année (statut `PLANNED`). Sur le bulletin de trimestre, les deu
 
 Quel gabarit pour quels niveaux : Q-26.
 
-### 5.6 Emploi du temps (`timetable_*`) — phase 0
-- **Grille** (`timetable_grids`) : voir `fixtures/timetable-grid.json` — 8 périodes, pauses, nettoyage ; lun–ven.
-- **Timetable** : `headerContact` (contacts PDF EDT, Q-45) ; une révision `PUBLISHED` / année.
-- **TimetableEntry** : `classSubjectIds[]` ; `sessionGroupId` (cours groupés) ; `optionGroupCode` / `optionCode` (LV2) ; samedi hors grille via `customStart`/`customEnd` (Q-33).
-- **TimetableSubjectAlias** : variantes d’impression → `classSubjectIds` ; jamais de match texte libre (Q-30 / Q-56).
-- **School** : `timetableSurveillantCanEdit` (défaut `false`, Q-32).
+### 5.6 Emploi du temps (`timetable_*`)
 
-Détail métier et BR-09 : `09-emploi-du-temps.md`.
+> **Référence complète** (cycle de vie, conflits, BR-67, API, seed, notifs) : [`09-emploi-du-temps.md`](09-emploi-du-temps.md).
+
+| Collection | Document | Rôle |
+|---|---|---|
+| `timetable_grids` | `TimeSlotGrid` + `GridPeriod` | Journée type lun–ven (8 périodes, pauses, nettoyage) — fixture `timetable-grid.json` |
+| `timetable_timetables` | `Timetable` | EDT d’une année ; `revision` ; `DRAFT` → `PUBLISHED` → `ARCHIVED` ; `headerContact` PDF (Q-45) |
+| `timetable_entries` | `TimetableEntry` | Cases : `slotKey`, `classSubjectIds[]`, `sessionGroupId`, options LV2, `customStart`/`customEnd` (samedi Q-33), `LESSON`/`ACTIVITY` |
+| `timetable_subject_aliases` | `TimetableSubjectAlias` | Alias imprimé → `classSubjectIds` ; jamais de match texte libre (Q-30 / Q-56 / Q-63) |
+| `timetable_change_requests` | `TimetableChangeRequest` + `TimetableEntrySnapshot` | Demandes enseignant → admin/dir. (BR-67) |
+
+**School** : `timetableSurveillantCanEdit` (défaut `false`, Q-32).
+
+**Index critiques** : `uk_year_revision`, `uk_class_slot_option`, `idx_teacher_day`, `idx_room_day`, `idx_session_group`, `uk_alias_year_section`, `idx_tt_change_entry_pending`.
+
+**Statuts case / demande** : `EntryKind` { LESSON, ACTIVITY } ; `ActivityType` { CLUB, LIBRARY, MUSIC, CHINESE, GENERAL_CLEANING, STUDY_HALL, OTHER } ; `TimetableChangeStatus` { PENDING, APPROVED, REJECTED, CANCELLED }.
 
 ## 6. Ce qui n'est volontairement pas dans le modèle
 

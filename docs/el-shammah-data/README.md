@@ -53,7 +53,7 @@ Un éventuel `edt-*-extraction.json` déposé ici est **gitignoré** — le dép
 
 Fichier absent → le runner ignore (pas d’échec). Timetable créé en **DRAFT** révision 1. Fiches Staff **sans** compte (Q-60).
 
-Import renforcé : index des séances jumelées (`EdtJointSessionIndex`), anti-doublons upsert, auto-heal des `TEACHER_OVERLAP` multi-classes (`auto-heal-teacher-overlaps=true`). Voir `docs/seed-private/README.md`.
+Import renforcé : index des séances jumelées (`EdtJointSessionIndex`), anti-doublons upsert, auto-heal des `TEACHER_OVERLAP` multi-classes (`auto-heal-teacher-overlaps=true`). Voir `docs/seed-private/README.md` et la **doc de référence EDT** [`../09-emploi-du-temps.md`](../09-emploi-du-temps.md) § 15.
 
 ### Après modification de ce JSON
 

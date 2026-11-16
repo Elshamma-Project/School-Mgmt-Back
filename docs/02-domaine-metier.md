@@ -180,11 +180,16 @@ stateDiagram-v2
 - **BR-53** Tout est modifiable depuis l'interface graphique dans les deux langues.
 
 ### 5.7 Emploi du temps (une seule page A4)
-- **BR-60** L'emploi du temps est **généré une seule fois par an** (`Timetable`, une version publiée par année) ; semaine type répétée toute l'année.
+- **BR-60** L'emploi du temps est **généré une seule fois par an** (`Timetable`, une version publiée par année) ; semaine type répétée toute l'année. Chaque publication / republication notifie in-app **tous** les acteurs scolaires (élève, parent, enseignant, staff) avec lien vers la consultation EDT.
 - **BR-61** Une case = classe + jour + période (+ option LV2) + `classSubjectIds` + enseignant (+ salle) ; ou `ACTIVITY`. Hors grille / samedi : `customStart`/`customEnd`.
 - **BR-62** **Impression : une seule page A4 paysage par classe** (et par enseignant ou par salle sur demande), jamais de seconde page.
+- **BR-09** (EDT) Conflits : pas de chevauchement classe (sauf options parallèles) ; enseignant / salle sauf même `sessionGroupId` ; ACTIVITY n’engage pas l’enseignant.
 - **BR-63** Périodes EDT ↔ **somme** des `weeklyHours` des `classSubjectIds` liés (avertissement) ; résolution des libellés via `TimetableSubjectAlias`.
+- **BR-64** Enseignant différent du titulaire `ClassSubject` → avertissement.
+- **BR-65** / **BR-66** ACTIVITY sans conflit enseignant ; case hors pause / nettoyage (sauf hors grille).
 - **BR-67** Sur un EDT **PUBLISHED**, l’enseignant titulaire d’une case peut **proposer** une modification / suppression de créneau (motif ≥ 15 caractères). Une seule demande `PENDING` par case. **Administration** ou **directeur** (ou `SUPER_ADMIN`) **approuve** (applique sur le brouillon existant ou crée une nouvelle révision) ou **refuse** (motif de revue). Collection `timetable_change_requests`.
+
+Détail exhaustif (API, seed, front, notifs) : [`09-emploi-du-temps.md`](09-emploi-du-temps.md).
 
 ## 6. Parcours principal : de la saisie au bulletin
 
