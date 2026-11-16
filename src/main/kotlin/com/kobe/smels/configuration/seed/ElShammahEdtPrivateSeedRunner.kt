@@ -114,8 +114,8 @@ class ElShammahEdtPrivateSeedRunner(
 
     private fun seed(extraction: EdtExtractionFile): Mono<SeedReport> {
         val schoolId = properties.schoolId
-        val yearLabel = extraction.academicYearLabel?.takeIf { it.isNotBlank() }
-            ?: properties.academicYearLabel
+        val yearLabel = extraction.resolvedYearLabel(properties.academicYearLabel)
+        val aliasCodes = flatAliasCodeMap(extraction)
 
         return academicYearRepository.findBySchoolIdAndLabel(schoolId, yearLabel)
             .switchIfEmpty(
@@ -126,18 +126,20 @@ class ElShammahEdtPrivateSeedRunner(
                 ensureTeachers(schoolId, extraction.teachers)
                     .flatMap { teacherIds ->
                         cloneClassSubjectsFromPreviousYear(schoolId, yearId, yearLabel)
+                            .then(overlayWeeklyHours(schoolId, yearId, extraction, aliasCodes))
                             .then(ensureGrid(schoolId, yearId))
                             .flatMap { gridId ->
                                 ensureDraftTimetable(schoolId, yearId, gridId)
                                     .flatMap { timetableId ->
-                                        ensureAliases(schoolId, yearId, extraction)
+                                        ensureAliases(schoolId, yearId, aliasCodes)
                                             .then(
                                                 upsertEntries(
                                                     schoolId = schoolId,
                                                     yearId = yearId,
                                                     timetableId = timetableId,
                                                     extraction = extraction,
-                                                    teacherIds = teacherIds
+                                                    teacherIds = teacherIds,
+                                                    aliasCodes = aliasCodes
                                                 )
                                             )
                                             .flatMap { entryStats ->
@@ -157,6 +159,19 @@ class ElShammahEdtPrivateSeedRunner(
             }
     }
 
+    /** Map alias imprimé → code catalogue (premier candidate normalisé). */
+    private fun flatAliasCodeMap(extraction: EdtExtractionFile): Map<String, String> {
+        val out = linkedMapOf<String, String>()
+        extraction.printedAliasMap.forEach { (printed, info) ->
+            val code = info.candidateSubjectCodes
+                .asSequence()
+                .mapNotNull { normalizeExtractionSubjectCode(it) }
+                .firstOrNull()
+            if (code != null) out[printed] = code
+        }
+        return out
+    }
+
     private fun ensureTeachers(
         schoolId: String,
         teachers: List<EdtTeacher>
@@ -165,9 +180,10 @@ class ElShammahEdtPrivateSeedRunner(
         return Flux.fromIterable(teachers)
             .concatMap { row ->
                 val key = row.key.trim()
-                if (key.isEmpty()) return@concatMap Mono.empty()
+                // Q-61 : ne jamais créer de fiche pour un enseignant inconnu imprimé « Mme … »
+                if (key.isEmpty() || isUnknownTeacherKey(key)) return@concatMap Mono.empty()
                 val civility = parseCivility(row.civility)
-                val lastName = row.printedName.trim()
+                val lastName = row.printedName.trim().ifBlank { key }
                 staffRepository.findBySchoolIdAndSeedKey(schoolId, key)
                     .flatMap { existing ->
                         if (!properties.overwriteExisting) {
@@ -225,12 +241,15 @@ class ElShammahEdtPrivateSeedRunner(
         targetYearLabel: String
     ): Mono<Void> {
         val sourceYearLabel = "2025-2026"
+        // 1ères absentes en 2025-2026 → modèle provisoire 2nde C (coefficients / groupes).
         val classMap = mapOf(
             "6ème" to listOf("6ème"),
             "5ème" to listOf("5ème"),
             "4ème" to listOf("4ème ALL", "4ème ESP"),
             "3ème" to listOf("3ème ALL"),
             "2nde C" to listOf("2nde C"),
+            "1ère A" to listOf("2nde C"),
+            "1ère C/D" to listOf("2nde C"),
             "Form 1" to listOf("Form 1"),
             "Form 2" to listOf("Form 2"),
             "Form 3" to listOf("Form 3"),
@@ -386,14 +405,14 @@ class ElShammahEdtPrivateSeedRunner(
     private fun ensureAliases(
         schoolId: String,
         yearId: String,
-        extraction: EdtExtractionFile
+        aliasCodes: Map<String, String>
     ): Mono<Void> {
-        if (extraction.printedAliasMap.isEmpty()) return Mono.empty()
+        if (aliasCodes.isEmpty()) return Mono.empty()
         return subjectRepository.findBySchoolIdAndActiveTrue(schoolId)
             .collectList()
             .flatMap { subjects ->
                 val byCode = subjects.associateBy { it.code }
-                Flux.fromIterable(extraction.printedAliasMap.entries)
+                Flux.fromIterable(aliasCodes.entries)
                     .concatMap { (printed, target) ->
                         val normalized = TimetableSubjectAliasService.normalizeAlias(printed)
                         val subject = byCode[target]
@@ -432,18 +451,84 @@ class ElShammahEdtPrivateSeedRunner(
             }
     }
 
+    /**
+     * Applique les volumes hebdomadaires de l’extraction sur les ClassSubject déjà clonés
+     * (ids uniquement dans les logs).
+     */
+    private fun overlayWeeklyHours(
+        schoolId: String,
+        yearId: String,
+        extraction: EdtExtractionFile,
+        aliasCodes: Map<String, String>
+    ): Mono<Void> {
+        if (extraction.weeklyPeriodsByClassAndAlias.isEmpty()) return Mono.empty()
+        return schoolClassRepository.findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, yearId)
+            .collectMap({ it.name }, { it.id!! })
+            .flatMap { classIds ->
+                subjectRepository.findBySchoolIdAndActiveTrue(schoolId).collectList()
+                    .flatMap { subjects ->
+                        val subjectByCode = subjects.associateBy { it.code }
+                        Flux.fromIterable(extraction.weeklyPeriodsByClassAndAlias.entries)
+                            .concatMap { (className, aliasHours) ->
+                                val classId = classIds[className] ?: return@concatMap Mono.empty()
+                                Flux.fromIterable(aliasHours.entries)
+                                    .concatMap { (printed, hours) ->
+                                        val code = resolveAliasCode(printed, aliasCodes) ?: return@concatMap Mono.empty()
+                                        val subject = subjectByCode[code] ?: return@concatMap Mono.empty()
+                                        if (subject.kind == SubjectKind.ACTIVITY) return@concatMap Mono.empty()
+                                        classSubjectRepository
+                                            .findBySchoolIdAndClassIdAndSubjectId(schoolId, classId, subject.id!!)
+                                            .flatMap { cs ->
+                                                if (cs.weeklyHours == hours && !properties.overwriteExisting) {
+                                                    Mono.just(cs)
+                                                } else {
+                                                    cs.weeklyHours = hours
+                                                    classSubjectRepository.save(cs)
+                                                }
+                                            }
+                                    }
+                                    .then()
+                            }
+                            .then()
+                    }
+            }
+    }
+
     private fun upsertEntries(
         schoolId: String,
         yearId: String,
         timetableId: String,
         extraction: EdtExtractionFile,
-        teacherIds: Map<String, String>
+        teacherIds: Map<String, String>,
+        aliasCodes: Map<String, String>
     ): Mono<Pair<Int, Int>> {
         val sessionGroupIds = mutableMapOf<String, String>()
-        fun groupIdFor(hint: String?): String? {
-            val h = hint?.trim()?.ifBlank { null } ?: return null
-            return sessionGroupIds.getOrPut(h) { "sg-" + UUID.nameUUIDFromBytes(h.toByteArray()).toString() }
+        fun groupIdFor(hints: List<String>): String? {
+            if (hints.isEmpty()) return null
+            val key = hints.sorted().joinToString("+")
+            return sessionGroupIds.getOrPut(key) {
+                "sg-" + UUID.nameUUIDFromBytes(key.toByteArray()).toString()
+            }
         }
+
+        val activityByAlias = mapOf(
+            "CHINOIS" to ActivityType.CHINESE,
+            "CNINOIS" to ActivityType.CHINESE,
+            "CNINESE" to ActivityType.CHINESE,
+            "CHINESE" to ActivityType.CHINESE,
+            "MUSIQUE" to ActivityType.MUSIC,
+            "MUSIC" to ActivityType.MUSIC,
+            "CLUB" to ActivityType.CLUB,
+            "BIBLIOTHEQUE" to ActivityType.LIBRARY,
+            "BIBLIOTHÈQUE" to ActivityType.LIBRARY,
+            "LIBRARY" to ActivityType.LIBRARY,
+            "MENAGE GENERAL" to ActivityType.GENERAL_CLEANING,
+            "MÉNAGE GÉNÉRAL" to ActivityType.GENERAL_CLEANING,
+            "GENERAL CLEAN UP" to ActivityType.GENERAL_CLEANING,
+            "GENERAL CLEANUP" to ActivityType.GENERAL_CLEANING,
+            "ART EDUC" to ActivityType.OTHER,
+            "ART. EDUC" to ActivityType.OTHER
+        )
 
         return schoolClassRepository.findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, yearId)
             .collectMap({ it.name }, { it.id!! })
@@ -451,28 +536,10 @@ class ElShammahEdtPrivateSeedRunner(
                 subjectRepository.findBySchoolIdAndActiveTrue(schoolId).collectList()
                     .flatMap { subjects ->
                         val subjectByCode = subjects.associateBy { it.code }
-                        val activityByAlias = mapOf(
-                            "CHINOIS" to ActivityType.CHINESE,
-                            "CNINOIS" to ActivityType.CHINESE,
-                            "CNINESE" to ActivityType.CHINESE,
-                            "CHINESE" to ActivityType.CHINESE,
-                            "MUSIQUE" to ActivityType.MUSIC,
-                            "MUSIC" to ActivityType.MUSIC,
-                            "CLUB" to ActivityType.CLUB,
-                            "BIBLIOTHEQUE" to ActivityType.LIBRARY,
-                            "BIBLIOTHÈQUE" to ActivityType.LIBRARY,
-                            "LIBRARY" to ActivityType.LIBRARY,
-                            "MENAGE GENERAL" to ActivityType.GENERAL_CLEANING,
-                            "MÉNAGE GÉNÉRAL" to ActivityType.GENERAL_CLEANING,
-                            "GENERAL CLEAN UP" to ActivityType.GENERAL_CLEANING,
-                            "GENERAL CLEANUP" to ActivityType.GENERAL_CLEANING,
-                            "ART EDUC" to ActivityType.OTHER,
-                            "ART. EDUC" to ActivityType.OTHER
-                        )
                         classSubjectRepository.findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, yearId)
                             .collectMultimap({ it.classId }, { it })
                             .flatMap { csByClass ->
-                                Flux.fromIterable(extraction.entries)
+                                val weekEntries = Flux.fromIterable(extraction.entries)
                                     .concatMap { entry ->
                                         val classId = classIds[entry.`class`]
                                         if (classId == null) {
@@ -489,10 +556,12 @@ class ElShammahEdtPrivateSeedRunner(
                                                 "T" + entry.customStart.replace(":", "")
                                             else -> return@concatMap Mono.empty()
                                         }
-                                        val sessionGroupId =
-                                            groupIdFor(entry.jointSessionId ?: entry.jointSessionHint)
-                                        Flux.fromIterable(entry.resolvedItems())
+                                        val items = entry.resolvedItems()
+                                        val parallelOptions = items.size > 1
+                                        Flux.fromIterable(items)
                                             .concatMap { item ->
+                                                val hints =
+                                                    item.resolvedJointHints().ifEmpty { entry.resolvedJointHints() }
                                                 upsertOneEntry(
                                                     schoolId = schoolId,
                                                     yearId = yearId,
@@ -500,17 +569,54 @@ class ElShammahEdtPrivateSeedRunner(
                                                     classId = classId,
                                                     day = day,
                                                     slotKey = slotKey,
-                                                    entry = entry,
+                                                    startPeriod = entry.startPeriod,
+                                                    periodCount = entry.periodCount,
+                                                    customStart = entry.customStart,
+                                                    customEnd = entry.customEnd,
                                                     item = item,
-                                                    sessionGroupId = sessionGroupId,
+                                                    sessionGroupId = groupIdFor(hints),
+                                                    parallelOptions = parallelOptions,
                                                     teacherIds = teacherIds,
                                                     subjectByCode = subjectByCode,
                                                     activityByAlias = activityByAlias,
                                                     classSubjects = csByClass[classId]?.toList().orEmpty(),
-                                                    aliasMap = extraction.printedAliasMap
+                                                    aliasMap = aliasCodes
                                                 )
                                             }
                                     }
+                                val saturdayEntries = Flux.fromIterable(extraction.saturdayBlocks)
+                                    .concatMap { block ->
+                                        val classId = classIds[block.`class`] ?: return@concatMap Mono.empty()
+                                        val start = block.start ?: return@concatMap Mono.empty()
+                                        val end = block.end ?: return@concatMap Mono.empty()
+                                        val printed = block.subject?.trim().orEmpty()
+                                        val item = EdtEntryItem(
+                                            printedAlias = printed,
+                                            teacherKey = matchTeacherKey(block.teacherPrinted, extraction.teachers),
+                                            nature = if (printed.uppercase().startsWith("TD")) "TD" else "T"
+                                        )
+                                        upsertOneEntry(
+                                            schoolId = schoolId,
+                                            yearId = yearId,
+                                            timetableId = timetableId,
+                                            classId = classId,
+                                            day = DayOfWeek.SATURDAY,
+                                            slotKey = "T" + start.replace(":", ""),
+                                            startPeriod = null,
+                                            periodCount = (block.hours ?: 1).coerceAtLeast(1),
+                                            customStart = start,
+                                            customEnd = end,
+                                            item = item,
+                                            sessionGroupId = null,
+                                            parallelOptions = false,
+                                            teacherIds = teacherIds,
+                                            subjectByCode = subjectByCode,
+                                            activityByAlias = activityByAlias,
+                                            classSubjects = csByClass[classId]?.toList().orEmpty(),
+                                            aliasMap = aliasCodes
+                                        )
+                                    }
+                                Flux.concat(weekEntries, saturdayEntries)
                                     .count()
                                     .map { count -> count.toInt() to sessionGroupIds.size }
                             }
@@ -525,21 +631,28 @@ class ElShammahEdtPrivateSeedRunner(
         classId: String,
         day: DayOfWeek,
         slotKey: String,
-        entry: EdtEntry,
+        startPeriod: Int?,
+        periodCount: Int,
+        customStart: String?,
+        customEnd: String?,
         item: EdtEntryItem,
         sessionGroupId: String?,
+        parallelOptions: Boolean,
         teacherIds: Map<String, String>,
         subjectByCode: Map<String, com.kobe.smels.model.academic.Subject>,
         activityByAlias: Map<String, ActivityType>,
         classSubjects: List<ClassSubject>,
         aliasMap: Map<String, String>
     ): Mono<TimetableEntry> {
-        val optionCode = item.optionCode?.trim().orEmpty()
         val printed = item.printedAlias?.trim().orEmpty()
         val normalized = TimetableSubjectAliasService.normalizeAlias(printed)
-        val mappedCode = aliasMap[printed] ?: aliasMap.entries
-            .firstOrNull { TimetableSubjectAliasService.normalizeAlias(it.key) == normalized }
-            ?.value
+        val mappedCode = item.subjectCodes
+            .asSequence()
+            .mapNotNull { normalizeExtractionSubjectCode(it) }
+            .firstOrNull()
+            ?: resolveAliasCode(printed, aliasMap)
+        val (optionGroupCode, optionCode) = resolveOptionCodes(item, printed, parallelOptions)
+        val nature = item.nature?.trim()?.uppercase().orEmpty()
         val activityType = item.activityType?.let {
             runCatching { ActivityType.valueOf(it) }.getOrNull()
         } ?: activityByAlias.entries
@@ -547,12 +660,17 @@ class ElShammahEdtPrivateSeedRunner(
             ?.value
         val kind = when {
             item.kind.equals("ACTIVITY", ignoreCase = true) -> EntryKind.ACTIVITY
+            nature == "A" -> EntryKind.ACTIVITY
             activityType != null -> EntryKind.ACTIVITY
             subjectByCode[mappedCode]?.kind == SubjectKind.ACTIVITY -> EntryKind.ACTIVITY
             else -> EntryKind.LESSON
         }
         // Q-61 : enseignant inconnu (« Mme ... ») → pas de fiche fantôme
-        val teacherId = item.teacherKey?.trim()?.takeIf { it.isNotEmpty() }?.let { teacherIds[it] }
+        val rawTeacherKey = item.resolvedTeacherKey()
+        val teacherId =
+            rawTeacherKey
+                ?.takeUnless { isUnknownTeacherKey(it) }
+                ?.let { teacherIds[it] }
         val subject = mappedCode?.let { subjectByCode[it] }
         val classSubjectIds =
             if (kind == EntryKind.ACTIVITY) {
@@ -576,14 +694,18 @@ class ElShammahEdtPrivateSeedRunner(
                 } else {
                     applyEntry(
                         existing,
-                        entry,
+                        startPeriod,
+                        periodCount,
+                        customStart,
+                        customEnd,
                         kind,
                         activityType,
                         teacherId,
                         subject?.id,
                         classSubjectIds,
                         sessionGroupId,
-                        item
+                        optionGroupCode,
+                        optionCode
                     )
                     timetableEntryRepository.save(existing)
                 }
@@ -596,10 +718,10 @@ class ElShammahEdtPrivateSeedRunner(
                         timetableId = timetableId,
                         classId = classId,
                         day = day,
-                        startPeriod = entry.startPeriod,
-                        periodCount = entry.periodCount.coerceAtLeast(1),
-                        customStart = entry.customStart?.let { LocalTime.parse(it) },
-                        customEnd = entry.customEnd?.let { LocalTime.parse(it) },
+                        startPeriod = startPeriod,
+                        periodCount = periodCount.coerceAtLeast(1),
+                        customStart = customStart?.let { LocalTime.parse(it) },
+                        customEnd = customEnd?.let { LocalTime.parse(it) },
                         slotKey = slotKey,
                         kind = kind,
                         classSubjectIds = classSubjectIds,
@@ -607,7 +729,7 @@ class ElShammahEdtPrivateSeedRunner(
                         teacherId = teacherId,
                         activityType = activityType,
                         sessionGroupId = sessionGroupId,
-                        optionGroupCode = item.optionGroupCode,
+                        optionGroupCode = optionGroupCode,
                         optionCode = optionCode,
                         label = when {
                             item.labelFr != null || item.labelEn != null ->
@@ -626,27 +748,86 @@ class ElShammahEdtPrivateSeedRunner(
 
     private fun applyEntry(
         existing: TimetableEntry,
-        entry: EdtEntry,
+        startPeriod: Int?,
+        periodCount: Int,
+        customStart: String?,
+        customEnd: String?,
         kind: EntryKind,
         activityType: ActivityType?,
         teacherId: String?,
         subjectId: String?,
         classSubjectIds: List<String>,
         sessionGroupId: String?,
-        item: EdtEntryItem
+        optionGroupCode: String?,
+        optionCode: String
     ) {
-        existing.startPeriod = entry.startPeriod
-        existing.periodCount = entry.periodCount.coerceAtLeast(1)
-        existing.customStart = entry.customStart?.let { LocalTime.parse(it) }
-        existing.customEnd = entry.customEnd?.let { LocalTime.parse(it) }
+        existing.startPeriod = startPeriod
+        existing.periodCount = periodCount.coerceAtLeast(1)
+        existing.customStart = customStart?.let { LocalTime.parse(it) }
+        existing.customEnd = customEnd?.let { LocalTime.parse(it) }
         existing.kind = kind
         existing.activityType = activityType
         existing.teacherId = teacherId
         existing.subjectId = subjectId
         existing.classSubjectIds = classSubjectIds
         existing.sessionGroupId = sessionGroupId
-        existing.optionGroupCode = item.optionGroupCode
-        existing.optionCode = item.optionCode?.trim().orEmpty()
+        existing.optionGroupCode = optionGroupCode
+        existing.optionCode = optionCode
+    }
+
+    private fun resolveAliasCode(printed: String, aliasMap: Map<String, String>): String? {
+        if (printed.isBlank()) return null
+        aliasMap[printed]?.let { return it }
+        val normalized = TimetableSubjectAliasService.normalizeAlias(printed)
+        return aliasMap.entries
+            .firstOrNull { TimetableSubjectAliasService.normalizeAlias(it.key) == normalized }
+            ?.value
+            ?: normalizeExtractionSubjectCode(printed)
+    }
+
+    private fun resolveOptionCodes(
+        item: EdtEntryItem,
+        printed: String,
+        parallelOptions: Boolean
+    ): Pair<String?, String> {
+        item.optionGroupCode?.trim()?.takeIf { it.isNotEmpty() }?.let { group ->
+            return group to (item.optionCode?.trim().orEmpty())
+        }
+        if (!parallelOptions) return null to (item.optionCode?.trim().orEmpty())
+        val code = when (TimetableSubjectAliasService.normalizeAlias(printed)) {
+            TimetableSubjectAliasService.normalizeAlias("ALLEMAND"),
+            TimetableSubjectAliasService.normalizeAlias("ALL") -> "ALL"
+            TimetableSubjectAliasService.normalizeAlias("ESP"),
+            TimetableSubjectAliasService.normalizeAlias("ESPAGNOL") -> "ESP"
+            else -> item.optionCode?.trim().orEmpty()
+        }
+        return if (code.isEmpty()) null to "" else "LV2" to code
+    }
+
+    private fun isUnknownTeacherKey(key: String): Boolean {
+        val n = key.trim().uppercase()
+        return n.isEmpty() ||
+            n == "INCONNU" ||
+            n == "UNKNOWN" ||
+            n == "..." ||
+            n.contains("...")
+    }
+
+    private fun matchTeacherKey(printed: String?, teachers: List<EdtTeacher>): String? {
+        val raw = printed?.trim().orEmpty()
+        if (raw.isEmpty()) return null
+        val stripped = raw
+            .replace(Regex("^(M\\.?|MR\\.?|MME\\.?|MRS\\.?|MS\\.?)\\s+", RegexOption.IGNORE_CASE), "")
+            .trim()
+        val compact = stripped.uppercase().replace(Regex("[^A-Z0-9]"), "")
+        teachers.firstOrNull { it.key.equals(stripped, ignoreCase = true) }?.let { return it.key }
+        teachers.firstOrNull {
+            it.key.uppercase().replace(Regex("[^A-Z0-9]"), "") == compact
+        }?.let { return it.key }
+        teachers.firstOrNull {
+            it.printedName.uppercase().replace(Regex("[^A-Z0-9]"), "") == compact
+        }?.let { return it.key }
+        return null
     }
 
     private fun parseDay(raw: String): DayOfWeek? =

@@ -59,6 +59,7 @@
 | Q-60 | Accès enseignants : e-mail réel, invitation, pas de changement d’e-mail | 🟡 | **Option A** : Staff sans compte ; `POST /staff/{id}/login-access` saisit l’e-mail une fois |
 | Q-61 | Enseignant d’allemand 3ème / 1ère A imprimé « Mme … » | ❓ | Case sans `teacherId` (pas de fiche fantôme) |
 | Q-62 | Envoi e-mail automatique pour mot de passe oublié / invitation | ❓ | v1 : demande publique + notif admin ; reset manuel `POST /users/{id}/reset-password` |
+| Q-63 | Mapping EDT `FRANÇAIS` / `?FRANCAIS` → matières bulletin (`LANG_FR` vs `EXP_*`) | ❓ | Seed EDT mappe vers `LANG_FR` ; cases junior peuvent rester sans `classSubjectIds` |
 
 ## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
 
@@ -103,6 +104,7 @@
 | Q-60 | **Quand et comment** les enseignants reçoivent un accès : e-mail réel, invitation, activation ; la règle « e-mail de login non modifiable » doit rester vraie pour les vrais e-mails | 🟡 | **Option A (retenue)** : fiche `Staff` **sans** `UserAccount` ; action admin `POST /api/v1/staff/{id}/login-access` saisit le vrai e-mail et crée un compte `PENDING` (une seule fois). Pas d’e-mail `@…invalid`. Option B (e-mail réservé + réclamation) rejetée tant que A suffit. | Auth + onboarding enseignants |
 | Q-61 | Enseignant d’**allemand** de la **3ème** et de la **1ère A** imprimé « Mme … » (inconnu) | ❓ | Créer la case EDT **sans** `teacherId` plutôt qu’une fiche fantôme | Chargeur EDT |
 | Q-62 | **Mot de passe oublié / invitation** : envoi automatique d’e-mail (lien ou MDP temporaire) ? Canal (SMTP école) ? | ❓ | **v1** : `POST /api/v1/auth/forgot-password` (réponse uniforme) + notif in-app admin/directeur ; réinitialisation manuelle via `POST /users/{id}/reset-password` | Auth publique |
+| Q-63 | **FRANÇAIS** imprimé sur l’EDT (`?FRANCAIS`) : une matière catalogue, ou répartition vers `EXP_ECR` / `EXP_ORA` / `CORR_ORTH` / `ETUDE_TXT` / `LANG_FR` selon le niveau ? (lié à Q-56) | ❓ | Seed EDT : code cible provisoire `LANG_FR` ; case créée même si aucun `ClassSubject` junior ne matche | Chargeur EDT |
 
 ## 3. Décisions provisoires (résumé)
 

@@ -34,7 +34,16 @@ Les comptes de connexion DEV (`MockUsersBootstrapRunner`) **ne touchent plus** �
 
 ### Seed EDT privé (enseignants + cases 2026-2027)
 
-Les **noms d’enseignants** et l’extraction PDF ne sont **pas** dans ce JSON public. Voir `docs/seed-private/README.md` (hors Git) et `ElShammahEdtPrivateSeedRunner` (`@Order(16)`).
+Les **noms d’enseignants** et l’extraction PDF ne sont **pas** dans ce dossier public (règle 12).
+
+Emplacement **obligatoire** (hors Git) :
+
+```
+docs/seed-private/edt-2026-2027-extraction.json
+```
+
+Voir `docs/seed-private/README.md` et `ElShammahEdtPrivateSeedRunner` (`@Order(16)`).
+Un éventuel `edt-*-extraction.json` déposé ici est **gitignoré** — le déplacer vers `seed-private/`.
 
 | Propriété | Défaut |
 |---|---|

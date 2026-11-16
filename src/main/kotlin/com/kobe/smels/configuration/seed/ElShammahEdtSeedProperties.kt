@@ -18,7 +18,7 @@ data class ElShammahEdtSeedProperties(
      * Ne jamais committer le JSON dans le classpath.
      */
     val resource: String = "file:docs/seed-private/edt-2026-2027-extraction.json",
-    val gridResource: String = "classpath:fixtures/timetable-grid.json",
+    val gridResource: String = "file:docs/fixtures/timetable-grid.json",
     /** false = upsert insert-if-absent / enrichissement ; true = réapplique les champs seed. */
     val overwriteExisting: Boolean = false
 )
