@@ -2,21 +2,27 @@ package com.kobe.smels.controller.timetable
 
 import com.kobe.smels.dto.timetable.CreateTimeSlotGridRequest
 import com.kobe.smels.dto.timetable.CreateTimetableRequest
+import com.kobe.smels.dto.timetable.DuplicateTimetableRequest
 import com.kobe.smels.dto.timetable.LinkSessionGroupRequest
 import com.kobe.smels.dto.timetable.UnlinkSessionGroupRequest
 import com.kobe.smels.dto.timetable.UpdateTimeSlotGridRequest
 import com.kobe.smels.dto.timetable.UpdateTimetableRequest
 import com.kobe.smels.dto.timetable.UpsertTimetableEntryRequest
 import com.kobe.smels.dto.timetable.UpsertTimetableSubjectAliasRequest
+import com.kobe.smels.model.shared.Language
 import com.kobe.smels.service.timetable.TimeSlotGridService
 import com.kobe.smels.service.timetable.TimetableConflictService
 import com.kobe.smels.service.timetable.TimetableEntryService
+import com.kobe.smels.service.timetable.TimetablePdfService
 import com.kobe.smels.service.timetable.TimetableService
 import com.kobe.smels.service.timetable.TimetableSessionGroupService
 import com.kobe.smels.service.timetable.TimetableSubjectAliasService
 import com.kobe.smels.shared.security.SecuritySupport
 import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -27,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/v1/timetable-grids")
@@ -62,7 +69,8 @@ class TimetableController(
     private val timetableService: TimetableService,
     private val timetableEntryService: TimetableEntryService,
     private val timetableConflictService: TimetableConflictService,
-    private val timetableSessionGroupService: TimetableSessionGroupService
+    private val timetableSessionGroupService: TimetableSessionGroupService,
+    private val timetablePdfService: TimetablePdfService
 ) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -86,6 +94,42 @@ class TimetableController(
         @Valid @RequestBody request: UpdateTimetableRequest,
         @RequestParam(required = false) schoolId: String?
     ) = SecuritySupport.currentUser().flatMap { timetableService.updateDraft(it, id, request, schoolId) }
+
+    @PostMapping("/{id}/publish")
+    fun publish(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { timetableService.publish(it, id, schoolId) }
+
+    @PostMapping("/{id}/revise")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun revise(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap { timetableService.revise(it, id, schoolId) }
+
+    @PostMapping("/{id}/duplicate")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun duplicate(
+        @PathVariable id: String,
+        @Valid @RequestBody request: DuplicateTimetableRequest
+    ) = SecuritySupport.currentUser().flatMap { timetableService.duplicateToYear(it, id, request) }
+
+    @GetMapping("/{id}/pdf")
+    fun pdf(
+        @PathVariable id: String,
+        @RequestParam classId: String,
+        @RequestParam(required = false) language: Language?,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser().flatMap { user ->
+            timetablePdfService.renderClassPdf(user, id, classId, language, schoolId).map { bytes ->
+                ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"timetable.pdf\"")
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(bytes)
+            }
+        }
 
     @GetMapping("/{id}/entries")
     fun listEntries(

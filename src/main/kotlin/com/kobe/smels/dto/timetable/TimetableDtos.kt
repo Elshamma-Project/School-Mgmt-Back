@@ -241,3 +241,11 @@ data class SessionGroupResponse(
     val sessionGroupId: String,
     val entryIds: List<String>
 )
+
+data class DuplicateTimetableRequest(
+    @field:NotBlank
+    val targetAcademicYearId: String,
+    /** Si absent, la grille source est clonée vers l’année cible. */
+    val targetGridId: String? = null,
+    val schoolId: String? = null
+)

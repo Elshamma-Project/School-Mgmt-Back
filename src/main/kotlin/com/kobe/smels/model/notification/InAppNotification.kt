@@ -62,6 +62,8 @@ enum class NotificationCategory {
     CORRECTION_DECIDED,
     REPORT_SHEET_REJECTED,
     STAFF_SIGNAL,
+    /** Emploi du temps publié (`timetable.published`). */
+    TIMETABLE_PUBLISHED,
     SYSTEM
 }
 
