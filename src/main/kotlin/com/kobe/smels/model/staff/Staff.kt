@@ -22,7 +22,9 @@ import java.time.LocalDate
 @Document(collection = "staff_members")
 @CompoundIndexes(
     CompoundIndex(name = "idx_school_name", def = "{'schoolId': 1, 'lastName': 1, 'firstName': 1}"),
-    CompoundIndex(name = "idx_school_function", def = "{'schoolId': 1, 'functions': 1, 'active': 1}")
+    CompoundIndex(name = "idx_school_function", def = "{'schoolId': 1, 'functions': 1, 'active': 1}"),
+    // Index non unique : seedKey null pour les fiches UI ; unicité applicative via findBySchoolIdAndSeedKey.
+    CompoundIndex(name = "idx_school_seed_key", def = "{'schoolId': 1, 'seedKey': 1}")
 )
 data class Staff(
     @Id
@@ -49,11 +51,37 @@ data class Staff(
     var teachableSubjectIds: Set<String> = emptySet(),
     var hireDate: LocalDate? = null,
 
+    /**
+     * Clé naturelle du seed privé (ex. clé `teachers[].key` de l’extraction EDT).
+     * Null pour les fiches créées manuellement dans l’UI. Upsert seed uniquement.
+     */
+    var seedKey: String? = null,
+
+    /**
+     * Provenance de la fiche (seed EDT, saisie manuelle…). Null = historique / UI.
+     * Voir Q-59 : fiches EDT souvent incomplètes (prénom, contact inconnus).
+     */
+    var source: StaffSource? = null,
+
+    /**
+     * True tant que l’identité RH n’est pas complétée (prénom, sexe, contact, matricule…).
+     * Les fiches issues du PDF EDT démarrent à `true` (Q-59).
+     */
+    var needsCompletion: Boolean = false,
+
     /** Désactiver plutôt que supprimer : des notes et des bulletins le référencent. */
     var active: Boolean = true
 ) : TenantDocument() {
     /** Nom tel qu'imprimé sur le bulletin : « NOM Prénom ». */
     fun fullName(): String = listOf(lastName, firstName).filter { it.isNotBlank() }.joinToString(" ")
+}
+
+/** Origine d’une fiche personnel (seed vs saisie). */
+enum class StaffSource {
+    /** Extraction PDF emploi du temps 2026-2027 (fichier privé). */
+    EDT_2026_2027,
+    MANUAL,
+    IMPORT
 }
 
 /** Poste occupé dans l'établissement (peut être multiple). */

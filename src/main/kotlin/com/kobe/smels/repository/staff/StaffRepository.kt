@@ -10,6 +10,8 @@ import reactor.core.publisher.Mono
 interface StaffRepository : ReactiveMongoRepository<Staff, String> {
     fun findByIdAndSchoolId(id: String, schoolId: String): Mono<Staff>
     fun findBySchoolIdAndStaffNumber(schoolId: String, staffNumber: String): Mono<Staff>
+    /** Upsert seed privé : clé naturelle `teachers[].key`. */
+    fun findBySchoolIdAndSeedKey(schoolId: String, seedKey: String): Mono<Staff>
     fun findBySchoolId(schoolId: String, pageable: Pageable): Flux<Staff>
     fun countBySchoolId(schoolId: String): Mono<Long>
     fun findBySchoolIdAndActive(schoolId: String, active: Boolean, pageable: Pageable): Flux<Staff>

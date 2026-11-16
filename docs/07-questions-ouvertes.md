@@ -55,6 +55,9 @@
 | Q-56 | Alias FRANÇAIS/LITTÉRATURE/TM/F/N ↔ matières bulletin | ❓ | `TimetableSubjectAlias` + somme weeklyHours |
 | Q-57 | Bibliothèque : surveillance multi-classes pendant cours ? | ❓ | ACTIVITY sans conflit enseignant (v1) |
 | Q-58 | Doublons PDF (ex. Batoum 6ème+4ème mardi P6) | ❓ | Avertissement au chargement |
+| Q-59 | Identité enseignants EDT (prénoms, sexe, contact, homonymes FOYEH / MASSAH / NONO / JOSEPH) | ❓ | Fiches `needsCompletion=true`, `source=EDT_2026_2027` ; pas de trancher |
+| Q-60 | Accès enseignants : e-mail réel, invitation, pas de changement d’e-mail | 🟡 | **Option A** : Staff sans compte ; `POST /staff/{id}/login-access` saisit l’e-mail une fois |
+| Q-61 | Enseignant d’allemand 3ème / 1ère A imprimé « Mme … » | ❓ | Case sans `teacherId` (pas de fiche fantôme) |
 
 ## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
 
@@ -95,6 +98,9 @@
 | Q-56 | **Alias EDT** : FRANÇAIS / LITTÉRATURE ↔ expression écrite, orale, correction orthographique, étude de texte ? TM ↔ TM + ESF ? F/N en Form 4 ? | ❓ | Table `TimetableSubjectAlias` ; BR-63 = somme des `weeklyHours` | Chargeur + heures |
 | Q-57 | **Bibliothèque** : un enseignant surveille plusieurs classes pendant ses propres cours ? | ❓ | v1 : `ACTIVITY` sans engagement enseignant au conflit | Séances communes / surveillance |
 | Q-58 | **Doublons PDF** : vérifier avec l’école les collisions apparentes (ex. mardi période 6, Mme Batoum en 6ème et 4ème) | ❓ | Au chargement : **avertissement**, pas blocage | Qualité des données source |
+| Q-59 | **Identité des enseignants** issus du PDF EDT : prénoms, sexe, date de naissance, contact, matricule ; homonymes / ambiguïtés **FOYEH** (Mme Biologie vs Mr English), **MASSAH** (Fabiola vs Jenny sur bulletins 2025-2026), **NONO** (Mr vs Shekina), **JOSEPH** (Maths Form 4) | ❓ | Fiches minimales `needsCompletion=true`, `source=EDT_2026_2027`, `seedKey` ; **ne pas inventer** ; signaler sans trancher | RH + seed privé |
+| Q-60 | **Quand et comment** les enseignants reçoivent un accès : e-mail réel, invitation, activation ; la règle « e-mail de login non modifiable » doit rester vraie pour les vrais e-mails | 🟡 | **Option A (retenue)** : fiche `Staff` **sans** `UserAccount` ; action admin `POST /api/v1/staff/{id}/login-access` saisit le vrai e-mail et crée un compte `PENDING` (une seule fois). Pas d’e-mail `@…invalid`. Option B (e-mail réservé + réclamation) rejetée tant que A suffit. | Auth + onboarding enseignants |
+| Q-61 | Enseignant d’**allemand** de la **3ème** et de la **1ère A** imprimé « Mme … » (inconnu) | ❓ | Créer la case EDT **sans** `teacherId` plutôt qu’une fiche fantôme | Chargeur EDT |
 
 ## 3. Décisions provisoires (résumé)
 

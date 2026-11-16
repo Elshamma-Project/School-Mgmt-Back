@@ -43,7 +43,7 @@
 | student | `student_school_photos` | `StudentSchoolPhoto` | Binaire photo scolaire élève (bulletins / cartes) — distinct de `user_avatars` |
 | student | `student_guardians` | `Guardian` | Parents / tuteurs |
 | student | `student_enrollments` | `Enrollment` | Inscription d'un élève dans une classe pour une année |
-| staff | `staff_members` | `Staff` | Enseignants et administration (civilité pour l'emploi du temps) |
+| staff | `staff_members` | `Staff` | Enseignants et administration (civilité EDT) ; `seedKey` / `source` / `needsCompletion` pour fiches issues du seed privé EDT (Q-59) ; **une fiche peut exister sans `UserAccount`** (Q-60 option A) |
 | grading | `grading_sessions` | `EvaluationSession` | Les 6 séquences et leur clôture |
 | grading | `grading_sheets` | `GradeSheet` | **Fiche de notes** d'un enseignant (matière de classe × séquence), règle de totalisation |
 | grading | `grading_assessments` | `Assessment` | Colonnes d'une fiche : notes, **bonus**, **malus** |

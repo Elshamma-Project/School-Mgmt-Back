@@ -177,7 +177,7 @@ class TimetableConflictService(
         return warnings
     }
 
-    fun toCandidate(entry: TimetableEntry, periods: List<GridPeriod>): TimetableConflictEngine.Candidate {
+    internal fun toCandidate(entry: TimetableEntry, periods: List<GridPeriod>): TimetableConflictEngine.Candidate {
         val (start, end) = TimetableConflictEngine.resolveInterval(
             startPeriod = entry.startPeriod,
             periodCount = entry.periodCount,

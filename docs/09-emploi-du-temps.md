@@ -129,6 +129,7 @@ Publie `timetable.published`, `timetable.change.requested` / `.approved` / `.rej
 | **F** | Front enseignant (lecture) | ✅ |
 | **G** | Demandes de modif de créneau (BR-67, miroir corrections notes) | ✅ |
 | **H** | Front parent / élève / SG (lecture + PDF) | ✅ |
+| **I** | Seed privé EDT 2026-2027 (enseignants + cases → DRAFT) | ⏳ fichier `docs/seed-private/edt-2026-2027-extraction.json` requis |
 
 Ordre : **0 → A → B → C → D → E → F → G** (B avant E).
 

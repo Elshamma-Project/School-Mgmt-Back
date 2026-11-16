@@ -50,6 +50,15 @@ interface TimetableEntryRepository : ReactiveMongoRepository<TimetableEntry, Str
         classId: String
     ): Flux<TimetableEntry>
 
+    fun findBySchoolIdAndTimetableIdAndClassIdAndDayAndSlotKeyAndOptionCode(
+        schoolId: String,
+        timetableId: String,
+        classId: String,
+        day: DayOfWeek,
+        slotKey: String,
+        optionCode: String
+    ): Mono<TimetableEntry>
+
     fun findBySchoolIdAndTimetableIdAndTeacherId(
         schoolId: String,
         timetableId: String,

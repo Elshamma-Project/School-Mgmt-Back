@@ -4,7 +4,9 @@ import com.kobe.smels.model.shared.Sex
 import com.kobe.smels.model.staff.Civility
 import com.kobe.smels.model.staff.EmploymentStatus
 import com.kobe.smels.model.staff.StaffFunction
+import com.kobe.smels.model.staff.StaffSource
 import jakarta.validation.Valid
+import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import java.time.Instant
@@ -38,8 +40,20 @@ data class CreateStaffRequest(
     /**
      * Si true, provisionne un UserAccount lié (e-mail = identifiant de connexion).
      * L’e-mail de contact est alors obligatoire.
+     * Défaut true pour la création UI ; le seed EDT utilise des fiches **sans** compte (Q-60 option A).
      */
     val createLoginAccount: Boolean = true
+)
+
+/**
+ * Action administration « Créer l’accès » : saisit le vrai e-mail et crée un compte PENDING
+ * lié à une fiche Staff qui n’en a pas encore (Q-60). L’e-mail n’est jamais « changé » ensuite.
+ */
+data class CreateStaffLoginAccessRequest(
+    @field:NotBlank
+    @field:Email
+    @field:Size(max = 180)
+    val email: String
 )
 
 data class UpdateStaffRequest(
@@ -90,6 +104,9 @@ data class StaffResponse(
     val employmentStatus: EmploymentStatus?,
     val teachableSubjectIds: Set<String>,
     val hireDate: LocalDate?,
+    val seedKey: String? = null,
+    val source: StaffSource? = null,
+    val needsCompletion: Boolean = false,
     val active: Boolean,
     /** Enrichi depuis le compte lié (`user`), null si aucun compte ou jamais connecté. */
     val lastLoginAt: Instant? = null,

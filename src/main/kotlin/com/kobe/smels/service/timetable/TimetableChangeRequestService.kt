@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.time.Instant
+import java.util.Optional
 
 @Service
 class TimetableChangeRequestService(
@@ -66,7 +67,11 @@ class TimetableChangeRequestService(
                         )
                     )
                 } else {
-                    resolveSourceEntry(schoolId, request).flatMap { sourceEntry ->
+                    resolveSourceEntry(schoolId, request)
+                        .map { Optional.of(it) }
+                        .defaultIfEmpty(Optional.empty())
+                        .flatMap { sourceOpt ->
+                        val sourceEntry = sourceOpt.orElse(null)
                         if (sourceEntry != null &&
                             sourceEntry.teacherId != null &&
                             sourceEntry.teacherId != teacherId &&
@@ -192,12 +197,15 @@ class TimetableChangeRequestService(
                     Mono.error(BusinessRuleException("INVALID_STATUS", "Only PENDING requests can be approved"))
                 } else {
                     ensureDraft(currentUser, schoolId, req).flatMap { draftId ->
-                        applyToDraft(currentUser, schoolId, draftId, req).flatMap { appliedEntryId ->
+                        applyToDraft(currentUser, schoolId, draftId, req)
+                            .map { Optional.of(it) }
+                            .defaultIfEmpty(Optional.empty())
+                            .flatMap { appliedOpt ->
                             req.status = TimetableChangeStatus.APPROVED
                             req.reviewedBy = currentUser.accountId
                             req.reviewedAt = Instant.now()
                             req.appliedTimetableId = draftId
-                            req.appliedEntryId = appliedEntryId
+                            req.appliedEntryId = appliedOpt.orElse(null)
                             requestRepository.save(req).flatMap { saved ->
                                 outboxWriter.append(
                                     schoolId = schoolId,
@@ -313,24 +321,32 @@ class TimetableChangeRequestService(
         schoolId: String,
         draftId: String,
         req: TimetableChangeRequest
-    ): Mono<String?> =
+    ): Mono<String> =
         when (req.changeKind) {
             TimetableChangeKind.REMOVE ->
                 findDraftEntry(schoolId, draftId, req)
                     .flatMap { entry ->
-                        entryService.delete(currentUser, entry.id!!, schoolId).thenReturn(entry.id)
+                        val entryId = entry.id ?: return@flatMap Mono.empty()
+                        entryService.delete(currentUser, entryId, schoolId).thenReturn(entryId)
                     }
-                    .switchIfEmpty(Mono.justOrEmpty(null as String?))
+                    .switchIfEmpty(Mono.empty())
             TimetableChangeKind.ADD, TimetableChangeKind.UPDATE -> {
                 val upsert = upsertFromSnapshot(req.proposed, schoolId)
                 findDraftEntry(schoolId, draftId, req)
                     .flatMap { existing ->
-                        entryService.update(currentUser, existing.id!!, upsert, schoolId)
-                            .map { it.entry.id }
+                        val existingId = existing.id ?: return@flatMap Mono.empty()
+                        entryService.update(currentUser, existingId, upsert, schoolId)
+                            .flatMap { write ->
+                                val id = write.entry.id
+                                if (id != null) Mono.just(id) else Mono.empty()
+                            }
                     }
                     .switchIfEmpty(
                         Mono.defer {
-                            entryService.upsert(currentUser, draftId, upsert).map { it.entry.id }
+                            entryService.upsert(currentUser, draftId, upsert).flatMap { write ->
+                                val id = write.entry.id
+                                if (id != null) Mono.just(id) else Mono.empty()
+                            }
                         }
                     )
             }
@@ -353,13 +369,12 @@ class TimetableChangeRequestService(
     private fun resolveSourceEntry(
         schoolId: String,
         request: CreateTimetableChangeRequest
-    ): Mono<TimetableEntry?> {
+    ): Mono<TimetableEntry> {
         if (request.changeKind == TimetableChangeKind.ADD || request.sourceEntryId.isNullOrBlank()) {
-            return Mono.justOrEmpty(null as TimetableEntry?)
+            return Mono.empty()
         }
         return entryRepository.findByIdAndSchoolId(request.sourceEntryId!!.trim(), schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("ENTRY_NOT_FOUND", "Timetable entry not found")))
-            .map { it as TimetableEntry? }
     }
 
     private fun snapshotFromEntry(entry: TimetableEntry) = TimetableEntrySnapshot(

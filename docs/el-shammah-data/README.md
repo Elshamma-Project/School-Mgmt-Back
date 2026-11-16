@@ -32,6 +32,18 @@ Politique **insert-if-absent** (clés naturelles : `code`, `label`, `name`×ann�
 
 Les comptes de connexion DEV (`MockUsersBootstrapRunner`) **ne touchent plus** à ce document School ni à la structure académique.
 
+### Seed EDT privé (enseignants + cases 2026-2027)
+
+Les **noms d’enseignants** et l’extraction PDF ne sont **pas** dans ce JSON public. Voir `docs/seed-private/README.md` (hors Git) et `ElShammahEdtPrivateSeedRunner` (`@Order(16)`).
+
+| Propriété | Défaut |
+|---|---|
+| `smels.seed.el-shammah-edt.enabled` | `true` |
+| `smels.seed.el-shammah-edt.resource` | `file:docs/seed-private/edt-2026-2027-extraction.json` |
+| `smels.seed.el-shammah-edt.grid-resource` | `file:docs/fixtures/timetable-grid.json` |
+
+Fichier absent → le runner ignore (pas d’échec). Timetable créé en **DRAFT** révision 1. Fiches Staff **sans** compte (Q-60).
+
 ### Après modification de ce JSON
 
 ```powershell

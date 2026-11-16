@@ -54,3 +54,7 @@ docs/fixtures/maquette-bulletins/node_modules/
 # Local maquette tooling
 docs/fixtures/maquette-bulletins/node_modules/
 
+### Données initiales réelles (noms élèves / enseignants) — hors Git (AGENTS.md règle 12) ###
+docs/seed-private/
+!docs/seed-private/README.md
+

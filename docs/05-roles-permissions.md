@@ -61,6 +61,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Proposer modif de créneau** (timetable) | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant sur ses cases PUBLISHED ; motif (BR-67) |
 | **Approuver / refuser modif de créneau** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration **ou** directeur ; applique sur brouillon / révision |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
+| **Créer l’accès** enseignant (`POST /staff/{id}/login-access`) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | Q-60 : fiche Staff sans compte → e-mail réel + compte PENDING ; refusé si compte déjà lié |
 | Plusieurs établissements, support | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | accès journalisé |
 
 ## 3. Règles d'appartenance (côté serveur, jamais seulement dans l'interface)

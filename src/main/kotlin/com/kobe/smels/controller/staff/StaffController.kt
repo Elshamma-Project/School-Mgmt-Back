@@ -1,6 +1,7 @@
 package com.kobe.smels.controller.staff
 
 import com.kobe.smels.configuration.SecurityProperties
+import com.kobe.smels.dto.staff.CreateStaffLoginAccessRequest
 import com.kobe.smels.dto.staff.CreateStaffRequest
 import com.kobe.smels.dto.staff.PageResponse
 import com.kobe.smels.dto.staff.StaffResponse
@@ -9,6 +10,7 @@ import com.kobe.smels.dto.staff.UpdateStaffRequest
 import com.kobe.smels.dto.user.CreateUserAccountRequest
 import com.kobe.smels.dto.user.StaffLinkedAccountDto
 import com.kobe.smels.exception.BusinessRuleException
+import com.kobe.smels.exception.ConflictException
 import com.kobe.smels.model.staff.StaffFunction
 import com.kobe.smels.model.user.ProfileType
 import com.kobe.smels.service.staff.StaffService
@@ -117,6 +119,54 @@ class StaffController(
         @RequestParam(required = false) schoolId: String?
     ): Mono<StaffResponse> =
         SecuritySupport.currentUser().flatMap { staffService.updateIdentity(it, id, request, schoolId) }
+
+    /**
+     * Q-60 option A : « Créer l’accès » — e-mail réel saisi maintenant, compte PENDING lié.
+     * Refusé si un compte est déjà lié (pas de changement d’e-mail).
+     */
+    @PostMapping("/{id}/login-access")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createLoginAccess(
+        @PathVariable id: String,
+        @Valid @RequestBody request: CreateStaffLoginAccessRequest,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<StaffResponse> =
+        SecuritySupport.currentUser().flatMap { currentUser ->
+            staffService.getById(currentUser, id, schoolId).flatMap { staff ->
+                userAccountApi.findStaffLinkedAccounts(staff.schoolId, listOf(staff.id)).flatMap { linked ->
+                    if (linked.containsKey(staff.id)) {
+                        return@flatMap Mono.error(
+                            ConflictException(
+                                "STAFF_ALREADY_HAS_LOGIN",
+                                "This staff member already has a login account"
+                            )
+                        )
+                    }
+                    val email = request.email.trim().lowercase()
+                    val temporaryPassword = securityProperties.provisioning.temporaryPassword
+                    userAccountApi
+                        .createAccount(
+                            currentUser,
+                            CreateUserAccountRequest(
+                                username = email,
+                                password = temporaryPassword,
+                                schoolId = staff.schoolId,
+                                roles = StaffLoginRoles.fromFunctions(staff.functions),
+                                profileType = ProfileType.STAFF,
+                                profileId = staff.id,
+                                mustChangePassword = true
+                            )
+                        )
+                        .map { account ->
+                            staff.copy(
+                                hasLoginAccount = true,
+                                loginUsername = account.username,
+                                temporaryPassword = temporaryPassword
+                            )
+                        }
+                }
+            }
+        }
 
     @PostMapping("/{id}/deactivate")
     fun deactivate(
