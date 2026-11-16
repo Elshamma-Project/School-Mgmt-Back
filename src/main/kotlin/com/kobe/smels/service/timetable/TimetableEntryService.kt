@@ -194,7 +194,39 @@ class TimetableEntryService(
     ): Flux<TimetableEntryResponse> {
         TimetableAccess.assertCanRead(currentUser)
         val schoolId = TimetableAccess.resolveSchoolId(currentUser, schoolIdOverride)
-        val scopedTeacherId = resolveTeacherScope(currentUser, teacherId)
+        val ownTeacherId = ownStaffIdOrNull(currentUser)
+        if (isTeacherOnly(currentUser)) {
+            if (ownTeacherId == null) {
+                return Flux.error(ForbiddenException("FORBIDDEN", "Teacher profile required"))
+            }
+            if (teacherId != null && teacherId != ownTeacherId) {
+                return Flux.error(
+                    ForbiddenException("FORBIDDEN", "Teachers may only filter their own timetable")
+                )
+            }
+            // Vue générale : classId seul → toutes les cases de la classe.
+            // Vue perso : teacherId (implicite) ± classId → uniquement ses cours.
+            val personal = teacherId != null || classId.isNullOrBlank()
+            val source =
+                if (!classId.isNullOrBlank()) {
+                    entryRepository
+                        .findBySchoolIdAndTimetableIdAndClassId(
+                            schoolId,
+                            timetableId,
+                            classId.trim()
+                        )
+                        .let { flux ->
+                            if (personal) flux.filter { it.teacherId == ownTeacherId } else flux
+                        }
+                } else {
+                    entryRepository.findBySchoolIdAndTimetableIdAndTeacherId(
+                        schoolId,
+                        timetableId,
+                        ownTeacherId
+                    )
+                }
+            return source.map { TimetableMapper.toEntryResponse(it) }
+        }
         val source = when {
             classId != null ->
                 entryRepository.findBySchoolIdAndTimetableIdAndClassId(
@@ -202,19 +234,15 @@ class TimetableEntryService(
                     timetableId,
                     classId
                 )
-            scopedTeacherId != null ->
+            teacherId != null ->
                 entryRepository.findBySchoolIdAndTimetableIdAndTeacherId(
                     schoolId,
                     timetableId,
-                    scopedTeacherId
+                    teacherId
                 )
             else -> entryRepository.findBySchoolIdAndTimetableId(schoolId, timetableId)
         }
-        return source
-            .filter { entry ->
-                !isTeacherOnly(currentUser) || entry.teacherId == scopedTeacherId
-            }
-            .map { TimetableMapper.toEntryResponse(it) }
+        return source.map { TimetableMapper.toEntryResponse(it) }
     }
 
     private fun findExisting(
@@ -373,21 +401,20 @@ class TimetableEntryService(
                 Role.SUPER_ADMIN
             )
 
-    private fun resolveTeacherScope(currentUser: CurrentUser, teacherIdParam: String?): String? {
-        if (!isTeacherOnly(currentUser)) return teacherIdParam
-        val ownId = currentUser.profileId.takeIf {
+    private fun ownStaffIdOrNull(currentUser: CurrentUser): String? =
+        currentUser.profileId.takeIf {
             currentUser.profileType == ProfileType.STAFF && !it.isNullOrBlank()
-        } ?: throw ForbiddenException("FORBIDDEN", "Teacher profile required")
-        if (teacherIdParam != null && teacherIdParam != ownId) {
-            throw ForbiddenException("FORBIDDEN", "Teachers may only read their own timetable entries")
         }
-        return ownId
-    }
 
+    /**
+     * Lecture détail : l’enseignant peut consulter toute case (vue générale),
+     * pas seulement les siennes.
+     */
     private fun assertTeacherMaySee(currentUser: CurrentUser, entry: TimetableEntry): Mono<Void> {
         if (!isTeacherOnly(currentUser)) return Mono.empty()
-        val ownId = currentUser.profileId
-        if (ownId != null && entry.teacherId == ownId) return Mono.empty()
-        return Mono.error(ForbiddenException("FORBIDDEN", "Teachers may only read their own timetable entries"))
+        if (ownStaffIdOrNull(currentUser) == null) {
+            return Mono.error(ForbiddenException("FORBIDDEN", "Teacher profile required"))
+        }
+        return Mono.empty()
     }
 }

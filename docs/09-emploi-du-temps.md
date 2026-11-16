@@ -109,11 +109,12 @@ Publie `timetable.published`, `timetable.change.requested` / `.approved` / `.rej
 
 | Action | Ens. | SG | Admin. | Dir. |
 |---|---|---|---|---|
-| Lire (ses cours / tout) | ses cours | lecture | tout | tout |
+| Lire (ses cours / général) + PDF | ses cours + EDT par classe | lecture | tout | tout |
 | Modifier / publier | non | si `timetableSurveillantCanEdit` | oui | oui |
 | Proposer modif créneau (BR-67) | ses cases | non | non | non |
 | Approuver / refuser demande | non | non | oui | oui |
-| Élève / parent | lecture classe / enfants (plus tard) | | | |
+| Parent | lecture classe enfant + EDT général + PDF ; **pas** de demande de modif | | | |
+| Élève | lecture sa classe + EDT général + PDF | | | |
 
 ## 7. Plan d’implémentation
 
@@ -126,8 +127,10 @@ Publie `timetable.published`, `timetable.change.requested` / `.approved` / `.rej
 | **D** | PDF 1 page + `headerContact` | ✅ |
 | **E** | Front admin/dir (éditeur) | ✅ |
 | **F** | Front enseignant (lecture) | ✅ |
+| **G** | Demandes de modif de créneau (BR-67, miroir corrections notes) | ✅ |
+| **H** | Front parent / élève / SG (lecture + PDF) | ✅ |
 
-Ordre : **0 → A → B → C → D → E → F** (B avant E).
+Ordre : **0 → A → B → C → D → E → F → G** (B avant E).
 
 ## 8. Questions ouvertes liées
 Q-30, Q-32, Q-33, Q-41, Q-45, Q-47, Q-55 (cours groupés), Q-56 (alias FRANÇAIS/TM), Q-57 (bibliothèque / surveillance), Q-58 (doublons PDF). Voir `07-questions-ouvertes.md`.

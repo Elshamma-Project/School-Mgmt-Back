@@ -34,9 +34,9 @@ Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `servic
 | Comptes démo | `docs/mock-logins.md` |
 
 ## État (nov. 2026)
-- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements + `TIMETABLE_PUBLISHED`), `portal` (`GET /api/v1/dashboard/summary`), `timetable` **phases 0–F** (API + conflits + publish + PDF + éditeur admin/dir + lecture enseignant ; `School.timetableSurveillantCanEdit`).
-- **Front** (dépôt séparé Next.js) : workspaces `/teacher`, `/administration`, `/director`, `/surveillant-general`, `/super-admin` ; élève/parent en shell « bientôt ».
-- **Décisions v1 figées** tant que Q-xx non rouvertes : Principal = `DIRECTOR` (pas de rôle `PRINCIPAL`) ; SG = lecture catalogue academic + visa fiches de report (`/surveillant-general`) ; EDT = saisie manuelle + duplication ; parents = navigateur, enfants liés seulement (UI parent encore stub).
+- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements + `TIMETABLE_*`), `portal` (`GET /api/v1/dashboard/summary`), `timetable` **phases 0–H** + **BR-67** demandes de modif de créneau (`timetable_change_requests` ; enseignant → admin/directeur) ; lecture + PDF pour tous les acteurs scolaires.
+- **Front** (dépôt séparé Next.js) : workspaces `/teacher`, `/administration`, `/director`, `/surveillant-general` (visas + EDT lecture), `/super-admin`, `/parent` (enfants, notes, bulletins, EDT), `/student` (EDT lecture + PDF ; notes/bulletins encore stub).
+- **Décisions v1 figées** tant que Q-xx non rouvertes : Principal = `DIRECTOR` (pas de rôle `PRINCIPAL`) ; SG = lecture catalogue academic + visa fiches de report + consultation EDT (`/surveillant-general`) ; EDT = saisie manuelle + duplication ; parents = navigateur, enfants liés seulement.
 - Test **ArchUnit** des frontières de modules : `src/test/.../architecture/ModuleBoundariesArchTest.kt` (CI Gradle).
 
 ## Règles impératives

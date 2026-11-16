@@ -10,7 +10,7 @@
 |---|---|---|
 | `STUDENT` | Élève (connexion par **e-mail** ; compte créé par l’admin — futur envoi MDP par e-mail) | Ses propres données |
 | `PARENT` | Parent / tuteur | **Tous ses enfants, et uniquement eux** (réponse Q-20), via `Student.guardians` |
-| `TEACHER` | Enseignant | Ses `ClassSubject` : ses fiches de notes, ses fiches de report, son emploi du temps |
+| `TEACHER` | Enseignant | Ses `ClassSubject` : fiches de notes / report ; EDT : **ses cours** + consultation **générale par classe** |
 | `SURVEILLANT_GENERAL` | Surveillant Général | Lecture + visa SG des fiches de report ; UI `/surveillant-general` (Q-38 v1) |
 | `ADMINISTRATION` | Secrétariat, censeur | Tout l'établissement, sauf **Direction** (RH), comptes d'administration (user) et réouverture ; régénération / correction fiche de report avec motif |
 | `DIRECTOR` | Directeur / chef d'établissement (= Principal v1, Q-38) | Tout l'établissement ; visa final des fiches de report ; approbation des corrections post-dépôt |
@@ -28,8 +28,8 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Paramètres sensibles** (logo, identité, en-têtes, année courante) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | enseignant / SG : consultation seule ; modification = admin + directeur |
 | Ouvrir / clôturer une séquence (grading) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Rouvrir une séquence clôturée | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | provisoire (Q-04) |
-| Niveaux, classes, salles : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | **SG** : lecture seule (année / libellés pour hub visas) ; pas de colonne dédiée — même règle que Ens. |
-| Matières, groupes, **coefficients** : CRUD (academic) | ✖ | ✖ | lecture | ✔ | ✔ | ✔ | **SG** : lecture seule (idem) |
+| Niveaux, classes, salles : CRUD (academic) | lecture | lecture | lecture | ✔ | ✔ | ✔ | élève/parent : lecture catalogue pour libellés (notes, EDT) ; **SG** : lecture (hub visas) |
+| Matières, groupes, **coefficients** : CRUD (academic) | lecture | lecture | lecture | ✔ | ✔ | ✔ | idem ; écriture = admin/dir. |
 | Compétences du trimestre (academic) | ✖ | ✖ | ◐ | ✔ | ✔ | ✔ | enseignant : ses ClassSubject |
 | Affecter un enseignant à une matière de classe | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | Barèmes de notation, gabarits de bulletin (grading, reporting) | ✖ | ✖ | ✖ | lecture | ✔ | ✔ | un changement modifie les calculs |
@@ -57,7 +57,7 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Télécharger le bulletin annuel** | ◐ | ◐ | ✖ | ✔ | ✔ | ◐ | `PUBLISHED`, période `ANNUAL`, élève concerné (parent : tous ses enfants) |
 | Journal d'audit des notes | ✖ | ✖ | ✖ | ✔ | ✔ | ◐ | |
 | **Emploi du temps** : créer, modifier, publier (timetable) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | SG : si `School.timetableSurveillantCanEdit` (défaut false, Q-32) |
-| Emploi du temps : consulter | ◐ | ◐ | ◐ | ✔ | ✔ | ✔ | élève : sa classe ; parent : classes de ses enfants ; enseignant : ses cours |
+| Emploi du temps : consulter + PDF | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | **tous les acteurs scolaires** : EDT publié + PDF ; élève : sa classe **et** EDT général ; parent : classe de l’enfant **et** EDT général (**pas** de demande de modif) ; enseignant : ses cours + général ; SG : lecture par classe + PDF (édition seulement si `timetableSurveillantCanEdit`) |
 | **Proposer modif de créneau** (timetable) | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant sur ses cases PUBLISHED ; motif (BR-67) |
 | **Approuver / refuser modif de créneau** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration **ou** directeur ; applique sur brouillon / révision |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |

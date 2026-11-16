@@ -25,7 +25,10 @@ internal object AcademicAccess {
                 Role.SURVEILLANT_GENERAL,
                 Role.ADMINISTRATION,
                 Role.DIRECTOR,
-                Role.SUPER_ADMIN
+                Role.SUPER_ADMIN,
+                // Parent / élève : libellés classe & matière pour notes, EDT, bulletins (docs/05).
+                Role.PARENT,
+                Role.STUDENT
             )
         ) {
             throw ForbiddenException("FORBIDDEN", "Insufficient role to read academic catalog")
