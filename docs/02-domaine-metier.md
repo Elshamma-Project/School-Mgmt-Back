@@ -180,7 +180,7 @@ stateDiagram-v2
 - **BR-53** Tout est modifiable depuis l'interface graphique dans les deux langues.
 
 ### 5.7 Emploi du temps (une seule page A4)
-- **BR-60** L'emploi du temps est **généré une seule fois par an** (`Timetable`, une version publiée par année) ; semaine type répétée toute l'année. Chaque publication / republication notifie in-app **tous** les acteurs scolaires (élève, parent, enseignant, staff) avec lien vers la consultation EDT.
+- **BR-60** L'emploi du temps est **généré une seule fois par an** (`Timetable`, une version publiée par année) ; semaine type répétée toute l'année. Chaque publication / republication notifie in-app **tous** les acteurs scolaires (élève, parent, enseignant, staff) avec lien vers la consultation EDT. Nouvelle classe sans créneaux sur un EDT déjà publié → notif aux **éditeurs** (`TIMETABLE_UPDATE_NEEDED`) pour revise + republish.
 - **BR-61** Une case = classe + jour + période (+ option LV2) + `classSubjectIds` + enseignant (+ salle) ; ou `ACTIVITY`. Hors grille / samedi : `customStart`/`customEnd`.
 - **BR-62** **Impression : une seule page A4 paysage par classe** (et par enseignant ou par salle sur demande), jamais de seconde page.
 - **BR-09** (EDT) Conflits : pas de chevauchement classe (sauf options parallèles) ; enseignant / salle sauf même `sessionGroupId` ; ACTIVITY n’engage pas l’enseignant.

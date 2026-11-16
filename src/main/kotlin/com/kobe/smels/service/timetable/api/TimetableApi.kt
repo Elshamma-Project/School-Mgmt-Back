@@ -8,4 +8,7 @@ interface TimetableApi {
     fun getSummary(schoolId: String, timetableId: String): Mono<TimetableSummaryDto>
 
     fun findPublished(schoolId: String, academicYearId: String): Mono<TimetableSummaryDto>
+
+    /** true si l’EDT a au moins une case pour cette classe. */
+    fun hasEntriesForClass(schoolId: String, timetableId: String, classId: String): Mono<Boolean>
 }

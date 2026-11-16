@@ -273,6 +273,12 @@ class TimetableService(
             )
             .map { TimetableMapper.toSummary(it) }
 
+    override fun hasEntriesForClass(schoolId: String, timetableId: String, classId: String): Mono<Boolean> =
+        entryRepository
+            .countBySchoolIdAndTimetableIdAndClassId(schoolId, timetableId, classId)
+            .map { it > 0L }
+            .defaultIfEmpty(false)
+
     internal fun requireDraft(schoolId: String, timetableId: String): Mono<Timetable> =
         timetableRepository.findByIdAndSchoolId(timetableId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("TIMETABLE_NOT_FOUND", "Timetable not found")))

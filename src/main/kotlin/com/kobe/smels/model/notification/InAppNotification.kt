@@ -68,6 +68,11 @@ enum class NotificationCategory {
     TIMETABLE_CHANGE_REQUESTED,
     /** Décision admin/directeur sur une demande de créneau (BR-67). */
     TIMETABLE_CHANGE_DECIDED,
+    /**
+     * Classe active sans cases sur l’EDT publié (`academic.class.changed` CREATED/ACTIVATED).
+     * Destinataires : comptes pouvant éditer l’EDT.
+     */
+    TIMETABLE_UPDATE_NEEDED,
     SYSTEM
 }
 

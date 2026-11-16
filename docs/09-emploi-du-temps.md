@@ -454,7 +454,32 @@ Vues complémentaires (conception) : par enseignant / par salle — même contra
 
 ## 11. Notifications
 
-### 11.1 Publication / republication (BR-60)
+### 11.1 Synchronisation « nouvelle classe ↔ EDT publié »
+
+```
+EDT PUBLISHED
+    │
+    ▼
+Nouvelle classe créée (ou réactivée)  ──academic.class.changed──►
+    │
+    ▼
+Classe sans aucune case sur l’EDT publié ?
+    │ oui
+    ▼
+Notif TIMETABLE_UPDATE_NEEDED → admin / directeur
+                 (+ SG si timetableSurveillantCanEdit)
+    │  deep-link /timetable?tab=editor&classId=…
+    ▼
+Éditeurs : revise → ajouter les créneaux → publish
+    │
+    ▼
+timetable.published → notif TIMETABLE_PUBLISHED à **tous** les acteurs scolaires
+```
+
+Handler : `TimetableUpdateNeededNotificationHandler` (consomme `academic.class.changed`, actions `CREATED` / `ACTIVATED` uniquement).  
+Si aucun EDT `PUBLISHED` pour l’année, ou si des cases existent déjà → **pas** de notif.
+
+### 11.2 Publication / republication (BR-60)
 
 Événement : `timetable.published`  
 Handler : `TimetablePublishedNotificationHandler`
@@ -471,10 +496,11 @@ Handler : `TimetablePublishedNotificationHandler`
 
 Idempotence : couple `(sourceEventId, recipientAccountId)`.
 
-### 11.2 Autres catégories EDT
+### 11.3 Autres catégories EDT
 
 | Événement | Catégorie | Destinataires typiques |
 |---|---|---|
+| `academic.class.changed` (CREATED/ACTIVATED, sans cases) | `TIMETABLE_UPDATE_NEEDED` | Éditeurs EDT |
 | `timetable.change.requested` | `TIMETABLE_CHANGE_REQUESTED` | Admin / directeur |
 | `timetable.change.approved` / `.rejected` | `TIMETABLE_CHANGE_DECIDED` | Enseignant demandeur |
 

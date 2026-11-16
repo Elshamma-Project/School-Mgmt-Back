@@ -68,7 +68,9 @@ class SchoolClassService(
                         )
                     )
             }
-            .flatMap { saved -> emitClassChanged(saved).thenReturn(AcademicMapper.toClassResponse(saved)) }
+            .flatMap { saved ->
+                emitClassChanged(saved, action = "CREATED").thenReturn(AcademicMapper.toClassResponse(saved))
+            }
             .doOnNext {
                 log.info("class.create ok by={} schoolId={} classId={}", currentUser.username, schoolId, it.id)
             }
@@ -103,7 +105,9 @@ class SchoolClassService(
                     })
             }
             .flatMap { schoolClassRepository.save(it) }
-            .flatMap { saved -> emitClassChanged(saved).thenReturn(AcademicMapper.toClassResponse(saved)) }
+            .flatMap { saved ->
+                emitClassChanged(saved, action = "UPDATED").thenReturn(AcademicMapper.toClassResponse(saved))
+            }
     }
 
     fun getById(currentUser: CurrentUser, id: String, schoolIdOverride: String? = null): Mono<SchoolClassResponse> {
@@ -170,10 +174,13 @@ class SchoolClassService(
                 schoolClass.active = active
                 schoolClassRepository.save(schoolClass)
             }
-            .flatMap { saved -> emitClassChanged(saved).thenReturn(AcademicMapper.toClassResponse(saved)) }
+            .flatMap { saved ->
+                val action = if (active) "ACTIVATED" else "DEACTIVATED"
+                emitClassChanged(saved, action = action).thenReturn(AcademicMapper.toClassResponse(saved))
+            }
     }
 
-    private fun emitClassChanged(schoolClass: SchoolClass): Mono<Void> =
+    private fun emitClassChanged(schoolClass: SchoolClass, action: String): Mono<Void> =
         outboxWriter.append(
             schoolId = schoolClass.schoolId,
             module = "academic",
@@ -182,11 +189,13 @@ class SchoolClassService(
             eventType = "academic.class.changed",
             payload = mapOf(
                 "classId" to schoolClass.id,
+                "academicYearId" to schoolClass.academicYearId,
                 "name" to schoolClass.name,
                 "levelCode" to schoolClass.levelCode,
                 "section" to schoolClass.section.name,
                 "defaultLanguage" to schoolClass.defaultLanguage.name,
-                "active" to schoolClass.active
+                "active" to schoolClass.active,
+                "action" to action
             )
         ).then()
 

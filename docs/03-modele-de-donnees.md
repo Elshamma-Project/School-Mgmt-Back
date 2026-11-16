@@ -62,7 +62,7 @@
 | timetable | `timetable_entries` | `TimetableEntry` | Cases (options LV2, `sessionGroupId`, `classSubjectIds`) |
 | timetable | `timetable_subject_aliases` | `TimetableSubjectAlias` | Alias libellé EDT → ClassSubject(s) |
 | timetable | `timetable_change_requests` | `TimetableChangeRequest` (+ `TimetableEntrySnapshot`) | Demandes de modif de créneau enseignant → admin/dir. (BR-67) ; libellés figés |
-| notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégories `TIMETABLE_PUBLISHED`, `TIMETABLE_CHANGE_REQUESTED`, `TIMETABLE_CHANGE_DECIDED` |
+| notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégories `TIMETABLE_PUBLISHED`, `TIMETABLE_CHANGE_REQUESTED`, `TIMETABLE_CHANGE_DECIDED`, `TIMETABLE_UPDATE_NEEDED` |
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
 
 ## 3. Index clés et requêtes chaudes

@@ -75,7 +75,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | Événement | Émis par | Consommé par | Charge utile minimale |
 |---|---|---|---|
 | `academic.class-subject.changed` | academic | grading, timetable, reporting | `classSubjectId`, `classId`, `subjectId`, `teacherId`, `coefficient`, `groupId`, `weeklyHours` |
-| `academic.class.changed` | academic | student, grading, reporting, timetable | `classId`, `name`, `levelCode`, `section`, `defaultLanguage` |
+| `academic.class.changed` | academic | student, grading, reporting, timetable, **notification** | `classId`, `academicYearId`, `name`, `levelCode`, `section`, `defaultLanguage`, `active`, `action` (`CREATED`\|`UPDATED`\|`ACTIVATED`\|`DEACTIVATED`) ; si EDT `PUBLISHED` sans cases pour la classe → notif `TIMETABLE_UPDATE_NEEDED` aux éditeurs |
 | `academic.subject.renamed` | academic | timetable, reporting | `subjectId`, noms FR/EN |
 | `staff.member.changed` | staff | academic, timetable, reporting, user | `staffId`, nom affiché, civilité, `active` |
 | `student.enrolled` / `student.enrollment.changed` | student | grading, reporting | `enrollmentId`, `studentId`, `classId`, `academicYearId`, statut |
@@ -88,7 +88,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `grading.correction.requested` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `studentLabel`, `classLabel`, `teacherLabel` |
 | `grading.correction.approved` / `grading.correction.rejected` | grading | notification | `requestId`, `sessionId`, `classSubjectId`, `requestedBy`, `teacherId`, `studentLabel`, `decision` ; rejet : `reviewNote` |
 | `reporting.report-card.published` | reporting | notification, student portal | `reportCardId`, `studentId`, période |
-| `timetable.published` | timetable | notification | `timetableId`, `academicYearId`, `revision` ; inbox **tous** les comptes scolaires actifs (élève, parent, enseignant, SG, admin, directeur) ; deep-link logique `/timetable` (réécrit vers l’espace du rôle) ; révision > 1 = message « mis à jour » |
+| `timetable.published` | timetable | notification | `timetableId`, `academicYearId`, `revision` ; inbox **tous** les comptes scolaires actifs (élève, parent, enseignant, SG, admin, directeur) ; deep-link logique `/timetable` (réécrit vers l’espace du rôle) ; révision > 1 = message « mis à jour » (après revise + republish suite à nouvelle classe, etc.) |
 | `timetable.change.requested` | timetable | notification | `requestId`, `timetableId`, `teacherId`, `teacherLabel`, `classLabel`, `changeKind`, `status` |
 | `timetable.change.approved` / `timetable.change.rejected` | timetable | notification | `requestId`, `requestedBy`, `teacherId`, `classLabel`, `decision` ; rejet : `reviewNote` ; approbation : `appliedTimetableId` |
 | *(alias EDT)* | — | — | `TimetableSubjectAlias` tenu à jour par chargeur / admin ; pas d’événement dédié en v1 (rafraîchissement des libellés d’entrée via `academic.subject.renamed` + republish) |
