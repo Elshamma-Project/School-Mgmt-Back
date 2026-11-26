@@ -1,6 +1,6 @@
 # 10 — Scolarité et solvabilité
 
-> Module **`fees`** (docs/08) — **v1 partiellement livrée** (API barèmes / paiements / solvabilité + colonne liste élèves). Objectif : suivre l’**inscription annuelle** et les **tranches de scolarité**, puis afficher un **statut de solvabilité** sur la liste élèves (remplace la colonne « Statut actif/inactif » côté UI liste — l’actif/inactif reste sur la fiche / onglets).
+> Module **`fees`** (docs/08) — **v1 livrée** (API barèmes / paiements / solvabilité / politique / job rappels-pénalités-exclusion + UI liste, fiche, workspace Solvabilité). Objectif : suivre l’**inscription annuelle** et les **tranches de scolarité**, afficher un **statut de solvabilité** dérivé, et permettre à la **direction / comptabilité** d’enregistrer les paiements.
 >
 > Fuseau d’affichage et de calcul des échéances : **Africa/Douala**. Montants : `BigDecimal` / `DECIMAL128`, comparaison `compareTo`.
 
@@ -100,17 +100,24 @@ Pas de suppression physique des paiements : annulation = écriture inverse ou st
 - Calculs et cron : **Africa/Douala**, cron défaut `0 0 7 * * *` (`beesm.fees.reminder-cron`).
 - Idempotence : clé `dedupeKey` = sourceEventId inbox ; réexécution le même jour ne duplique pas.
 
-## 5. API publique (esquisse)
+## 5. API publique
 
 Module `fees` :
 
-- `GET /api/v1/fees/access` — droits UI (`canManageSchedules`, `canRecordPayments`, `canManagePolicy`, `canRead`).
-- `GET/PUT /api/v1/fees/policy` — politique rappels / pénalités / exclusion (**DIRECTOR** ; lecture aussi Administration).
-- `PUT/GET /api/v1/fees/schedules` — barèmes par année/classe (**DIRECTOR** ; lecture aussi comptable).
-- `GET /api/v1/fees/students/{studentId}/account?academicYearId=` — détail compte + solvabilité.
-- `POST /api/v1/fees/payments` — enregistrer un paiement (reçu banque) — **BR-F09**.
-- `POST /api/v1/fees/payments/{id}/void` — annuler un paiement — **BR-F09**.
-- `FeesApi.solvencySnapshot(schoolId, academicYearId, studentIds)` — pour la liste élèves / portal.
+| Méthode | Chemin | Qui | Notes |
+|---|---|---|---|
+| `GET` | `/api/v1/fees/access` | authentifié | `canRead`, `canManageSchedules`, `canRecordPayments`, `canManagePolicy` |
+| `GET` / `PUT` | `/api/v1/fees/policy` | lecture Admin+ ; écriture **DIRECTOR** | rappels / pénalités / exclusion |
+| `GET` / `PUT` | `/api/v1/fees/schedules` | lecture comptable+ ; écriture **DIRECTOR** | barèmes année / classe |
+| `GET` | `/api/v1/fees/students/{studentId}/account?academicYearId=` | lecture scoped | détail + solvabilité + paiements |
+| `GET` | `/api/v1/fees/solvency?academicYearId=&studentIds=` | lecture scoped | batch liste élèves (virgules) |
+| `GET` | `/api/v1/fees/unpaid-summary?academicYearId=` | **staff** Admin / Dir. / SG / SuperAdmin | compteurs hub : inscription + 3 tranches impayées + total insolvables |
+| `POST` | `/api/v1/fees/payments` | **BR-F09** | enregistrer un paiement |
+| `POST` | `/api/v1/fees/payments/{id}/void` | **BR-F09** | annuler (`VOID` + motif) |
+
+API inter-modules :
+
+- `FeesApi.solvencySnapshot(schoolId, academicYearId, studentIds)` — liste élèves / portal (pas d’import `repository`/`model` hors module).
 
 Événements (outbox) :
 
@@ -118,27 +125,42 @@ Module `fees` :
 - `fees.payment.recorded` → confirmation parent (roadmap).
 - `academic.class.changed` / `student.enrollment.*` → rattacher ou invalider le compte scolarité (idempotent).
 
-## 6. UI
+## 6. UI (front Next.js, dépôt séparé)
 
-- Liste élèves : colonne **Solvabilité** (vert / ambre / rouge / neutre) à la place de **Statut actif**.
-- Fiche élève : section Scolarité (barème, échéances, paiements, bouton « Enregistrer un paiement »).
-- Administration / Direction : écran **Barèmes de scolarité** (par année, grille des classes).
-- Direction : écran **Politique scolarité** (jours de rappel, pénalité hebdo, délai max, exclusion on/off).
-- Portail parent : inbox rappels + deep-link `/fees` (espace parent).
-- L’**actif/inactif** de la fiche `Student` reste ailleurs (filtre onglet Actifs / Inactifs, fiche détail).
+### 6.1 Droits d’écran
+
+| Surface | Qui la voit |
+|---|---|
+| Colonne / pastille solvabilité (liste, fiche) | Direction, Administration, SG ; **pas** enseignant ; parent = enfants liés |
+| Bouton **Enregistrer un paiement** | `GET /fees/access` → `canRecordPayments` (**DIRECTOR** / **SUPER_ADMIN**, ou **ADMINISTRATION** + `StaffFunction.ACCOUNTANT`) **et** barème applicable |
+| Nav **Élèves → Solvabilité** (`/{role}/students/solvency`) | Même règle que `canRecordPayments` (masquée sinon) |
+| Hub élèves — cartes impayés / insolvables | Direction / Admin (lecture summary) ; clic → workspace Solvabilité |
+
+### 6.2 Surfaces livrées
+
+- **Liste élèves** : colonne **Solvabilité** (vert / ambre / rouge / neutre) ; onglets Tous / Actifs / Inactifs ; cartes stats (Total, Actifs, Inactifs, Insolvables) + 2ᵉ ligne (Inscription / 1ʳᵉ / 2ᵉ / 3ᵉ tranche impayées via `unpaid-summary`).
+- **Fiche élève** : section **Scolarité & solvabilité** (sous Photo / Tuteurs) — échéances, ponctualité, historique paiements ; bouton paiement si droit.
+- **Workspace Solvabilité** (`/director|administration/students/solvency`) :
+  1. grande barre de **recherche élève** ;
+  2. sans sélection : **diagramme** répartition SOLVENT / PENDING / INSOLVENT / N/A + **barres** d’impayés par échéance ;
+  3. au clic élève : détail échéances / soldes / paiements + enregistrement paiement (même dialog que la fiche).
+- Direction : écrans **Barèmes** et **Politique scolarité** (jours de rappel, pénalité hebdo, délai max, exclusion).
+- Portail parent : inbox rappels `FEES_*` (deep-link roadmap).
+- L’**actif / inactif** reste sur les onglets liste et la fiche (indépendant de la solvabilité).
 
 ## 7. Périmètre v1 vs plus tard / idées d’amélioration
 
-| v1 | Roadmap (bonnes pratiques) |
+| v1 (livré) | Roadmap (bonnes pratiques) |
 |---|---|
 | Barèmes + 3 tranches + inscription | Remises, bourses, échelonnement custom |
-| Saisie manuelle des paiements | Mobile money / reçu PDF (sans marque tierce) |
+| Saisie manuelle des paiements (dialog) | Mobile money / reçu PDF (sans marque tierce) |
 | Rappels inbox 15/10/5/3/2/1 + insolvabilité | SMS / e-mail opt-in (canal hors inbox) |
 | Pénalité 1000 XAF/sem. paramétrable | Plafond de pénalités ; remise de peine si paiement |
 | Exclusion auto après grâce | Soft-block portail notes avant exclusion ; appeal workflow |
 | Un message multi-enfants | Récap mensuel PDF « état de compte famille » |
 | Devise XAF | Multi-devises |
-| Solvabilité liste + fiche | Blocage notes / présence si insolvable (Q-65) |
+| Solvabilité liste + fiche + workspace + unpaid-summary | Blocage notes / présence si insolvable (Q-65) |
+| Seed démo variété solvabilité (`FeesDemoSeedRunner`) | Import cahier de caisse / grille réelle |
 
 ## 8. Questions ouvertes
 

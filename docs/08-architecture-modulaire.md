@@ -17,7 +17,7 @@
 | `timetable` | grille, EDT, cases, alias matières | `timetable_grids`, `timetable_timetables`, `timetable_entries`, `timetable_subject_aliases` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 | `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
-| `fees` | barèmes, paiements, solvabilité, rappels/pénalités/exclusion | `fees_tuition_schedules`, `fees_payments`, `fees_policies`, `fees_student_states`, `fees_penalty_charges` | `academic`, `student`, `staff` (`ACCOUNTANT`), `user` (comptes parents) via `service/*/api` ; outbox → `notification` |
+| `fees` | barèmes, paiements, solvabilité (dont unpaid-summary), rappels/pénalités/exclusion | `fees_tuition_schedules`, `fees_payments`, `fees_policies`, `fees_student_states`, `fees_penalty_charges` | `academic`, `student`, `staff` (`ACCOUNTANT`), `user` (comptes parents) via `service/*/api` ; outbox → `notification` ; UI workspace front `/students/solvency` (doc `10` § 6) |
 
 Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `cards`. Réf. scolarité : **`10-scolarite-solvabilite.md`**.
 

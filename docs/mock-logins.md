@@ -92,10 +92,15 @@ Actif si `beesm.security.mock-users.enabled=true` (insert-if-absent ; **enrichit
 
 - Politique `FeesPolicy` (rappels 15/10/5/3/2/1, pénalité 1000 XAF/sem., grâce 28 j).
 - Barème pour la classe démo : inscription **25 000** + 3× **50 000** XAF.
-- Paiements variés pour visualiser la colonne Solvabilité :
+- Paiements variés pour visualiser la colonne Solvabilité **et** le workspace `/director/students/solvency` :
   - `stu-demo-01` / `05` → **SOLVENT** (tout payé)
   - `stu-demo-02` → **PENDING** (tranche du mois en cours manquante)
   - `stu-demo-03` / sans paiement → **INSOLVENT**
+- **Qui teste quoi** :
+  - `directeur@elshammah.demo` → nav **Élèves → Solvabilité**, paiements, unpaid-summary.
+  - `admin@elshammah.demo` → paiements **seulement** si la fiche Staff porte `ACCOUNTANT` (sinon nav Solvabilité masquée ; `GET /fees/access` → `canRecordPayments=false`).
+  - `enseignant@elshammah.demo` → **pas** de colonne / API solvabilité.
+  - `parent.demo@elshammah.demo` → inbox `FEES_*` + solvabilité **enfants liés** uniquement.
 
 ### Remise à zéro locale
 

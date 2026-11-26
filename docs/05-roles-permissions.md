@@ -62,8 +62,10 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Approuver / refuser modif de créneau** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration **ou** directeur ; applique sur brouillon / révision |
 | **Barèmes scolarité** (fees schedules) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | Direction seule (BR-F09) |
 | **Politique rappels / pénalités / exclusion** (fees policy) | ✖ | ✖ | ✖ | lecture | ✔ | ✔ | Direction seule en écriture (BR-F10…F14) |
-| **Enregistrer / annuler un paiement** scolarité (fees) | ✖ | ✖ | ✖ | ◐ | ✔ | ✔ | Admin **comptable** (`StaffFunction.ACCOUNTANT`) ou directeur ; reçu banque → solvabilité |
-| **Consulter solvabilité** élève (fees) | ✖ | ◐ | ✖ | ✔ | ✔ | ✔ | Parent : **ses enfants seulement** ; enseignant : ✖ ; + SG |
+| **Enregistrer / annuler un paiement** scolarité (fees) | ✖ | ✖ | ✖ | ◐ | ✔ | ✔ | Admin **comptable** (`StaffFunction.ACCOUNTANT`) ou directeur ; reçu banque → solvabilité ; confirmé par `GET /fees/access` |
+| **Consulter solvabilité** élève (fees) | ✖ | ◐ | ✖ | ✔ | ✔ | ✔ | Parent : **ses enfants seulement** ; enseignant : ✖ ; + SG (liste / fiche) |
+| **Workspace Solvabilité** (nav Élèves → Solvabilité, stats + paiement) | ✖ | ✖ | ✖ | ◐ | ✔ | ✔ | Même périmètre que `canRecordPayments` ; masqué en nav sinon (front) |
+| **Compteurs impayés hub** (`GET /fees/unpaid-summary`) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | Staff Admin / Dir. / SG ; pas parent / enseignant |
 | **Notifications rappels scolarité** (inbox) | ✖ | ✔ | ✖ | ✖ | ✖ | ◐ | Parents (enfants liés) ; catégories `FEES_*` |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Créer l’accès** enseignant (`POST /staff/{id}/login-access`) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | Q-60 : fiche Staff sans compte → e-mail réel + compte PENDING ; refusé si compte déjà lié |

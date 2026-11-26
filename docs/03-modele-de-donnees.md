@@ -70,6 +70,8 @@
 | fees | `fees_student_states` | `FeeStudentFeeState` | Ancre insolvabilité, semaines de pénalité, exclusion (effets de bord) |
 | fees | `fees_penalty_charges` | `FeePenaltyCharge` | Lignes de pénalité hebdomadaire (idempotentes) |
 
+> **Pas de collection « solvabilité »** : statut `SOLVENT` / `PENDING` / `INSOLVENT` / `NOT_APPLICABLE` et compteurs `GET /fees/unpaid-summary` sont **dérivés** en service à partir des barèmes + paiements (+ date Douala). Voir `docs/10`.
+
 ## 3. Index clés et requêtes chaudes
 
 | Besoin | Requête | Index |

@@ -62,7 +62,7 @@
 | Q-63 | Mapping EDT `FRANÇAIS` / `?FRANCAIS` → matières bulletin (`LANG_FR` vs `EXP_*`) | ❓ | Seed EDT mappe vers `LANG_FR` ; cases junior peuvent rester sans `classSubjectIds` |
 | Q-64 | Examens dans la grille semaine type vs calendrier sessions | 🟡 | **v1** : calendrier `EvaluationSession` synchronisé (onglet Examens + notif) ; pas de cases examen dans l’EDT hebdo |
 | Q-65 | Accès école bloqué sans paiement d’inscription ? | ❓ | Affichage solvabilité d’abord ; blocage notes/portail plus tard |
-| Q-66 | Qui paramètre les barèmes / saisit les paiements ? | 🟡 | Barèmes = Direction ; paiements = Direction **ou** Administration avec fonction RH `ACCOUNTANT` (BR-F09) |
+| Q-66 | Qui paramètre les barèmes / saisit les paiements ? | 🟡 | Barèmes = Direction ; paiements = Direction **ou** Administration avec fonction RH `ACCOUNTANT` (BR-F09) ; workspace UI `/students/solvency` aligné sur `canRecordPayments` |
 | Q-67 | Barème par **classe** ou par **niveau** ? | 💡 | Par **classe** (montants peuvent différer 6ème A / 6ème B) |
 | Q-68 | Mois des 3 tranches si rentrée ≠ 1er sept. | 💡 | 3 premiers mois civils à partir du mois de `AcademicYear.startDate` |
 | Q-69 | Modes de paiement v1 | 💡 | Saisie manuelle (espèces / mobile money / autre + référence) |
