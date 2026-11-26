@@ -102,13 +102,26 @@ class UserAccountService(
     override fun findStaffLinkedAccounts(
         schoolId: String,
         staffIds: Collection<String>
+    ): Mono<Map<String, StaffLinkedAccountDto>> =
+        findLinkedAccounts(schoolId, ProfileType.STAFF, staffIds)
+
+    override fun findGuardianLinkedAccounts(
+        schoolId: String,
+        guardianIds: Collection<String>
+    ): Mono<Map<String, StaffLinkedAccountDto>> =
+        findLinkedAccounts(schoolId, ProfileType.GUARDIAN, guardianIds)
+
+    private fun findLinkedAccounts(
+        schoolId: String,
+        profileType: ProfileType,
+        profileIds: Collection<String>
     ): Mono<Map<String, StaffLinkedAccountDto>> {
-        val ids = staffIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        val ids = profileIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         if (ids.isEmpty()) {
             return Mono.just(emptyMap())
         }
         return userAccountRepository
-            .findBySchoolIdAndProfileTypeAndProfileIdIn(schoolId, ProfileType.STAFF, ids)
+            .findBySchoolIdAndProfileTypeAndProfileIdIn(schoolId, profileType, ids)
             .collectList()
             .map { accounts ->
                 accounts

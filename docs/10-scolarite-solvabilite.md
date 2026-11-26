@@ -88,13 +88,24 @@ Pas de suppression physique des paiements : annulation = écriture inverse ou st
 - **BR-F06** Solvabilité calculée dans `service/fees` uniquement ; la liste élèves consomme `FeesApi.solvencyForStudents(...)`.
 - **BR-F07** Tout `BigDecimal` stocké : `@Field(DECIMAL128)` ; comparaisons `compareTo`.
 - **BR-F08** Toute requête filtre `schoolId` ; index composites commencent par `schoolId`.
-- **BR-F09** Saisie / annulation des paiements (reçu banque → mise à jour solvabilité) : **`DIRECTOR`** / **`SUPER_ADMIN`**, ou **`ADMINISTRATION`** dont la fiche Staff porte la fonction **`ACCOUNTANT`**. Barèmes (montants) : Direction seule. Lecture solvabilité : admin / dir. / SG / enseignant.
+- **BR-F09** Saisie / annulation des paiements (reçu banque → mise à jour solvabilité) : **`DIRECTOR`** / **`SUPER_ADMIN`**, ou **`ADMINISTRATION`** dont la fiche Staff porte la fonction **`ACCOUNTANT`**. Barèmes (montants) : Direction seule. Lecture solvabilité : admin / dir. / SG ; **parent = enfants liés uniquement** ; **enseignant : pas d’accès**.
+- **BR-F10** Rappels automatiques parents (inbox) **15 / 10 / 5 / 3 / 2 / 1** jours avant l’échéance de la tranche non payée (+ jour J si activé). Paramétrable via `FeesPolicy.reminderDaysBeforeDue`. **Un seul message par compte parent**, même multi-enfants : détail nom, statut, payé / non payé, prochaine échéance.
+- **BR-F11** Au passage **INSOLVENT** : notification parent avec montant de pénalité hebdo et délai max d’exclusion (si définis).
+- **BR-F12** Pénalité hebdomadaire après insolvabilité : défaut **1000 XAF / semaine / enfant**, montant et devise dans `FeesPolicy` (Direction). Accrual idempotent (`fees_penalty_charges` + `fees_student_states`).
+- **BR-F13** Avertissement parent **N jours** avant exclusion (`exclusionWarningDaysBefore`, défaut 7).
+- **BR-F14** Après `maxInsolvencyGraceDays` (défaut 28, Direction) sans régularisation : **désactivation** de l’élève (`Student.active=false`, motif `FEES_INSOLVENCY_EXCLUSION`) + notification. Réactivation = action manuelle Direction/Admin (hors job).
+
+### Fuseau et job
+
+- Calculs et cron : **Africa/Douala**, cron défaut `0 0 7 * * *` (`beesm.fees.reminder-cron`).
+- Idempotence : clé `dedupeKey` = sourceEventId inbox ; réexécution le même jour ne duplique pas.
 
 ## 5. API publique (esquisse)
 
 Module `fees` :
 
-- `GET /api/v1/fees/access` — droits UI (`canManageSchedules`, `canRecordPayments`, `canRead`).
+- `GET /api/v1/fees/access` — droits UI (`canManageSchedules`, `canRecordPayments`, `canManagePolicy`, `canRead`).
+- `GET/PUT /api/v1/fees/policy` — politique rappels / pénalités / exclusion (**DIRECTOR** ; lecture aussi Administration).
 - `PUT/GET /api/v1/fees/schedules` — barèmes par année/classe (**DIRECTOR** ; lecture aussi comptable).
 - `GET /api/v1/fees/students/{studentId}/account?academicYearId=` — détail compte + solvabilité.
 - `POST /api/v1/fees/payments` — enregistrer un paiement (reçu banque) — **BR-F09**.
@@ -103,7 +114,8 @@ Module `fees` :
 
 Événements (outbox) :
 
-- `fees.payment.recorded` → notification parent (plus tard).
+- `fees.tuition.reminder` → inbox parent (`FEES_REMINDER` / `FEES_INSOLVENT` / `FEES_PENALTY` / `FEES_EXCLUSION`) ; payload bilingue multi-enfants.
+- `fees.payment.recorded` → confirmation parent (roadmap).
 - `academic.class.changed` / `student.enrollment.*` → rattacher ou invalider le compte scolarité (idempotent).
 
 ## 6. UI
@@ -111,17 +123,23 @@ Module `fees` :
 - Liste élèves : colonne **Solvabilité** (vert / ambre / rouge / neutre) à la place de **Statut actif**.
 - Fiche élève : section Scolarité (barème, échéances, paiements, bouton « Enregistrer un paiement »).
 - Administration / Direction : écran **Barèmes de scolarité** (par année, grille des classes).
+- Direction : écran **Politique scolarité** (jours de rappel, pénalité hebdo, délai max, exclusion on/off).
+- Portail parent : inbox rappels + deep-link `/fees` (espace parent).
 - L’**actif/inactif** de la fiche `Student` reste ailleurs (filtre onglet Actifs / Inactifs, fiche détail).
 
-## 7. Périmètre v1 vs plus tard
+## 7. Périmètre v1 vs plus tard / idées d’amélioration
 
-| v1 (après réponses Q-65…Q-76) | Plus tard |
+| v1 | Roadmap (bonnes pratiques) |
 |---|---|
-| Barèmes par classe + 3 tranches + inscription | Remises, bourses, échelonnement custom |
-| Saisie manuelle des paiements | Mobile money / reçu PDF / USSD (**interdit** marque tierce sur docs) |
-| Solvabilité sur liste + fiche | Blocage notes / portail si insolvable |
+| Barèmes + 3 tranches + inscription | Remises, bourses, échelonnement custom |
+| Saisie manuelle des paiements | Mobile money / reçu PDF (sans marque tierce) |
+| Rappels inbox 15/10/5/3/2/1 + insolvabilité | SMS / e-mail opt-in (canal hors inbox) |
+| Pénalité 1000 XAF/sem. paramétrable | Plafond de pénalités ; remise de peine si paiement |
+| Exclusion auto après grâce | Soft-block portail notes avant exclusion ; appeal workflow |
+| Un message multi-enfants | Récap mensuel PDF « état de compte famille » |
 | Devise XAF | Multi-devises |
+| Solvabilité liste + fiche | Blocage notes / présence si insolvable (Q-65) |
 
 ## 8. Questions ouvertes
 
-Voir **Q-65 à Q-76** dans `07-questions-ouvertes.md`.
+Voir **Q-65 à Q-76** et **Q-77…Q-80** (rappels / pénalités) dans `07-questions-ouvertes.md`.

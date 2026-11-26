@@ -75,6 +75,14 @@ enum class NotificationCategory {
     TIMETABLE_UPDATE_NEEDED,
     /** Calendrier de composition modifié (`grading.session.schedule.changed`). */
     SESSION_SCHEDULE_CHANGED,
+    /** Rappel échéance tranche scolarité (`fees.tuition.reminder` BEFORE_DUE / ON_DUE). */
+    FEES_REMINDER,
+    /** Passage insolvable (`fees.tuition.reminder` INSOLVENT). */
+    FEES_INSOLVENT,
+    /** Pénalité hebdomadaire (`fees.tuition.reminder` PENALTY_WEEKLY). */
+    FEES_PENALTY,
+    /** Avertissement / exclusion pour insolvabilité. */
+    FEES_EXCLUSION,
     SYSTEM
 }
 

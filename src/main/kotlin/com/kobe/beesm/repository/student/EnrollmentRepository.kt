@@ -70,6 +70,12 @@ interface EnrollmentRepository : ReactiveMongoRepository<Enrollment, String> {
         pageable: Pageable
     ): Flux<Enrollment>
 
+    fun findBySchoolIdAndAcademicYearIdAndStatus(
+        schoolId: String,
+        academicYearId: String,
+        status: EnrollmentStatus
+    ): Flux<Enrollment>
+
     fun countBySchoolIdAndAcademicYearId(schoolId: String, academicYearId: String): Mono<Long>
 
     fun countBySchoolIdAndAcademicYearIdAndStatus(

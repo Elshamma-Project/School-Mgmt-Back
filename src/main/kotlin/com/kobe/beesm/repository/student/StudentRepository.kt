@@ -7,6 +7,8 @@ import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 interface StudentRepository : ReactiveMongoRepository<Student, String> {
+    fun findBySchoolIdAndIdIn(schoolId: String, ids: Collection<String>): Flux<Student>
+
     fun findByIdAndSchoolId(id: String, schoolId: String): Mono<Student>
     fun findBySchoolIdAndMatricule(schoolId: String, matricule: String): Mono<Student>
     fun findBySchoolId(schoolId: String, pageable: Pageable): Flux<Student>

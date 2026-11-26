@@ -211,4 +211,5 @@ Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `user`, `acade
 
 - Inscription annuelle + **3 tranches** (échéances = fin des 3 premiers mois de rentrée, défaut sept.–nov.).
 - Barèmes = **Direction** ; saisie des paiements (reçu banque) = Direction **ou** Administration avec fonction RH **`ACCOUNTANT`** (BR-F09).
+- Rappels parents automatiques (15/10/5/3/2/1 j + insolvabilité / pénalités / exclusion) : **BR-F10…F14**, paramètres `FeesPolicy`, un message multi-enfants (docs/10).
 - **Solvabilité** calculée (Solvable / En attente / Insolvable). Détail : `10-scolarite-solvabilite.md`, Q-65 à Q-76.

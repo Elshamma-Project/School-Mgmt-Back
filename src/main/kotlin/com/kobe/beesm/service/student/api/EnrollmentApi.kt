@@ -21,6 +21,10 @@ interface EnrollmentApi {
     fun findByStudent(schoolId: String, studentId: String): Flux<EnrollmentSummaryDto>
 
     fun findEnrolledByClass(schoolId: String, classId: String): Flux<EnrollmentSummaryDto>
+
+    /** Toutes les inscriptions ENROLLED d’une année (rappels scolarité). */
+    fun findEnrolledByYear(schoolId: String, academicYearId: String): Flux<EnrollmentSummaryDto>
+
     fun isEnrolled(
         schoolId: String,
         studentId: String,

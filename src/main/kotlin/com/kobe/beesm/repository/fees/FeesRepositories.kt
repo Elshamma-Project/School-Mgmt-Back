@@ -2,10 +2,40 @@ package com.kobe.beesm.repository.fees
 
 import com.kobe.beesm.model.fees.FeePayment
 import com.kobe.beesm.model.fees.FeePaymentStatus
+import com.kobe.beesm.model.fees.FeePenaltyCharge
+import com.kobe.beesm.model.fees.FeeStudentFeeState
+import com.kobe.beesm.model.fees.FeesPolicy
 import com.kobe.beesm.model.fees.TuitionSchedule
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+
+interface FeesPolicyRepository : ReactiveMongoRepository<FeesPolicy, String> {
+    fun findBySchoolId(schoolId: String): Mono<FeesPolicy>
+
+    fun findByActiveTrue(): Flux<FeesPolicy>
+}
+
+interface FeeStudentFeeStateRepository : ReactiveMongoRepository<FeeStudentFeeState, String> {
+    fun findBySchoolIdAndAcademicYearIdAndStudentId(
+        schoolId: String,
+        academicYearId: String,
+        studentId: String
+    ): Mono<FeeStudentFeeState>
+
+    fun findBySchoolIdAndAcademicYearId(
+        schoolId: String,
+        academicYearId: String
+    ): Flux<FeeStudentFeeState>
+}
+
+interface FeePenaltyChargeRepository : ReactiveMongoRepository<FeePenaltyCharge, String> {
+    fun findBySchoolIdAndAcademicYearIdAndStudentId(
+        schoolId: String,
+        academicYearId: String,
+        studentId: String
+    ): Flux<FeePenaltyCharge>
+}
 
 interface TuitionScheduleRepository : ReactiveMongoRepository<TuitionSchedule, String> {
     fun findByIdAndSchoolId(id: String, schoolId: String): Mono<TuitionSchedule>
@@ -25,6 +55,8 @@ interface TuitionScheduleRepository : ReactiveMongoRepository<TuitionSchedule, S
         schoolId: String,
         academicYearId: String
     ): Flux<TuitionSchedule>
+
+    fun findByActiveTrue(): Flux<TuitionSchedule>
 }
 
 interface FeePaymentRepository : ReactiveMongoRepository<FeePayment, String> {

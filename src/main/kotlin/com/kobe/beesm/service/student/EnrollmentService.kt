@@ -309,6 +309,11 @@ class EnrollmentService(
         enrollmentRepository.findBySchoolIdAndClassIdAndStatus(schoolId, classId, EnrollmentStatus.ENROLLED)
             .map { StudentMapper.toEnrollmentSummary(it) }
 
+    override fun findEnrolledByYear(schoolId: String, academicYearId: String): Flux<EnrollmentSummaryDto> =
+        enrollmentRepository
+            .findBySchoolIdAndAcademicYearIdAndStatus(schoolId, academicYearId, EnrollmentStatus.ENROLLED)
+            .map { StudentMapper.toEnrollmentSummary(it) }
+
     override fun isEnrolled(
         schoolId: String,
         studentId: String,

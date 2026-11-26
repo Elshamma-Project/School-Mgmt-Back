@@ -144,12 +144,46 @@ data class StudentFeeAccountResponse(
 )
 
 /**
- * Droits fees pour l’UI (BR-F09) :
- * - barèmes : Direction / Super-admin
+ * Droits fees pour l’UI (BR-F09 / BR-F10) :
+ * - barèmes + politique rappels/pénalités : Direction / Super-admin
  * - paiements (reçu banque → solvabilité) : Direction / Super-admin / Administration **comptable**
  */
 data class FeesAccessResponse(
     val canRead: Boolean,
     val canManageSchedules: Boolean,
-    val canRecordPayments: Boolean
+    val canRecordPayments: Boolean,
+    val canManagePolicy: Boolean = false
+)
+
+data class FeesPolicyResponse(
+    val id: String,
+    val schoolId: String,
+    val reminderDaysBeforeDue: List<Int>,
+    val remindOnDueDate: Boolean,
+    val weeklyPenaltyAmount: BigDecimal,
+    val currency: String,
+    val maxInsolvencyGraceDays: Int,
+    val exclusionEnabled: Boolean,
+    val exclusionWarningDaysBefore: Int,
+    val active: Boolean
+)
+
+data class UpdateFeesPolicyRequest(
+    @field:NotNull
+    @field:Size(min = 1, max = 12)
+    val reminderDaysBeforeDue: List<@Min(0) @Max(60) Int>,
+    val remindOnDueDate: Boolean = true,
+    @field:NotNull
+    @field:DecimalMin("0.0", inclusive = true)
+    val weeklyPenaltyAmount: BigDecimal,
+    val currency: String? = "XAF",
+    @field:Min(1)
+    @field:Max(365)
+    val maxInsolvencyGraceDays: Int,
+    val exclusionEnabled: Boolean = true,
+    @field:Min(0)
+    @field:Max(60)
+    val exclusionWarningDaysBefore: Int = 7,
+    val active: Boolean = true,
+    val schoolId: String? = null
 )

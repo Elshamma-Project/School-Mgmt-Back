@@ -1,6 +1,7 @@
 package com.kobe.beesm.service.student.api
 
 import com.kobe.beesm.dto.student.GuardianLinkDto
+import com.kobe.beesm.dto.student.StudentGuardiansDto
 import com.kobe.beesm.dto.student.StudentIdentityDto
 import com.kobe.beesm.dto.student.StudentSummaryDto
 import reactor.core.publisher.Flux
@@ -23,4 +24,20 @@ interface StudentApi {
     fun findGuardianLink(schoolId: String, studentId: String, guardianId: String): Mono<GuardianLinkDto>
     /** Compteur élèves actifs (tableau de bord). */
     fun countActive(schoolId: String): Mono<Long>
+
+    /** Tuteurs liés pour un lot d’élèves (fees rappels). */
+    fun findGuardiansForStudents(
+        schoolId: String,
+        studentIds: Collection<String>
+    ): Flux<StudentGuardiansDto>
+
+    /**
+     * Désactivation système pour exclusion scolarité (BR-F14) — sans jeton utilisateur.
+     * Émet `student.changed` comme une désactivation manuelle.
+     */
+    fun deactivateForFeeExclusion(
+        schoolId: String,
+        studentId: String,
+        reasonCode: String
+    ): Mono<StudentSummaryDto>
 }

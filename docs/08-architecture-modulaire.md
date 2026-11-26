@@ -17,7 +17,7 @@
 | `timetable` | grille, EDT, cases, alias matières | `timetable_grids`, `timetable_timetables`, `timetable_entries`, `timetable_subject_aliases` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 | `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
-| `fees` | barèmes scolarité, paiements, solvabilité | `fees_tuition_schedules`, `fees_payments` | `academic`, `student`, `staff` (fonction `ACCOUNTANT` via `service/*/api`) |
+| `fees` | barèmes, paiements, solvabilité, rappels/pénalités/exclusion | `fees_tuition_schedules`, `fees_payments`, `fees_policies`, `fees_student_states`, `fees_penalty_charges` | `academic`, `student`, `staff` (`ACCOUNTANT`), `user` (comptes parents) via `service/*/api` ; outbox → `notification` |
 
 Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `cards`. Réf. scolarité : **`10-scolarite-solvabilite.md`**.
 
@@ -94,6 +94,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `timetable.published` | timetable | notification | `timetableId`, `academicYearId`, `revision` ; inbox **tous** les comptes scolaires actifs (élève, parent, enseignant, SG, admin, directeur) ; deep-link logique `/timetable` (réécrit vers l’espace du rôle) ; révision > 1 = message « mis à jour » (après revise + republish suite à nouvelle classe, etc.) |
 | `timetable.change.requested` | timetable | notification | `requestId`, `timetableId`, `teacherId`, `teacherLabel`, `classLabel`, `changeKind`, `status` |
 | `timetable.change.approved` / `timetable.change.rejected` | timetable | notification | `requestId`, `requestedBy`, `teacherId`, `classLabel`, `decision` ; rejet : `reviewNote` ; approbation : `appliedTimetableId` |
+| `fees.tuition.reminder` | fees | notification | `dedupeKey`, `recipientAccountId`, `kind` (`BEFORE_DUE`\|`ON_DUE`\|`INSOLVENT`\|`PENALTY_WEEKLY`\|`EXCLUSION_WARNING`\|`EXCLUDED`), `daysBeforeDue?`, `severity`, `children[]` (nom, statut, payé/non payé, échéance), montants pénalité / grâce ; inbox parent groupé multi-enfants (BR-F10…F14) |
 | *(alias EDT)* | — | — | `TimetableSubjectAlias` tenu à jour par chargeur / admin ; pas d’événement dédié en v1 (rafraîchissement des libellés d’entrée via `academic.subject.renamed` + republish) |
 
 Versionner chaque charge utile (`schemaVersion`) ; n'y mettre que des identifiants et les valeurs nécessaires.

@@ -31,6 +31,15 @@ interface UserAccountApi {
     ): Mono<Map<String, StaffLinkedAccountDto>>
 
     /**
+     * Comptes liés à des fiches Guardian (`profileType=GUARDIAN`).
+     * Clé = `profileId` (guardianId). Absent si aucun compte lié.
+     */
+    fun findGuardianLinkedAccounts(
+        schoolId: String,
+        guardianIds: Collection<String>
+    ): Mono<Map<String, StaffLinkedAccountDto>>
+
+    /**
      * Dernière connexion des comptes liés à des fiches Staff.
      * Clé = `profileId` (staffId). Absent si aucun compte lié ou jamais connecté.
      */

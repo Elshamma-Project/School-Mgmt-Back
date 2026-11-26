@@ -420,6 +420,51 @@ class StudentService(
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .map { StudentMapper.toStudentSummary(it) }
 
+    override fun findGuardiansForStudents(
+        schoolId: String,
+        studentIds: Collection<String>
+    ): Flux<com.kobe.beesm.dto.student.StudentGuardiansDto> {
+        val ids = studentIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (ids.isEmpty()) return Flux.empty()
+        return studentRepository.findBySchoolIdAndIdIn(schoolId, ids).map { student ->
+            val guardianIds = student.guardians
+                .sortedByDescending { it.primary }
+                .mapNotNull { it.guardianId.trim().takeIf { id -> id.isNotEmpty() } }
+                .distinct()
+            com.kobe.beesm.dto.student.StudentGuardiansDto(
+                studentId = student.id!!,
+                displayName = student.fullName(),
+                matricule = student.matricule,
+                active = student.active,
+                guardianIds = guardianIds
+            )
+        }
+    }
+
+    override fun deactivateForFeeExclusion(
+        schoolId: String,
+        studentId: String,
+        reasonCode: String
+    ): Mono<StudentSummaryDto> {
+        log.info(
+            "student.deactivateForFeeExclusion schoolId={} reason={}",
+            schoolId,
+            reasonCode.trim().take(64)
+        )
+        return studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+            .flatMap { student ->
+                if (!student.active) {
+                    return@flatMap Mono.just(StudentMapper.toStudentSummary(student))
+                }
+                student.active = false
+                studentRepository.save(student)
+                    .flatMap { saved ->
+                        emitStudentChanged(saved).thenReturn(StudentMapper.toStudentSummary(saved))
+                    }
+            }
+    }
+
     override fun getIdentity(schoolId: String, studentId: String): Mono<com.kobe.beesm.dto.student.StudentIdentityDto> =
         studentRepository.findByIdAndSchoolId(studentId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))

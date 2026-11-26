@@ -29,6 +29,7 @@ import com.kobe.beesm.service.academic.api.SchoolClassApi
 import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.service.staff.api.StaffApi
 import com.kobe.beesm.service.student.api.EnrollmentApi
+import com.kobe.beesm.service.student.api.StudentApi
 import com.kobe.beesm.shared.security.CurrentUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
@@ -39,10 +40,11 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F09).
+ * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F14).
  *
  * BR-F09 : saisie des paiements (reçu banque) = `DIRECTOR` / `SUPER_ADMIN`
  * ou `ADMINISTRATION` avec fonction RH `ACCOUNTANT` ; barèmes = Direction seule.
+ * Lecture solvabilité : admin / dir. / SG ; **parent = ses enfants seulement** ; **pas l’enseignant**.
  */
 @Service
 class FeesService(
@@ -51,7 +53,8 @@ class FeesService(
     private val academicYearApi: AcademicYearApi,
     private val schoolClassApi: SchoolClassApi,
     private val enrollmentApi: EnrollmentApi,
-    private val staffApi: StaffApi
+    private val staffApi: StaffApi,
+    private val studentApi: StudentApi
 ) : FeesApi {
 
     private val zone: ZoneId = ZoneId.of("Africa/Douala")
@@ -260,6 +263,7 @@ class FeesService(
     ): Mono<StudentFeeAccountResponse> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
         return assertCanReadFees(currentUser, schoolId)
+            .then(assertCanViewStudentFees(currentUser, schoolId, studentId))
             .then(buildAccount(schoolId, studentId, academicYearId))
     }
 
@@ -271,7 +275,8 @@ class FeesService(
     ): Flux<SolvencySnapshotDto> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
         return assertCanReadFees(currentUser, schoolId)
-            .thenMany(solvencySnapshot(schoolId, academicYearId, studentIds))
+            .thenMany(filterStudentIdsForViewer(currentUser, schoolId, studentIds))
+            .flatMapMany { allowedIds -> solvencySnapshot(schoolId, academicYearId, allowedIds) }
     }
 
     override fun solvencySnapshot(
@@ -461,12 +466,13 @@ class FeesService(
     }
 
     private fun resolveAccess(currentUser: CurrentUser, schoolId: String): Mono<FeesAccessResponse> {
+        // Enseignant : pas de solvabilité. Parent : lecture limitée à ses enfants (contrôle fin).
         val canRead = currentUser.hasAnyRole(
             Role.ADMINISTRATION,
             Role.DIRECTOR,
             Role.SUPER_ADMIN,
             Role.SURVEILLANT_GENERAL,
-            Role.TEACHER
+            Role.PARENT
         )
         val canManageSchedules = currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)
         if (canManageSchedules) {
@@ -474,7 +480,8 @@ class FeesService(
                 FeesAccessResponse(
                     canRead = canRead,
                     canManageSchedules = true,
-                    canRecordPayments = true
+                    canRecordPayments = true,
+                    canManagePolicy = true
                 )
             )
         }
@@ -483,7 +490,8 @@ class FeesService(
                 FeesAccessResponse(
                     canRead = canRead,
                     canManageSchedules = false,
-                    canRecordPayments = false
+                    canRecordPayments = false,
+                    canManagePolicy = false
                 )
             )
         }
@@ -492,10 +500,67 @@ class FeesService(
                 FeesAccessResponse(
                     canRead = canRead,
                     canManageSchedules = false,
-                    canRecordPayments = accountant
+                    canRecordPayments = accountant,
+                    canManagePolicy = false
                 )
             }
     }
+
+    /** Parent : uniquement ses enfants liés ; staff autorisé : tous. */
+    private fun assertCanViewStudentFees(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String
+    ): Mono<Void> {
+        if (!isParentViewer(currentUser)) {
+            return Mono.empty()
+        }
+        val guardianId = currentUser.profileId?.trim().orEmpty()
+        if (guardianId.isEmpty()) {
+            return Mono.error(ForbiddenException("FORBIDDEN", "Parent profile required"))
+        }
+        return studentApi.findGuardianLink(schoolId, studentId, guardianId)
+            .switchIfEmpty(
+                Mono.error(ForbiddenException("FORBIDDEN", "Fees visible only for linked children"))
+            )
+            .then()
+    }
+
+    private fun filterStudentIdsForViewer(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentIds: List<String>
+    ): Mono<List<String>> {
+        val requested = studentIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+        if (requested.isEmpty()) {
+            return Mono.just(emptyList())
+        }
+        if (!isParentViewer(currentUser)) {
+            return Mono.just(requested)
+        }
+        val guardianId = currentUser.profileId?.trim().orEmpty()
+        if (guardianId.isEmpty()) {
+            return Mono.just(emptyList())
+        }
+        return studentApi.findByGuardian(schoolId, guardianId)
+            .map { it.id }
+            .collectList()
+            .map { linked ->
+                val allowed = linked.toSet()
+                requested.filter { it in allowed }
+            }
+    }
+
+    private fun isParentViewer(currentUser: CurrentUser): Boolean =
+        currentUser.hasRole(Role.PARENT) &&
+            currentUser.profileType == ProfileType.GUARDIAN &&
+            !currentUser.profileId.isNullOrBlank() &&
+            !currentUser.hasAnyRole(
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN,
+                Role.SURVEILLANT_GENERAL
+            )
 
     private fun isAccountantStaff(currentUser: CurrentUser, schoolId: String): Mono<Boolean> {
         if (currentUser.profileType != ProfileType.STAFF) {

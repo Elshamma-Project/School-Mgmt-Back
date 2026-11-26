@@ -73,6 +73,7 @@
 | Q-74 | Paiement partiel d’une tranche | ❓ | v1 : tranche « payée » seulement si montant ≥ dû |
 | Q-75 | Catalogue des modes de paiement | ❓ | Texte libre + enum court |
 | Q-76 | Annulation / correction d’un paiement | 💡 | Statut `VOID` + motif, pas de delete |
+| Q-77…Q-80 | Rappels / pénalités / exclusion | 🟡 | Voir détail §2 ; défauts Direction dans `FeesPolicy` |
 
 ## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
 
@@ -131,6 +132,10 @@
 | Q-74 | Un parent paie **une partie** d’une tranche : la tranche est-elle « payée » seulement au montant complet ? | ❓ | Proposition : payée ssi `paidAmount >= due` | fees |
 | Q-75 | Liste fermée des **modes de paiement** ou texte libre ? | ❓ | Proposition : enum court + « Autre » | fees |
 | Q-76 | Peut-on **supprimer** un paiement erroné ou seulement l’**annuler** (VOID) ? | 💡 | VOID + motif (audit) | fees |
+| Q-77 | Jours de rappel avant échéance (15/10/5/3/2/1) figés ou 100 % paramétrables ? | 🟡 | **Figé v1** : défauts 15/10/5/3/2/1 + jour J ; Direction peut ajuster via `FeesPolicy` (BR-F10) | fees |
+| Q-78 | Montant pénalité hebdo après insolvabilité ? | 🟡 | **Figé v1** : défaut **1000 XAF**/semaine/enfant, paramétrable Direction (BR-F12) | fees |
+| Q-79 | Délai max avant exclusion définitive ? | 🟡 | **Figé v1** : défaut **28 jours** calendaires après 1er jour d’insolvabilité ; paramétrable ; exclusion = `Student.active=false` (BR-F14) | fees |
+| Q-80 | Réactivation après exclusion pour insolvabilité : qui, et faut-il solder pénalités d’abord ? | ❓ | Proposition : Direction/Admin manuellement ; soldes pénalités + tranches avant réinscription année | fees |
 
 ## 3. Décisions provisoires (résumé)
 

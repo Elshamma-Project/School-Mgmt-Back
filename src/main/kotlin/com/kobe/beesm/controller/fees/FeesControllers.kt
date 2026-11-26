@@ -1,8 +1,10 @@
 package com.kobe.beesm.controller.fees
 
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
+import com.kobe.beesm.dto.fees.UpdateFeesPolicyRequest
 import com.kobe.beesm.dto.fees.UpsertTuitionScheduleRequest
 import com.kobe.beesm.dto.fees.VoidFeePaymentRequest
+import com.kobe.beesm.service.fees.FeesPolicyService
 import com.kobe.beesm.service.fees.FeesService
 import com.kobe.beesm.shared.security.SecuritySupport
 import jakarta.validation.Valid
@@ -18,11 +20,20 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/v1/fees")
 class FeesController(
-    private val feesService: FeesService
+    private val feesService: FeesService,
+    private val feesPolicyService: FeesPolicyService
 ) {
     @GetMapping("/access")
     fun access(@RequestParam(required = false) schoolId: String?) =
         SecuritySupport.currentUser().flatMap { feesService.access(it, schoolId) }
+
+    @GetMapping("/policy")
+    fun getPolicy(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMap { feesPolicyService.getPolicy(it, schoolId) }
+
+    @PutMapping("/policy")
+    fun updatePolicy(@Valid @RequestBody request: UpdateFeesPolicyRequest) =
+        SecuritySupport.currentUser().flatMap { feesPolicyService.updatePolicy(it, request) }
 
     @GetMapping("/schedules")
     fun listSchedules(

@@ -66,6 +66,9 @@
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
 | fees | `fees_tuition_schedules` | `TuitionSchedule` (+ `TuitionInstallment`) | Barème inscription + 3 tranches par année/classe (docs/10) |
 | fees | `fees_payments` | `FeePayment` | Écritures de paiement (ENROLLMENT / INSTALLMENT) ; annulation = `VOID` |
+| fees | `fees_policies` | `FeesPolicy` | Rappels (jours), pénalité hebdo, grâce / exclusion (BR-F10…F14) ; 1 doc / école |
+| fees | `fees_student_states` | `FeeStudentFeeState` | Ancre insolvabilité, semaines de pénalité, exclusion (effets de bord) |
+| fees | `fees_penalty_charges` | `FeePenaltyCharge` | Lignes de pénalité hebdomadaire (idempotentes) |
 
 ## 3. Index clés et requêtes chaudes
 

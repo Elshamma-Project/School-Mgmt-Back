@@ -103,6 +103,16 @@ data class StudentSummaryDto(
     val active: Boolean
 )
 
+/** Liens tuteurs pour un lot d’élèves (rappels scolarité, portal). */
+data class StudentGuardiansDto(
+    val studentId: String,
+    val displayName: String,
+    val matricule: String,
+    val active: Boolean,
+    /** `Guardian.id` liés (ordre : principal d’abord si présent). */
+    val guardianIds: List<String>
+)
+
 /** Identité figée pour bulletin (reporting) — sans contact ni tuteurs. */
 data class StudentIdentityDto(
     val id: String,

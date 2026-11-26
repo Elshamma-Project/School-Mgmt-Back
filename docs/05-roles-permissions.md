@@ -61,8 +61,10 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | **Proposer modif de créneau** (timetable) | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant sur ses cases PUBLISHED ; motif (BR-67) |
 | **Approuver / refuser modif de créneau** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration **ou** directeur ; applique sur brouillon / révision |
 | **Barèmes scolarité** (fees schedules) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | Direction seule (BR-F09) |
+| **Politique rappels / pénalités / exclusion** (fees policy) | ✖ | ✖ | ✖ | lecture | ✔ | ✔ | Direction seule en écriture (BR-F10…F14) |
 | **Enregistrer / annuler un paiement** scolarité (fees) | ✖ | ✖ | ✖ | ◐ | ✔ | ✔ | Admin **comptable** (`StaffFunction.ACCOUNTANT`) ou directeur ; reçu banque → solvabilité |
-| **Consulter solvabilité** élève (fees) | ✖ | ✖ | ✔ | ✔ | ✔ | ✔ | + SG |
+| **Consulter solvabilité** élève (fees) | ✖ | ◐ | ✖ | ✔ | ✔ | ✔ | Parent : **ses enfants seulement** ; enseignant : ✖ ; + SG |
+| **Notifications rappels scolarité** (inbox) | ✖ | ✔ | ✖ | ✖ | ✖ | ◐ | Parents (enfants liés) ; catégories `FEES_*` |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Créer l’accès** enseignant (`POST /staff/{id}/login-access`) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | Q-60 : fiche Staff sans compte → e-mail réel + compte PENDING ; refusé si compte déjà lié |
 | Plusieurs établissements, support | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | accès journalisé |
