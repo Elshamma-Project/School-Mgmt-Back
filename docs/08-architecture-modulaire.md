@@ -17,8 +17,9 @@
 | `timetable` | grille, EDT, cases, alias matières | `timetable_grids`, `timetable_timetables`, `timetable_entries`, `timetable_subject_aliases` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 | `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
+| `fees` | barèmes scolarité, paiements, solvabilité | `fees_tuition_schedules`, `fees_payments` | `academic`, `student` (via `service/*/api`) |
 
-Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `fees`, `cards`, `enrollment`.
+Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `cards`. Réf. scolarité : **`10-scolarite-solvabilite.md`**.
 
 ```mermaid
 flowchart LR
@@ -30,6 +31,7 @@ flowchart LR
   academic --> staff
   notification --> user
   portal --> academic & student & staff & grading & notification
+  fees --> academic & student
 ```
 Les flèches vont du module qui **consomme** vers celui qui **fournit**. **Aucune flèche inverse, aucun cycle** : si un cycle apparaît, c'est que l'information doit descendre par un événement (§ 4) ou qu'un module est mal découpé.
 
@@ -44,7 +46,7 @@ com.kobe.beesm
 ├── configuration/              socle technique (Mongo, Jackson, OpenAPI...) – commun
 ├── exception/                  exceptions et ProblemDetail – commun
 ├── shared/                     utilitaires communs (identité, tenant, événements) – commun
-├── model/<module>/             documents du module   (shared, user, academic, student, staff, grading, reporting, timetable)
+├── model/<module>/             documents du module   (shared, user, academic, student, staff, grading, reporting, timetable, notification, fees)
 ├── repository/<module>/        accès Mongo du module : JAMAIS utilisé hors du module
 ├── service/<module>/           logique du module
 │   └── api/                    interfaces PUBLIQUES du module (ce que les autres modules ont le droit d'appeler)

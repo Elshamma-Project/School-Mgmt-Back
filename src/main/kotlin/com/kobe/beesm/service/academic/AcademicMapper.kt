@@ -138,12 +138,14 @@ object AcademicMapper {
 
     fun toYearSummary(year: AcademicYear, today: LocalDate): AcademicYearSummaryDto =
         AcademicYearSummaryDto(
-            year.id!!,
-            year.schoolId,
-            year.label,
-            year.current,
-            year.status,
-            yearIsLocked(year, today)
+            id = year.id!!,
+            schoolId = year.schoolId,
+            label = year.label,
+            startDate = year.startDate,
+            endDate = year.endDate,
+            current = year.current,
+            status = year.status,
+            locked = yearIsLocked(year, today)
         )
 
     /**

@@ -64,6 +64,8 @@
 | timetable | `timetable_change_requests` | `TimetableChangeRequest` (+ `TimetableEntrySnapshot`) | Demandes de modif de créneau enseignant → admin/dir. (BR-67) ; libellés figés |
 | notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégories `TIMETABLE_PUBLISHED`, `TIMETABLE_CHANGE_REQUESTED`, `TIMETABLE_CHANGE_DECIDED`, `TIMETABLE_UPDATE_NEEDED`, `SESSION_SCHEDULE_CHANGED` |
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
+| fees | `fees_tuition_schedules` | `TuitionSchedule` (+ `TuitionInstallment`) | Barème inscription + 3 tranches par année/classe (docs/10) |
+| fees | `fees_payments` | `FeePayment` | Écritures de paiement (ENROLLMENT / INSTALLMENT) ; annulation = `VOID` |
 
 ## 3. Index clés et requêtes chaudes
 
@@ -198,7 +200,7 @@ Quel gabarit pour quels niveaux : Q-26.
 |---|---|
 | Disponibilités des enseignants, solveur automatique | module `timetable`, évolution (Q-32) ; v1 = saisie manuelle |
 | Options LV2 côté notes / Enrollment | hors modèle EDT ; Q-41 ouverte côté academic |
-| Cartes d'élèves, frais, notifications | modules futurs ; fichiers déjà gérés : `StudentSchoolPhoto` (`photoFileId`), `SchoolLogo` (`logoFileId`), `UserAvatar` (`avatarFileId`) ; PDF bulletin via `pdfFileId` |
+| Cartes d'élèves | module futur `cards` ; frais = module `fees` ci-dessus ; fichiers déjà gérés : `StudentSchoolPhoto`, `SchoolLogo`, `UserAvatar` ; PDF bulletin via `pdfFileId` |
 | Détail de chaque absence | compteurs seulement (`StudentPeriodReview`) |
 | Authentification et autorisations | `UserAccount` + `UserSession` (max 2 sessions) ; voir `05-roles-permissions.md` |
 | Import des élèves | plus tard ; création un par un en attendant |

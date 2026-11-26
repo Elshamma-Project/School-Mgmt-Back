@@ -205,4 +205,10 @@ Détail exhaustif (API, seed, front, notifs) : [`09-emploi-du-temps.md`](09-empl
 
 ## 7. Modules (futurs microservices)
 
-Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `user`, `academic`, `student`, `staff`, `grading`, `reporting`, `timetable` (+ `shared`). Modules suivants : cartes d'élèves, inscriptions/matricule, frais de scolarité, notifications, stockage de fichiers, import des élèves.
+Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `user`, `academic`, `student`, `staff`, `grading`, `reporting`, `timetable`, `notification`, `portal` (+ `shared`). Modules suivants : **frais de scolarité / solvabilité** (`fees`, doc `10-scolarite-solvabilite.md`), cartes d'élèves, stockage de fichiers, import des élèves.
+
+### 5.x Scolarité et solvabilité (module `fees` — en conception)
+
+- Inscription annuelle + **3 tranches** (échéances = fin des 3 premiers mois de rentrée, défaut sept.–nov.).
+- Barèmes paramétrables (direction) ; paiements saisis ; **solvabilité** calculée (Solvable / En attente / Insolvable).
+- Détail et questions : `10-scolarite-solvabilite.md`, Q-65 à Q-76.

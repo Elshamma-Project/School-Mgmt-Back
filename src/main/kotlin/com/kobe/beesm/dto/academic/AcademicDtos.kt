@@ -185,6 +185,8 @@ data class AcademicYearSummaryDto(
     val id: String,
     val schoolId: String,
     val label: String,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
     val current: Boolean,
     val status: AcademicYearStatus,
     val locked: Boolean

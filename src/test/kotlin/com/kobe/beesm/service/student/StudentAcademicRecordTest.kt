@@ -95,6 +95,8 @@ class StudentAcademicRecordTest {
                     id = "year-6e",
                     schoolId = "school-1",
                     label = "2020-2021",
+                    startDate = java.time.LocalDate.of(2020, 9, 1),
+                    endDate = java.time.LocalDate.of(2021, 6, 30),
                     current = false,
                     status = AcademicYearStatus.CLOSED,
                     locked = true
@@ -107,6 +109,8 @@ class StudentAcademicRecordTest {
                     id = "year-2nde",
                     schoolId = "school-1",
                     label = "2025-2026",
+                    startDate = java.time.LocalDate.of(2025, 9, 1),
+                    endDate = java.time.LocalDate.of(2026, 6, 30),
                     current = true,
                     status = AcademicYearStatus.ACTIVE,
                     locked = false

@@ -232,6 +232,8 @@ class GradeServiceRulesTest {
                         id = "year-1",
                         schoolId = "school-1",
                         label = "2025-2026",
+                        startDate = java.time.LocalDate.of(2025, 9, 1),
+                        endDate = java.time.LocalDate.of(2026, 6, 30),
                         current = true,
                         status = com.kobe.beesm.model.academic.AcademicYearStatus.ACTIVE,
                         locked = false

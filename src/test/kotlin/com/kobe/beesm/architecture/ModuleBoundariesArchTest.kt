@@ -26,6 +26,7 @@ class ModuleBoundariesArchTest {
         "timetable",
         "notification",
         "portal",
+        "fees",
     )
 
     private val classes = ClassFileImporter()

@@ -14,7 +14,7 @@ Utilisateurs non techniques ; données de **mineurs**. **Tout doit être paramé
 - Package racine : `com.kobe.beesm` ; couches : `configuration`, `controller`, `dto`, `exception`, `model`, `repository`, `service`, `shared`
 
 ## Modules (même sous-dossier dans chaque couche)
-`user` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · `notification` · `portal` · (`shared` : noyau commun)
+`user` · `academic` · `student` · `staff` · `grading` · `reporting` · `timetable` · `notification` · `portal` · `fees` · (`shared` : noyau commun)
 Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `service/grading/api/` = interface publique), `controller/grading/`, `dto/grading/`.
 `portal` : agrégats lecture seule (dashboard), **pas** de collections Mongo.
 
@@ -30,11 +30,12 @@ Exemple : `model/grading/`, `repository/grading/`, `service/grading/` (+ `servic
 | Réponses reçues et questions ouvertes (Q-xx) | `docs/07-questions-ouvertes.md` |
 | Modules, frontières, événements | `docs/08-architecture-modulaire.md` |
 | Emploi du temps | `docs/09-emploi-du-temps.md` |
+| Scolarité / solvabilité | `docs/10-scolarite-solvabilite.md` |
 | Jeux de test anonymisés | `docs/fixtures/*.json` |
 | Comptes démo | `docs/mock-logins.md` |
 
 ## État (nov. 2026)
-- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements + `TIMETABLE_*` dont broadcast publish), `portal` (`GET /api/v1/dashboard/summary`), `timetable` **phases 0–J** (édition, conflits, PDF, BR-67, seed privé, notif tous acteurs à la publication) ; lecture + PDF pour tous les acteurs scolaires. **Doc de référence EDT** : `docs/09-emploi-du-temps.md`.
+- **Implémenté** : `user` (auth JWT, sessions, lockout), `academic`, `student`, `staff`, `grading` (sessions, notes, audit, fiches de report, corrections), `reporting` (gabarits, bulletins PDF 1 page, calculs), `notification` (inbox + signalements + `TIMETABLE_*` dont broadcast publish), `portal` (`GET /api/v1/dashboard/summary`), `timetable` **phases 0–J** (édition, conflits, PDF, BR-67, seed privé, notif tous acteurs à la publication) ; lecture + PDF pour tous les acteurs scolaires. **Doc de référence EDT** : `docs/09-emploi-du-temps.md`. Module **`fees`** (barèmes, paiements manuels, solvabilité liste élèves — `docs/10-scolarite-solvabilite.md`, Q-65…Q-76).
 - **Front** (dépôt séparé Next.js) : workspaces `/teacher`, `/administration`, `/director`, `/surveillant-general` (visas + EDT lecture), `/super-admin`, `/parent` (enfants, notes, bulletins, EDT), `/student` (EDT lecture + PDF ; notes/bulletins encore stub).
 - **Décisions v1 figées** tant que Q-xx non rouvertes : Principal = `DIRECTOR` (pas de rôle `PRINCIPAL`) ; SG = lecture catalogue academic + visa fiches de report + consultation EDT (`/surveillant-general`) ; EDT = saisie manuelle + duplication ; parents = navigateur, enfants liés seulement.
 - Test **ArchUnit** des frontières de modules : `src/test/.../architecture/ModuleBoundariesArchTest.kt` (CI Gradle).
