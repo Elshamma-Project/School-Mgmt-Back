@@ -275,7 +275,7 @@ class FeesService(
     ): Flux<SolvencySnapshotDto> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
         return assertCanReadFees(currentUser, schoolId)
-            .thenMany(filterStudentIdsForViewer(currentUser, schoolId, studentIds))
+            .then(filterStudentIdsForViewer(currentUser, schoolId, studentIds))
             .flatMapMany { allowedIds -> solvencySnapshot(schoolId, academicYearId, allowedIds) }
     }
 
