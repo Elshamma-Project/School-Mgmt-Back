@@ -78,6 +78,11 @@ data class StudentResponse(
     val fullName: String,
     val sex: Sex?,
     val dateOfBirth: LocalDate?,
+    /**
+     * Âge en années révolues (fuseau Africa/Douala), dérivé de `dateOfBirth`.
+     * Non stocké en base — recalculé à chaque lecture.
+     */
+    val age: Int? = null,
     val placeOfBirth: String?,
     val nationality: String?,
     /** Id binaire photo scolaire (bulletin) — pas l’avatar compte. */

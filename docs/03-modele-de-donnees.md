@@ -156,6 +156,8 @@ Créées avec l'année (statut `PLANNED`). Sur le bulletin de trimestre, les deu
 
 **Évolutions modèle (fiche de report)** : `EvaluationSession.examDate` ; `Student.sex` nullable ; `Role.SURVEILLANT_GENERAL` ; `GradeAuditEntry` cible `REPORT_SHEET` + `approvedBy`/`approvedAt` ; collection `grading_report_sheets`.
 
+**DTO élève** : `StudentResponse.age` (années révolues, fuseau `Africa/Douala`) est **calculé** à la lecture depuis `dateOfBirth` — non stocké dans `student_students`.
+
 **Évolutions modèle (bulletins)** : `StudentSnapshot.sex` devient `Sex?` (aligné sur `Student.sex` nullable). Calculs et PDF dans `service/reporting` (`GradeCalculationService`, `ReportCardService`, `ReportCardPdfService`) ; gabarits seed `ANNUAL_STANDARD` / `TERM_COMPETENCY`.
 
 | Échelle | Tranches |

@@ -15,8 +15,19 @@ import com.kobe.beesm.model.student.Enrollment
 import com.kobe.beesm.model.student.Guardian
 import com.kobe.beesm.model.student.GuardianLink
 import com.kobe.beesm.model.student.Student
+import java.time.LocalDate
+import java.time.Period
+import java.time.ZoneId
 
 object StudentMapper {
+    private val DISPLAY_ZONE: ZoneId = ZoneId.of("Africa/Douala")
+
+    /** Âge en années révolues (null si date de naissance absente). */
+    fun ageYears(dateOfBirth: LocalDate?, today: LocalDate = LocalDate.now(DISPLAY_ZONE)): Int? {
+        if (dateOfBirth == null) return null
+        return Period.between(dateOfBirth, today).years.coerceAtLeast(0)
+    }
+
     fun toContact(dto: ContactInfoDto): ContactInfo =
         ContactInfo(
             phones = dto.phones.map { it.trim() }.filter { it.isNotBlank() },
@@ -61,6 +72,7 @@ object StudentMapper {
             fullName = student.fullName(),
             sex = student.sex,
             dateOfBirth = student.dateOfBirth,
+            age = ageYears(student.dateOfBirth),
             placeOfBirth = student.placeOfBirth,
             nationality = student.nationality,
             photoFileId = student.photoFileId,
