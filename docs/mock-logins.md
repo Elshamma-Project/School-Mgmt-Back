@@ -98,7 +98,7 @@ Actif si `beesm.security.mock-users.enabled=true` (insert-if-absent ; **enrichit
   - `stu-demo-03` / sans paiement → **INSOLVENT**
 - **Qui teste quoi** :
   - `directeur@elshammah.demo` → nav **Élèves → Solvabilité**, paiements, unpaid-summary.
-  - `admin@elshammah.demo` → paiements **seulement** si la fiche Staff porte `ACCOUNTANT` (sinon nav Solvabilité masquée ; `GET /fees/access` → `canRecordPayments=false`).
+  - `admin@elshammah.demo` → fiche Staff démo = `SECRETARY` + `ACCOUNTANT` → paiements + nav **Solvabilité** (`canRecordPayments=true`).
   - `enseignant@elshammah.demo` → **pas** de colonne / API solvabilité.
   - `parent.demo@elshammah.demo` → inbox `FEES_*` + solvabilité **enfants liés** uniquement.
 

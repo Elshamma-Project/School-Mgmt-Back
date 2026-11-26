@@ -166,7 +166,8 @@ class MockUsersBootstrapRunner(
                 lastName = "Administration",
                 firstName = "Demo",
                 civility = Civility.MME,
-                functions = setOf(StaffFunction.SECRETARY),
+                // SECRETARY + ACCOUNTANT : admin démo peut tester paiements / workspace Solvabilité (BR-F09).
+                functions = setOf(StaffFunction.SECRETARY, StaffFunction.ACCOUNTANT),
                 email = EMAIL_ADMIN
             ),
             upsertStaff(
