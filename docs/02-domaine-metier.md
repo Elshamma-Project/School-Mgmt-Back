@@ -207,8 +207,8 @@ Détail exhaustif (API, seed, front, notifs) : [`09-emploi-du-temps.md`](09-empl
 
 Voir `08-architecture-modulaire.md`. Modules déjà modélisés : `user`, `academic`, `student`, `staff`, `grading`, `reporting`, `timetable`, `notification`, `portal` (+ `shared`). Modules suivants : **frais de scolarité / solvabilité** (`fees`, doc `10-scolarite-solvabilite.md`), cartes d'élèves, stockage de fichiers, import des élèves.
 
-### 5.x Scolarité et solvabilité (module `fees` — en conception)
+### 5.x Scolarité et solvabilité (module `fees`)
 
 - Inscription annuelle + **3 tranches** (échéances = fin des 3 premiers mois de rentrée, défaut sept.–nov.).
-- Barèmes paramétrables (direction) ; paiements saisis ; **solvabilité** calculée (Solvable / En attente / Insolvable).
-- Détail et questions : `10-scolarite-solvabilite.md`, Q-65 à Q-76.
+- Barèmes = **Direction** ; saisie des paiements (reçu banque) = Direction **ou** Administration avec fonction RH **`ACCOUNTANT`** (BR-F09).
+- **Solvabilité** calculée (Solvable / En attente / Insolvable). Détail : `10-scolarite-solvabilite.md`, Q-65 à Q-76.
