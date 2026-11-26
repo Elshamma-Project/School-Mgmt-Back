@@ -116,6 +116,8 @@ data class StaffResponse(
     val hasLoginAccount: Boolean = false,
     /** Identifiant de connexion (e-mail) du compte lié, si présent. */
     val loginUsername: String? = null,
+    /** True si le compte lié a une photo de profil UI (`GET /staff/{id}/avatar`). */
+    val hasAvatar: Boolean = false,
     /**
      * Mot de passe temporaire — présent uniquement juste après création
      * si `createLoginAccount` a provisionné le compte. Jamais stocké sur Staff.

@@ -6,5 +6,7 @@ import java.time.Instant
 data class StaffLinkedAccountDto(
     val accountId: String,
     val username: String,
-    val lastLoginAt: Instant? = null
+    val lastLoginAt: Instant? = null,
+    /** True si le compte a une photo de profil UI. */
+    val hasAvatar: Boolean = false
 )

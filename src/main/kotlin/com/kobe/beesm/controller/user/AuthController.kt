@@ -99,9 +99,12 @@ class AuthController(
         SecuritySupport.currentUser()
             .flatMap { authService.getAvatar(it) }
             .map { avatar ->
+                // URL identique pour tous les comptes (/me/avatar) : ne jamais laisser
+                // le navigateur resservir la photo du compte précédent (max-age + même URL).
                 ResponseEntity.ok()
                     .contentType(MediaType.parseMediaType(avatar.contentType))
-                    .header(HttpHeaders.CACHE_CONTROL, "private, max-age=3600")
+                    .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+                    .header(HttpHeaders.VARY, HttpHeaders.AUTHORIZATION)
                     .body(avatar.data.data)
             }
 

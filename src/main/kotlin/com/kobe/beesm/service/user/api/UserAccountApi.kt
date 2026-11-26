@@ -1,5 +1,6 @@
 package com.kobe.beesm.service.user.api
 
+import com.kobe.beesm.dto.user.AvatarBinaryDto
 import com.kobe.beesm.dto.user.CreateUserAccountRequest
 import com.kobe.beesm.dto.user.StaffLinkedAccountDto
 import com.kobe.beesm.dto.user.UserAccountResponse
@@ -34,6 +35,12 @@ interface UserAccountApi {
      * Clé = `profileId` (staffId). Absent si aucun compte lié ou jamais connecté.
      */
     fun findStaffLastLogins(schoolId: String, staffIds: Collection<String>): Mono<Map<String, Instant>>
+
+    /**
+     * Avatar UI du compte lié à une fiche Staff (même établissement).
+     * Vide si pas de compte / pas de photo.
+     */
+    fun findStaffAvatar(schoolId: String, staffId: String): Mono<AvatarBinaryDto>
 
     /**
      * Identifiants de comptes ACTIVE d’un établissement ayant au moins un des rôles donnés.

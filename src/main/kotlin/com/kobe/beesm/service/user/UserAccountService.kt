@@ -1,5 +1,6 @@
 package com.kobe.beesm.service.user
 
+import com.kobe.beesm.dto.user.AvatarBinaryDto
 import com.kobe.beesm.dto.user.CreateUserAccountRequest
 import com.kobe.beesm.dto.user.StaffLinkedAccountDto
 import com.kobe.beesm.dto.user.UserAccountResponse
@@ -12,6 +13,7 @@ import com.kobe.beesm.model.user.ProfileType
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.model.user.UserAccount
 import com.kobe.beesm.repository.user.UserAccountRepository
+import com.kobe.beesm.repository.user.UserAvatarRepository
 import com.kobe.beesm.service.user.api.UserAccountApi
 import com.kobe.beesm.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
@@ -27,6 +29,7 @@ import java.time.Instant
 @Service
 class UserAccountService(
     private val userAccountRepository: UserAccountRepository,
+    private val userAvatarRepository: UserAvatarRepository,
     private val passwordEncoder: PasswordEncoder,
     private val userSessionService: UserSessionService
 ) : UserAccountApi {
@@ -117,7 +120,8 @@ class UserAccountService(
                         profileId to StaffLinkedAccountDto(
                             accountId = accountId,
                             username = account.username,
-                            lastLoginAt = account.lastLoginAt
+                            lastLoginAt = account.lastLoginAt,
+                            hasAvatar = !account.avatarFileId.isNullOrBlank()
                         )
                     }
                     .toMap()
@@ -133,6 +137,33 @@ class UserAccountService(
                 account.lastLoginAt?.let { staffId to it }
             }.toMap()
         }
+
+    override fun findStaffAvatar(schoolId: String, staffId: String): Mono<AvatarBinaryDto> {
+        val sid = staffId.trim()
+        if (sid.isEmpty()) {
+            return Mono.error(NotFoundException("AVATAR_NOT_FOUND", "No avatar"))
+        }
+        return userAccountRepository
+            .findBySchoolIdAndProfileTypeAndProfileIdIn(schoolId, ProfileType.STAFF, listOf(sid))
+            .next()
+            .switchIfEmpty(Mono.error(NotFoundException("AVATAR_NOT_FOUND", "No avatar")))
+            .flatMap { account ->
+                val avatarId = account.avatarFileId?.trim()?.takeIf { it.isNotEmpty() }
+                    ?: return@flatMap Mono.error(NotFoundException("AVATAR_NOT_FOUND", "No avatar"))
+                userAvatarRepository.findById(avatarId)
+                    .switchIfEmpty(
+                        userAvatarRepository.findByAccountId(account.id!!)
+                            .switchIfEmpty(Mono.error(NotFoundException("AVATAR_NOT_FOUND", "No avatar")))
+                    )
+            }
+            .map { avatar ->
+                AvatarBinaryDto(
+                    contentType = avatar.contentType,
+                    sizeBytes = avatar.sizeBytes,
+                    data = avatar.data.data
+                )
+            }
+    }
 
     override fun findActiveAccountIdsByRoles(schoolId: String, roles: Collection<Role>): Flux<String> {
         val roleSet = roles.toSet()

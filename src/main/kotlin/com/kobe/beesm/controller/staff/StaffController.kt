@@ -17,7 +17,10 @@ import com.kobe.beesm.service.staff.StaffService
 import com.kobe.beesm.service.user.api.UserAccountApi
 import com.kobe.beesm.shared.security.SecuritySupport
 import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -89,6 +92,29 @@ class StaffController(
         SecuritySupport.currentUser()
             .flatMap { staffService.getById(it, id, schoolId) }
             .flatMap { enrichOne(it) }
+
+    /**
+     * Photo de profil du compte lié à la fiche Staff (UI liste / détail).
+     * Droits = lecture de la fiche ; 404 si pas de compte ou pas de photo.
+     */
+    @GetMapping("/{id}/avatar")
+    fun getAvatar(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser()
+            .flatMap { currentUser ->
+                staffService.getById(currentUser, id, schoolId).flatMap { staff ->
+                    userAccountApi.findStaffAvatar(staff.schoolId, staff.id)
+                }
+            }
+            .map { avatar ->
+                ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(avatar.contentType))
+                    .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
+                    .header(HttpHeaders.VARY, HttpHeaders.AUTHORIZATION)
+                    .body(avatar.data)
+            }
 
     @GetMapping
     fun list(
@@ -210,7 +236,8 @@ class StaffController(
         return staff.copy(
             lastLoginAt = linked?.lastLoginAt ?: staff.lastLoginAt,
             hasLoginAccount = linked != null,
-            loginUsername = linked?.username ?: staff.loginUsername
+            loginUsername = linked?.username ?: staff.loginUsername,
+            hasAvatar = linked?.hasAvatar ?: false
         )
     }
 }
