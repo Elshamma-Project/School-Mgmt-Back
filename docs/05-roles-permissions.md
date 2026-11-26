@@ -60,6 +60,9 @@ Un compte peut cumuler plusieurs rôles (enseignant + administration). Le droit 
 | Emploi du temps : consulter + PDF | ✔ | ✔ | ✔ | ✔ | ✔ | ✔ | **tous les acteurs scolaires** : EDT publié + PDF ; élève : sa classe **et** EDT général ; parent : classe de l’enfant **et** EDT général (**pas** de demande de modif) ; enseignant : ses cours + général ; SG : lecture par classe + PDF (édition seulement si `timetableSurveillantCanEdit`) |
 | **Proposer modif de créneau** (timetable) | ✖ | ✖ | ✔ | ✖ | ✖ | ✔ | enseignant sur ses cases PUBLISHED ; motif (BR-67) |
 | **Approuver / refuser modif de créneau** | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | administration **ou** directeur ; applique sur brouillon / révision |
+| **Barèmes scolarité** (fees schedules) | ✖ | ✖ | ✖ | ✖ | ✔ | ✔ | Direction seule (BR-F09) |
+| **Enregistrer / annuler un paiement** scolarité (fees) | ✖ | ✖ | ✖ | ◐ | ✔ | ✔ | Admin **comptable** (`StaffFunction.ACCOUNTANT`) ou directeur ; reçu banque → solvabilité |
+| **Consulter solvabilité** élève (fees) | ✖ | ✖ | ✔ | ✔ | ✔ | ✔ | + SG |
 | Comptes élèves et parents : créer, réinitialiser (user) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | |
 | **Créer l’accès** enseignant (`POST /staff/{id}/login-access`) | ✖ | ✖ | ✖ | ✔ | ✔ | ✔ | Q-60 : fiche Staff sans compte → e-mail réel + compte PENDING ; refusé si compte déjà lié |
 | Plusieurs établissements, support | ✖ | ✖ | ✖ | ✖ | ✖ | ✔ | accès journalisé |

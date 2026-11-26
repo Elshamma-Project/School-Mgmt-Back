@@ -58,9 +58,9 @@ object SolvencyCalculator {
             }
         }
 
-        // Avant le 1er mois de tranche, ou après le dernier : tout échu déjà contrôlé.
-        val anyUnpaid = sorted.any { !isSettled(it.amount, it.paidAmount) }
-        return if (anyUnpaid) SolvencyStatus.INSOLVENT else SolvencyStatus.SOLVENT
+        // Avant le 1er mois (tranches futures) ou après le dernier (échues déjà filtrées) :
+        // inscription soldée + aucune échéance passée impayée → solvable.
+        return SolvencyStatus.SOLVENT
     }
 
     /**

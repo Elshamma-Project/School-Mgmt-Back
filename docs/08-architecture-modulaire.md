@@ -17,7 +17,7 @@
 | `timetable` | grille, EDT, cases, alias matières | `timetable_grids`, `timetable_timetables`, `timetable_entries`, `timetable_subject_aliases` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 | `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
-| `fees` | barèmes scolarité, paiements, solvabilité | `fees_tuition_schedules`, `fees_payments` | `academic`, `student` (via `service/*/api`) |
+| `fees` | barèmes scolarité, paiements, solvabilité | `fees_tuition_schedules`, `fees_payments` | `academic`, `student`, `staff` (fonction `ACCOUNTANT` via `service/*/api`) |
 
 Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mail (sur `notification`), `cards`. Réf. scolarité : **`10-scolarite-solvabilite.md`**.
 
@@ -31,7 +31,7 @@ flowchart LR
   academic --> staff
   notification --> user
   portal --> academic & student & staff & grading & notification
-  fees --> academic & student
+  fees --> academic & student & staff
 ```
 Les flèches vont du module qui **consomme** vers celui qui **fournit**. **Aucune flèche inverse, aucun cycle** : si un cycle apparaît, c'est que l'information doit descendre par un événement (§ 4) ou qu'un module est mal découpé.
 

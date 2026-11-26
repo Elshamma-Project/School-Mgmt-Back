@@ -88,15 +88,18 @@ Pas de suppression physique des paiements : annulation = écriture inverse ou st
 - **BR-F06** Solvabilité calculée dans `service/fees` uniquement ; la liste élèves consomme `FeesApi.solvencyForStudents(...)`.
 - **BR-F07** Tout `BigDecimal` stocké : `@Field(DECIMAL128)` ; comparaisons `compareTo`.
 - **BR-F08** Toute requête filtre `schoolId` ; index composites commencent par `schoolId`.
+- **BR-F09** Saisie / annulation des paiements (reçu banque → mise à jour solvabilité) : **`DIRECTOR`** / **`SUPER_ADMIN`**, ou **`ADMINISTRATION`** dont la fiche Staff porte la fonction **`ACCOUNTANT`**. Barèmes (montants) : Direction seule. Lecture solvabilité : admin / dir. / SG / enseignant.
 
 ## 5. API publique (esquisse)
 
 Module `fees` :
 
-- `PUT/GET /api/v1/fees/schedules` — barèmes par année/classe (DIRECTOR / ADMINISTRATION).
+- `GET /api/v1/fees/access` — droits UI (`canManageSchedules`, `canRecordPayments`, `canRead`).
+- `PUT/GET /api/v1/fees/schedules` — barèmes par année/classe (**DIRECTOR** ; lecture aussi comptable).
 - `GET /api/v1/fees/students/{studentId}/account?academicYearId=` — détail compte + solvabilité.
-- `POST /api/v1/fees/payments` — enregistrer un paiement.
-- `FeesApi.solvencySnapshot(schoolId, academicYearId, studentIds): Map<studentId, SolvencyDto>` — pour la liste élèves / portal.
+- `POST /api/v1/fees/payments` — enregistrer un paiement (reçu banque) — **BR-F09**.
+- `POST /api/v1/fees/payments/{id}/void` — annuler un paiement — **BR-F09**.
+- `FeesApi.solvencySnapshot(schoolId, academicYearId, studentIds)` — pour la liste élèves / portal.
 
 Événements (outbox) :
 

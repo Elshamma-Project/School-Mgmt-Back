@@ -62,7 +62,7 @@
 | Q-63 | Mapping EDT `FRANÇAIS` / `?FRANCAIS` → matières bulletin (`LANG_FR` vs `EXP_*`) | ❓ | Seed EDT mappe vers `LANG_FR` ; cases junior peuvent rester sans `classSubjectIds` |
 | Q-64 | Examens dans la grille semaine type vs calendrier sessions | 🟡 | **v1** : calendrier `EvaluationSession` synchronisé (onglet Examens + notif) ; pas de cases examen dans l’EDT hebdo |
 | Q-65 | Accès école bloqué sans paiement d’inscription ? | ❓ | Affichage solvabilité d’abord ; blocage notes/portail plus tard |
-| Q-66 | Qui paramètre les barèmes / saisit les paiements ? | 💡 | Direction + Administration |
+| Q-66 | Qui paramètre les barèmes / saisit les paiements ? | 🟡 | Barèmes = Direction ; paiements = Direction **ou** Administration avec fonction RH `ACCOUNTANT` (BR-F09) |
 | Q-67 | Barème par **classe** ou par **niveau** ? | 💡 | Par **classe** (montants peuvent différer 6ème A / 6ème B) |
 | Q-68 | Mois des 3 tranches si rentrée ≠ 1er sept. | 💡 | 3 premiers mois civils à partir du mois de `AcademicYear.startDate` |
 | Q-69 | Modes de paiement v1 | 💡 | Saisie manuelle (espèces / mobile money / autre + référence) |
@@ -120,7 +120,7 @@
 | Q-63 | **FRANÇAIS** imprimé sur l’EDT (`?FRANCAIS`) : une matière catalogue, ou répartition vers `EXP_ECR` / `EXP_ORA` / `CORR_ORTH` / `ETUDE_TXT` / `LANG_FR` selon le niveau ? (lié à Q-56) | ❓ | Seed EDT : code cible provisoire `LANG_FR` ; case créée même si aucun `ClassSubject` junior ne matche | Chargeur EDT |
 | Q-64 | **Examens dans l’EDT semaine type** : faut-il des cases `ACTIVITY` « composition » qui remplacent les cours la semaine d’examens, ou seulement le calendrier des `EvaluationSession.examDate` (synchro live) ? | 🟡 | **v1** : source unique = sessions (onglet Examens + notif `SESSION_SCHEDULE_CHANGED`) ; **pas** de cases examen dans la grille hebdo (cohérent Q-33 remplacements hors EDT annuel) | EDT ↔ grading |
 | Q-65 | **Sans paiement des frais d’inscription**, bloque-t-on l’accès école (notes, EDT, portail parent) ou seulement un **indicateur** de solvabilité ? | ❓ | Proposition v1 : **indicateur** + saisie paiements ; blocages métier en v2 | fees |
-| Q-66 | **Qui** définit les montants (inscription + tranches) et **qui** enregistre les paiements ? Direction seule, ou aussi Administration ? | 💡 | Proposition : DIRECTOR + ADMINISTRATION | fees + roles |
+| Q-66 | **Qui** définit les montants (inscription + tranches) et **qui** enregistre les paiements ? Direction seule, ou aussi Administration ? | 🟡 | **Figé v1** : barèmes = `DIRECTOR` ; paiements = `DIRECTOR` **ou** `ADMINISTRATION` + `StaffFunction.ACCOUNTANT` (BR-F09) | fees + roles |
 | Q-67 | Barème **par classe** ou **par niveau** (toutes les 6èmes identiques) ? Exceptions possibles ? | 💡 | Proposition : **par classe** | fees |
 | Q-68 | Si la rentrée est le **7 septembre** (ex. 2026-2027), les 3 mois sont-ils toujours **sept. / oct. / nov.** (dernier jour de chaque mois), ou décalés depuis `startDate` ? | 💡 | Proposition : mois civils du mois de `startDate` puis +1, +2 | fees |
 | Q-69 | **Comment** l’école enregistre un paiement en v1 (caisse, Mobile Money, virement) ? Faut-il un reçu PDF ? | 💡 | Proposition v1 : saisie manuelle + référence ; pas de PDF reçu | fees |

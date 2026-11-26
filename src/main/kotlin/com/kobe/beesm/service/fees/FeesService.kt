@@ -1,6 +1,7 @@
 package com.kobe.beesm.service.fees
 
 import com.kobe.beesm.dto.fees.FeePaymentResponse
+import com.kobe.beesm.dto.fees.FeesAccessResponse
 import com.kobe.beesm.dto.fees.InstallmentSolvencyDto
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.SolvencySnapshotDto
@@ -18,12 +19,15 @@ import com.kobe.beesm.model.fees.FeePaymentStatus
 import com.kobe.beesm.model.fees.SolvencyStatus
 import com.kobe.beesm.model.fees.TuitionInstallment
 import com.kobe.beesm.model.fees.TuitionSchedule
+import com.kobe.beesm.model.staff.StaffFunction
+import com.kobe.beesm.model.user.ProfileType
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.fees.FeePaymentRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
 import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.SchoolClassApi
 import com.kobe.beesm.service.fees.api.FeesApi
+import com.kobe.beesm.service.staff.api.StaffApi
 import com.kobe.beesm.service.student.api.EnrollmentApi
 import com.kobe.beesm.shared.security.CurrentUser
 import org.springframework.stereotype.Service
@@ -35,7 +39,10 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F08).
+ * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F09).
+ *
+ * BR-F09 : saisie des paiements (reçu banque) = `DIRECTOR` / `SUPER_ADMIN`
+ * ou `ADMINISTRATION` avec fonction RH `ACCOUNTANT` ; barèmes = Direction seule.
  */
 @Service
 class FeesService(
@@ -43,10 +50,16 @@ class FeesService(
     private val paymentRepository: FeePaymentRepository,
     private val academicYearApi: AcademicYearApi,
     private val schoolClassApi: SchoolClassApi,
-    private val enrollmentApi: EnrollmentApi
+    private val enrollmentApi: EnrollmentApi,
+    private val staffApi: StaffApi
 ) : FeesApi {
 
     private val zone: ZoneId = ZoneId.of("Africa/Douala")
+
+    fun access(currentUser: CurrentUser, schoolIdOverride: String? = null): Mono<FeesAccessResponse> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        return resolveAccess(currentUser, schoolId)
+    }
 
     fun listSchedules(
         currentUser: CurrentUser,
@@ -54,9 +67,18 @@ class FeesService(
         schoolIdOverride: String? = null
     ): Flux<TuitionScheduleResponse> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
-        assertCanManageFees(currentUser)
-        return scheduleRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
-            .map { toScheduleResponse(it) }
+        return resolveAccess(currentUser, schoolId).flatMapMany { access ->
+            if (!access.canManageSchedules && !access.canRecordPayments) {
+                return@flatMapMany Flux.error(
+                    ForbiddenException(
+                        "FEES_SCHEDULE_FORBIDDEN",
+                        "Tuition schedules require DIRECTOR or accountant access"
+                    )
+                )
+            }
+            scheduleRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
+                .map { toScheduleResponse(it) }
+        }
     }
 
     fun upsertSchedule(
@@ -64,10 +86,10 @@ class FeesService(
         request: UpsertTuitionScheduleRequest
     ): Mono<TuitionScheduleResponse> {
         val schoolId = currentUser.requireSchoolId(request.schoolId)
-        assertCanManageFees(currentUser)
         validateInstallmentIndexes(request)
 
-        return academicYearApi.assertWritable(schoolId, request.academicYearId)
+        return assertCanManageSchedules(currentUser, schoolId)
+            .then(academicYearApi.assertWritable(schoolId, request.academicYearId))
             .flatMap { year ->
                 schoolClassApi.getSummary(schoolId, request.classId)
                     .flatMap { clazz ->
@@ -131,7 +153,6 @@ class FeesService(
         request: RecordFeePaymentRequest
     ): Mono<FeePaymentResponse> {
         val schoolId = currentUser.requireSchoolId(request.schoolId)
-        assertCanManageFees(currentUser)
         if (request.kind == FeePaymentKind.INSTALLMENT && request.installmentIndex == null) {
             return Mono.error(
                 BusinessRuleException("INSTALLMENT_INDEX_REQUIRED", "installmentIndex is required for INSTALLMENT")
@@ -143,7 +164,8 @@ class FeesService(
             )
         }
 
-        return academicYearApi.assertWritable(schoolId, request.academicYearId)
+        return assertCanRecordPayments(currentUser, schoolId)
+            .then(academicYearApi.assertWritable(schoolId, request.academicYearId))
             .then(
                 enrollmentApi.findByStudentAndYear(schoolId, request.studentId, request.academicYearId)
             )
@@ -204,12 +226,12 @@ class FeesService(
         request: VoidFeePaymentRequest
     ): Mono<FeePaymentResponse> {
         val schoolId = currentUser.requireSchoolId(request.schoolId)
-        assertCanManageFees(currentUser)
         val reason = request.reason.trim()
         if (reason.isBlank()) {
             return Mono.error(BusinessRuleException("VOID_REASON_REQUIRED", "Void reason is required"))
         }
-        return paymentRepository.findByIdAndSchoolId(paymentId, schoolId)
+        return assertCanRecordPayments(currentUser, schoolId)
+            .then(paymentRepository.findByIdAndSchoolId(paymentId, schoolId))
             .switchIfEmpty(Mono.error(NotFoundException("FEE_PAYMENT_NOT_FOUND", "Payment not found")))
             .flatMap { payment ->
                 if (payment.status == FeePaymentStatus.VOID) {
@@ -237,8 +259,8 @@ class FeesService(
         schoolIdOverride: String? = null
     ): Mono<StudentFeeAccountResponse> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
-        assertCanReadFees(currentUser)
-        return buildAccount(schoolId, studentId, academicYearId)
+        return assertCanReadFees(currentUser, schoolId)
+            .then(buildAccount(schoolId, studentId, academicYearId))
     }
 
     fun solvencyForStudents(
@@ -248,8 +270,8 @@ class FeesService(
         schoolIdOverride: String? = null
     ): Flux<SolvencySnapshotDto> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
-        assertCanReadFees(currentUser)
-        return solvencySnapshot(schoolId, academicYearId, studentIds)
+        return assertCanReadFees(currentUser, schoolId)
+            .thenMany(solvencySnapshot(schoolId, academicYearId, studentIds))
     }
 
     override fun solvencySnapshot(
@@ -438,24 +460,84 @@ class FeesService(
         }
     }
 
-    private fun assertCanManageFees(currentUser: CurrentUser) {
-        if (!currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
-            throw ForbiddenException("FORBIDDEN", "Fees management requires ADMINISTRATION or DIRECTOR")
+    private fun resolveAccess(currentUser: CurrentUser, schoolId: String): Mono<FeesAccessResponse> {
+        val canRead = currentUser.hasAnyRole(
+            Role.ADMINISTRATION,
+            Role.DIRECTOR,
+            Role.SUPER_ADMIN,
+            Role.SURVEILLANT_GENERAL,
+            Role.TEACHER
+        )
+        val canManageSchedules = currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)
+        if (canManageSchedules) {
+            return Mono.just(
+                FeesAccessResponse(
+                    canRead = canRead,
+                    canManageSchedules = true,
+                    canRecordPayments = true
+                )
+            )
         }
+        if (!currentUser.hasRole(Role.ADMINISTRATION)) {
+            return Mono.just(
+                FeesAccessResponse(
+                    canRead = canRead,
+                    canManageSchedules = false,
+                    canRecordPayments = false
+                )
+            )
+        }
+        return isAccountantStaff(currentUser, schoolId)
+            .map { accountant ->
+                FeesAccessResponse(
+                    canRead = canRead,
+                    canManageSchedules = false,
+                    canRecordPayments = accountant
+                )
+            }
     }
 
-    private fun assertCanReadFees(currentUser: CurrentUser) {
-        if (!currentUser.hasAnyRole(
-                Role.ADMINISTRATION,
-                Role.DIRECTOR,
-                Role.SUPER_ADMIN,
-                Role.SURVEILLANT_GENERAL,
-                Role.TEACHER
-            )
-        ) {
-            throw ForbiddenException("FORBIDDEN", "Fees read access denied")
+    private fun isAccountantStaff(currentUser: CurrentUser, schoolId: String): Mono<Boolean> {
+        if (currentUser.profileType != ProfileType.STAFF) {
+            return Mono.just(false)
         }
+        val staffId = currentUser.profileId?.trim().orEmpty()
+        if (staffId.isEmpty()) {
+            return Mono.just(false)
+        }
+        return staffApi.getSummary(schoolId, staffId)
+            .map { summary -> summary.functions.contains(StaffFunction.ACCOUNTANT) }
+            .onErrorReturn(false)
+            .defaultIfEmpty(false)
     }
+
+    private fun assertCanManageSchedules(currentUser: CurrentUser, schoolId: String): Mono<Void> =
+        resolveAccess(currentUser, schoolId).flatMap { access ->
+            if (access.canManageSchedules) Mono.empty()
+            else Mono.error(
+                ForbiddenException(
+                    "FEES_SCHEDULE_FORBIDDEN",
+                    "Only DIRECTOR can manage tuition schedules"
+                )
+            )
+        }
+
+    private fun assertCanRecordPayments(currentUser: CurrentUser, schoolId: String): Mono<Void> =
+        resolveAccess(currentUser, schoolId).flatMap { access ->
+            if (access.canRecordPayments) Mono.empty()
+            else Mono.error(
+                ForbiddenException(
+                    "FEES_PAYMENT_FORBIDDEN",
+                    "Recording fee payments requires DIRECTOR or ADMINISTRATION with ACCOUNTANT function"
+                )
+            )
+        }
+
+    private fun assertCanReadFees(currentUser: CurrentUser, schoolId: String): Mono<Void> =
+        resolveAccess(currentUser, schoolId).flatMap { access ->
+            if (access.canRead) Mono.empty()
+            else Mono.error(ForbiddenException("FORBIDDEN", "Fees read access denied"))
+        }
 
     private fun toScheduleResponse(schedule: TuitionSchedule): TuitionScheduleResponse =
         TuitionScheduleResponse(

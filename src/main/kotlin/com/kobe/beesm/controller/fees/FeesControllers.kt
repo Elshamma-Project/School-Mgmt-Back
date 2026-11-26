@@ -20,6 +20,10 @@ import org.springframework.web.bind.annotation.RestController
 class FeesController(
     private val feesService: FeesService
 ) {
+    @GetMapping("/access")
+    fun access(@RequestParam(required = false) schoolId: String?) =
+        SecuritySupport.currentUser().flatMap { feesService.access(it, schoolId) }
+
     @GetMapping("/schedules")
     fun listSchedules(
         @RequestParam academicYearId: String,

@@ -142,3 +142,14 @@ data class StudentFeeAccountResponse(
     val installments: List<InstallmentSolvencyDto>,
     val payments: List<FeePaymentResponse>
 )
+
+/**
+ * Droits fees pour l’UI (BR-F09) :
+ * - barèmes : Direction / Super-admin
+ * - paiements (reçu banque → solvabilité) : Direction / Super-admin / Administration **comptable**
+ */
+data class FeesAccessResponse(
+    val canRead: Boolean,
+    val canManageSchedules: Boolean,
+    val canRecordPayments: Boolean
+)
