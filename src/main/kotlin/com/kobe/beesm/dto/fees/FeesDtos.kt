@@ -155,6 +155,20 @@ data class FeesAccessResponse(
     val canManagePolicy: Boolean = false
 )
 
+/**
+ * Compteurs d’impayés / insolvabilité pour le hub élèves (année donnée).
+ * Une ligne = élèves ENROLLED avec barème, échéance due et non soldée.
+ */
+data class FeesUnpaidSummaryResponse(
+    val academicYearId: String,
+    val enrollmentUnpaid: Int,
+    val installment1Unpaid: Int,
+    val installment2Unpaid: Int,
+    val installment3Unpaid: Int,
+    /** Élèves au statut dérivé INSOLVENT. */
+    val insolventStudents: Int
+)
+
 data class FeesPolicyResponse(
     val id: String,
     val schoolId: String,

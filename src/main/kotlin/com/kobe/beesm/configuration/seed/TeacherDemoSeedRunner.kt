@@ -18,8 +18,11 @@ import com.kobe.beesm.model.grading.SheetStatus
 import com.kobe.beesm.model.shared.Cycle
 import com.kobe.beesm.model.shared.Section
 import com.kobe.beesm.model.shared.Sex
+import com.kobe.beesm.model.shared.ContactInfo
 import com.kobe.beesm.model.student.Enrollment
 import com.kobe.beesm.model.student.EnrollmentStatus
+import com.kobe.beesm.model.student.GuardianLink
+import com.kobe.beesm.model.student.GuardianRelationship
 import com.kobe.beesm.model.student.Student
 import com.kobe.beesm.dto.grading.UpsertGradeRequest
 import com.kobe.beesm.model.user.ProfileType
@@ -38,6 +41,7 @@ import com.kobe.beesm.repository.staff.StaffRepository
 import com.kobe.beesm.repository.student.EnrollmentRepository
 import com.kobe.beesm.repository.student.StudentRepository
 import com.kobe.beesm.repository.user.UserAccountRepository
+import java.time.LocalDate
 import com.kobe.beesm.service.grading.AssessmentService
 import com.kobe.beesm.service.grading.EvaluationSessionService
 import com.kobe.beesm.service.grading.GradeReportSheetService
@@ -346,19 +350,13 @@ class TeacherDemoSeedRunner(
 
         val enrolled = mutableListOf<String>()
         DEMO_STUDENTS.forEachIndexed { index, demo ->
-            val student = studentRepository.findById(demo.id).block()
+            val existing = studentRepository.findById(demo.id).block()
                 ?: studentRepository.findBySchoolIdAndMatricule(schoolId, demo.matricule).block()
-                ?: studentRepository.save(
-                    Student(
-                        id = demo.id,
-                        schoolId = schoolId,
-                        matricule = demo.matricule,
-                        lastName = demo.lastName,
-                        firstName = demo.firstName,
-                        sex = demo.sex,
-                        active = true
-                    )
-                ).block()?.also { report.studentsCreated++ }
+            val student = if (existing == null) {
+                studentRepository.save(demo.toStudent(schoolId)).block()?.also { report.studentsCreated++ }
+            } else {
+                enrichDemoStudentProfile(existing, demo, schoolId)
+            }
 
             val studentId = student?.id ?: return@forEachIndexed
 
@@ -386,6 +384,51 @@ class TeacherDemoSeedRunner(
             }
         }
         return enrolled
+    }
+
+    /**
+     * Complète les champs vides d’un élève démo déjà créé (DOB, contact, tuteurs)
+     * sans écraser une saisie UI non vide.
+     */
+    private fun enrichDemoStudentProfile(
+        existing: Student,
+        demo: DemoStudent,
+        schoolId: String
+    ): Student {
+        var dirty = false
+        existing.schoolId = schoolId
+        if (existing.sex == null) {
+            existing.sex = demo.sex
+            dirty = true
+        }
+        if (existing.dateOfBirth == null) {
+            existing.dateOfBirth = demo.dateOfBirth
+            dirty = true
+        }
+        if (existing.placeOfBirth.isNullOrBlank()) {
+            existing.placeOfBirth = demo.placeOfBirth
+            dirty = true
+        }
+        if (existing.nationality.isNullOrBlank()) {
+            existing.nationality = demo.nationality
+            dirty = true
+        }
+        val contact = existing.contact
+        if (contact.phones.isEmpty() && contact.email.isNullOrBlank() &&
+            contact.address.isNullOrBlank() && contact.city.isNullOrBlank()
+        ) {
+            existing.contact = demo.contact
+            dirty = true
+        }
+        if (existing.guardians.isEmpty() && demo.guardians.isNotEmpty()) {
+            existing.guardians = demo.guardians
+            dirty = true
+        }
+        return if (dirty) {
+            studentRepository.save(existing).block() ?: existing
+        } else {
+            existing
+        }
     }
 
     // ── Séquences (1 et 2) ──────────────────────────────────────────────────
@@ -650,8 +693,30 @@ class TeacherDemoSeedRunner(
         val matricule: String,
         val lastName: String,
         val firstName: String,
-        val sex: Sex
-    )
+        val sex: Sex,
+        val dateOfBirth: LocalDate,
+        val placeOfBirth: String,
+        val nationality: String,
+        val contact: ContactInfo,
+        val guardians: List<GuardianLink>,
+        val active: Boolean = true
+    ) {
+        fun toStudent(schoolId: String): Student =
+            Student(
+                id = id,
+                schoolId = schoolId,
+                matricule = matricule,
+                lastName = lastName,
+                firstName = firstName,
+                sex = sex,
+                dateOfBirth = dateOfBirth,
+                placeOfBirth = placeOfBirth,
+                nationality = nationality,
+                contact = contact,
+                guardians = guardians,
+                active = active
+            )
+    }
 
     companion object {
         private const val TEACHER_ID = MockUsersBootstrapRunner.STAFF_TEACHER
@@ -683,28 +748,184 @@ class TeacherDemoSeedRunner(
             null, null, null, BigDecimal("1.00"), null, null, BigDecimal("0.50"), null, null, null
         )
 
-        /** Élèves **fictifs** : aucun nom réel (règle 12). */
-        private val DEMO_STUDENTS: List<DemoStudent> = listOf(
-            Triple("Abena Kofi", Sex.MALE, 1),
-            Triple("Ngozi Ada", Sex.FEMALE, 2),
-            Triple("Élève Démo 03", Sex.MALE, 3),
-            Triple("Élève Démo 04", Sex.FEMALE, 4),
-            Triple("Élève Démo 05", Sex.FEMALE, 5),
-            Triple("Élève Démo 06", Sex.MALE, 6),
-            Triple("Élève Démo 07", Sex.FEMALE, 7),
-            Triple("Élève Démo 08", Sex.MALE, 8),
-            Triple("Élève Démo 09", Sex.FEMALE, 9),
-            Triple("Élève Démo 10", Sex.MALE, 10)
-        ).map { (firstName, sex, n) ->
-            val nn = n.toString().padStart(2, '0')
-            DemoStudent(
-                id = "stu-demo-$nn",
-                enrollmentId = "enr-demo-$nn",
-                matricule = "DEMO-2026-$nn",
-                lastName = "DEMO",
-                firstName = firstName,
-                sex = sex
+        private fun parentLinks(primaryMother: Boolean = true): List<GuardianLink> = listOf(
+            GuardianLink(
+                guardianId = MockUsersBootstrapRunner.GUARDIAN_PARENT,
+                relationship = GuardianRelationship.MOTHER,
+                primary = primaryMother,
+                canViewGrades = true,
+                canDownloadReportCards = true
+            ),
+            GuardianLink(
+                guardianId = MockUsersBootstrapRunner.GUARDIAN_FATHER,
+                relationship = GuardianRelationship.FATHER,
+                primary = !primaryMother,
+                canViewGrades = true,
+                canDownloadReportCards = true
             )
-        }
+        )
+
+        /**
+         * Élèves **fictifs** enrichis (identité, contact, tuteurs) — aucun nom réel (règle 12).
+         * Les 3 premiers sont liés au parent démo (multi-enfants / rappels scolarité).
+         */
+        private val DEMO_STUDENTS: List<DemoStudent> = listOf(
+            DemoStudent(
+                id = "stu-demo-01",
+                enrollmentId = "enr-demo-01",
+                matricule = "DEMO-2026-01",
+                lastName = "DEMO",
+                firstName = "Abena Kofi",
+                sex = Sex.MALE,
+                dateOfBirth = LocalDate.of(2014, 3, 12),
+                placeOfBirth = "Douala",
+                nationality = "Camerounaise",
+                contact = ContactInfo(
+                    phones = listOf("+237 6 90 00 00 01"),
+                    email = "abena.demo@elshammah.demo",
+                    address = "Bonamoussadi, Rue des Écoles",
+                    city = "Douala"
+                ),
+                guardians = parentLinks(primaryMother = true)
+            ),
+            DemoStudent(
+                id = "stu-demo-02",
+                enrollmentId = "enr-demo-02",
+                matricule = "DEMO-2026-02",
+                lastName = "DEMO",
+                firstName = "Ngozi Ada",
+                sex = Sex.FEMALE,
+                dateOfBirth = LocalDate.of(2014, 7, 28),
+                placeOfBirth = "Yaoundé",
+                nationality = "Camerounaise",
+                contact = ContactInfo(
+                    phones = listOf("+237 6 90 00 00 02"),
+                    email = "ngozi.demo@elshammah.demo",
+                    address = "Bonamoussadi, Rue des Écoles",
+                    city = "Douala"
+                ),
+                guardians = parentLinks(primaryMother = true)
+            ),
+            DemoStudent(
+                id = "stu-demo-03",
+                enrollmentId = "enr-demo-03",
+                matricule = "DEMO-2026-03",
+                lastName = "DEMO",
+                firstName = "Moussa Idriss",
+                sex = Sex.MALE,
+                dateOfBirth = LocalDate.of(2013, 11, 5),
+                placeOfBirth = "Garoua",
+                nationality = "Camerounaise",
+                contact = ContactInfo(
+                    phones = listOf("+237 6 90 00 00 03"),
+                    address = "Makepe, Carrefour Lycée",
+                    city = "Douala"
+                ),
+                guardians = parentLinks(primaryMother = false)
+            ),
+            DemoStudent(
+                id = "stu-demo-04",
+                enrollmentId = "enr-demo-04",
+                matricule = "DEMO-2026-04",
+                lastName = "DEMO",
+                firstName = "Esther Miria",
+                sex = Sex.FEMALE,
+                dateOfBirth = LocalDate.of(2014, 1, 19),
+                placeOfBirth = "Bafoussam",
+                nationality = "Camerounaise",
+                contact = ContactInfo(
+                    phones = listOf("+237 6 90 00 00 04"),
+                    city = "Douala"
+                ),
+                guardians = emptyList()
+            ),
+            DemoStudent(
+                id = "stu-demo-05",
+                enrollmentId = "enr-demo-05",
+                matricule = "DEMO-2026-05",
+                lastName = "DEMO",
+                firstName = "Chantal Mengue",
+                sex = Sex.FEMALE,
+                dateOfBirth = LocalDate.of(2014, 9, 2),
+                placeOfBirth = "Douala",
+                nationality = "Camerounaise",
+                contact = ContactInfo(
+                    email = "chantal.demo@elshammah.demo",
+                    address = "Akwa Nord",
+                    city = "Douala"
+                ),
+                guardians = emptyList()
+            ),
+            DemoStudent(
+                id = "stu-demo-06",
+                enrollmentId = "enr-demo-06",
+                matricule = "DEMO-2026-06",
+                lastName = "DEMO",
+                firstName = "Junior Ewane",
+                sex = Sex.MALE,
+                dateOfBirth = LocalDate.of(2013, 5, 21),
+                placeOfBirth = "Limbé",
+                nationality = "Camerounaise",
+                contact = ContactInfo(phones = listOf("+237 6 90 00 00 06"), city = "Douala"),
+                guardians = emptyList()
+            ),
+            DemoStudent(
+                id = "stu-demo-07",
+                enrollmentId = "enr-demo-07",
+                matricule = "DEMO-2026-07",
+                lastName = "DEMO",
+                firstName = "Grace Mbarga",
+                sex = Sex.FEMALE,
+                dateOfBirth = LocalDate.of(2014, 12, 14),
+                placeOfBirth = "Ebolowa",
+                nationality = "Camerounaise",
+                contact = ContactInfo(city = "Douala"),
+                guardians = emptyList()
+            ),
+            DemoStudent(
+                id = "stu-demo-08",
+                enrollmentId = "enr-demo-08",
+                matricule = "DEMO-2026-08",
+                lastName = "DEMO",
+                firstName = "Paul Ngoa",
+                sex = Sex.MALE,
+                dateOfBirth = LocalDate.of(2014, 4, 8),
+                placeOfBirth = "Edéa",
+                nationality = "Camerounaise",
+                contact = ContactInfo(
+                    phones = listOf("+237 6 90 00 00 08"),
+                    email = "paul.demo@elshammah.demo",
+                    city = "Douala"
+                ),
+                guardians = emptyList()
+            ),
+            DemoStudent(
+                id = "stu-demo-09",
+                enrollmentId = "enr-demo-09",
+                matricule = "DEMO-2026-09",
+                lastName = "DEMO",
+                firstName = "Sandra Fotso",
+                sex = Sex.FEMALE,
+                dateOfBirth = LocalDate.of(2013, 8, 30),
+                placeOfBirth = "Douala",
+                nationality = "Camerounaise",
+                contact = ContactInfo(address = "Deido", city = "Douala"),
+                guardians = emptyList(),
+                active = false
+            ),
+            DemoStudent(
+                id = "stu-demo-10",
+                enrollmentId = "enr-demo-10",
+                matricule = "DEMO-2026-10",
+                lastName = "DEMO",
+                firstName = "Kevin Tchana",
+                sex = Sex.MALE,
+                dateOfBirth = LocalDate.of(2014, 2, 17),
+                placeOfBirth = "Kribi",
+                nationality = "Camerounaise",
+                contact = ContactInfo(phones = listOf("+237 6 90 00 00 10"), city = "Douala"),
+                guardians = emptyList()
+            )
+        )
     }
 }

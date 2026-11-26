@@ -79,4 +79,13 @@ class FeesController(
         val ids = studentIds.split(',').map { it.trim() }.filter { it.isNotEmpty() }
         feesService.solvencyForStudents(user, academicYearId, ids, schoolId)
     }
+
+    /** Compteurs d’impayés (inscription + 3 tranches) pour le hub élèves. */
+    @GetMapping("/unpaid-summary")
+    fun unpaidSummary(
+        @RequestParam academicYearId: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap {
+        feesService.unpaidSummary(it, academicYearId, schoolId)
+    }
 }

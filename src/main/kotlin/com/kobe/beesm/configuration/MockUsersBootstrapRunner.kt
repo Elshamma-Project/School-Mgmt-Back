@@ -240,57 +240,152 @@ class MockUsersBootstrapRunner(
             )
 
     private fun ensureGuardianAndStudent(schoolId: String): Mono<Void> =
-        guardianRepository.findById(GUARDIAN_PARENT)
+        ensureGuardian(
+            id = GUARDIAN_PARENT,
+            schoolId = schoolId,
+            lastName = "Mbarga",
+            firstName = "Claire",
+            sex = Sex.FEMALE,
+            contact = ContactInfo(
+                phones = listOf("+237 6 77 00 00 10"),
+                email = EMAIL_PARENT,
+                address = "Bonamoussadi, Rue des Écoles",
+                city = "Douala"
+            )
+        ).then(
+            ensureGuardian(
+                id = GUARDIAN_FATHER,
+                schoolId = schoolId,
+                lastName = "Mbarga",
+                firstName = "Jean",
+                sex = Sex.MALE,
+                contact = ContactInfo(
+                    phones = listOf("+237 6 77 00 00 11"),
+                    email = "pere.demo@elshammah.demo",
+                    address = "Bonamoussadi, Rue des Écoles",
+                    city = "Douala"
+                )
+            )
+        ).then(
+            studentRepository.findById(STUDENT_DEMO)
+                .flatMap { existing ->
+                    enrichLoginDemoStudent(existing, schoolId)
+                    studentRepository.save(existing)
+                }
+                .switchIfEmpty(
+                    Mono.defer {
+                        studentRepository.save(
+                            Student(
+                                id = STUDENT_DEMO,
+                                schoolId = schoolId,
+                                matricule = STUDENT_MATRICULE,
+                                lastName = "Mbarga",
+                                firstName = "Léo Demo",
+                                sex = Sex.MALE,
+                                dateOfBirth = java.time.LocalDate.of(2015, 6, 18),
+                                placeOfBirth = "Douala",
+                                nationality = "Camerounaise",
+                                contact = ContactInfo(
+                                    phones = listOf("+237 6 90 00 01 00"),
+                                    email = EMAIL_STUDENT,
+                                    address = "Bonamoussadi, Rue des Écoles",
+                                    city = "Douala"
+                                ),
+                                guardians = listOf(
+                                    GuardianLink(
+                                        guardianId = GUARDIAN_PARENT,
+                                        relationship = GuardianRelationship.MOTHER,
+                                        primary = true,
+                                        canViewGrades = true,
+                                        canDownloadReportCards = true
+                                    ),
+                                    GuardianLink(
+                                        guardianId = GUARDIAN_FATHER,
+                                        relationship = GuardianRelationship.FATHER,
+                                        primary = false,
+                                        canViewGrades = true,
+                                        canDownloadReportCards = true
+                                    )
+                                ),
+                                active = true
+                            )
+                        )
+                    }
+                )
+        ).then()
+
+    private fun ensureGuardian(
+        id: String,
+        schoolId: String,
+        lastName: String,
+        firstName: String,
+        sex: Sex,
+        contact: ContactInfo
+    ): Mono<Guardian> =
+        guardianRepository.findById(id)
             .flatMap { existing ->
                 existing.schoolId = schoolId
+                if (existing.contact.phones.isEmpty() && existing.contact.email.isNullOrBlank()) {
+                    existing.contact = contact
+                }
                 guardianRepository.save(existing)
             }
             .switchIfEmpty(
                 Mono.defer {
                     guardianRepository.save(
                         Guardian(
-                            id = GUARDIAN_PARENT,
+                            id = id,
                             schoolId = schoolId,
-                            lastName = "Parent",
-                            firstName = "Demo",
-                            sex = Sex.FEMALE,
+                            lastName = lastName,
+                            firstName = firstName,
+                            sex = sex,
+                            contact = contact,
                             active = true
                         )
                     )
                 }
             )
-            .flatMap {
-                studentRepository.findById(STUDENT_DEMO)
-                    .flatMap { existing ->
-                        existing.schoolId = schoolId
-                        studentRepository.save(existing)
-                    }
-                    .switchIfEmpty(
-                        Mono.defer {
-                            studentRepository.save(
-                                Student(
-                                    id = STUDENT_DEMO,
-                                    schoolId = schoolId,
-                                    matricule = STUDENT_MATRICULE,
-                                    lastName = "Élève",
-                                    firstName = "Demo",
-                                    sex = Sex.MALE,
-                                    guardians = listOf(
-                                        GuardianLink(
-                                            guardianId = GUARDIAN_PARENT,
-                                            relationship = GuardianRelationship.MOTHER,
-                                            primary = true,
-                                            canViewGrades = true,
-                                            canDownloadReportCards = true
-                                        )
-                                    ),
-                                    active = true
-                                )
-                            )
-                        }
-                    )
-            }
-            .then()
+
+    /** Complète la fiche élève login démo si les nouveaux champs sont vides. */
+    private fun enrichLoginDemoStudent(existing: Student, schoolId: String) {
+        existing.schoolId = schoolId
+        if (existing.dateOfBirth == null) {
+            existing.dateOfBirth = java.time.LocalDate.of(2015, 6, 18)
+        }
+        if (existing.placeOfBirth.isNullOrBlank()) {
+            existing.placeOfBirth = "Douala"
+        }
+        if (existing.nationality.isNullOrBlank()) {
+            existing.nationality = "Camerounaise"
+        }
+        val c = existing.contact
+        if (c.phones.isEmpty() && c.email.isNullOrBlank() && c.address.isNullOrBlank()) {
+            existing.contact = ContactInfo(
+                phones = listOf("+237 6 90 00 01 00"),
+                email = EMAIL_STUDENT,
+                address = "Bonamoussadi, Rue des Écoles",
+                city = "Douala"
+            )
+        }
+        if (existing.guardians.isEmpty()) {
+            existing.guardians = listOf(
+                GuardianLink(
+                    guardianId = GUARDIAN_PARENT,
+                    relationship = GuardianRelationship.MOTHER,
+                    primary = true,
+                    canViewGrades = true,
+                    canDownloadReportCards = true
+                ),
+                GuardianLink(
+                    guardianId = GUARDIAN_FATHER,
+                    relationship = GuardianRelationship.FATHER,
+                    primary = false,
+                    canViewGrades = true,
+                    canDownloadReportCards = true
+                )
+            )
+        }
+    }
 
     private fun ensureAccounts(
         schoolId: String,
@@ -437,6 +532,8 @@ class MockUsersBootstrapRunner(
         const val STAFF_SG = "staff-demo-sg"
         const val STAFF_TEACHER = "staff-demo-teacher"
         const val GUARDIAN_PARENT = "guardian-demo-parent"
+        /** Second tuteur démo (sans compte login) — multi-tuteurs sur fiche élève. */
+        const val GUARDIAN_FATHER = "guardian-demo-father"
         const val STUDENT_DEMO = "student-demo-01"
         const val STUDENT_MATRICULE = "250000001"
 

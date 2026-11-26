@@ -160,7 +160,11 @@ data class GuardianResponse(
     val sex: Sex?,
     val profession: String?,
     val contact: ContactInfoDto,
-    val active: Boolean
+    val active: Boolean,
+    /** True si un UserAccount PARENT (profile GUARDIAN) est lié. */
+    val hasLoginAccount: Boolean = false,
+    /** Identifiant de connexion (e-mail) du compte parent lié. */
+    val loginUsername: String? = null
 )
 
 data class GuardianSummaryDto(

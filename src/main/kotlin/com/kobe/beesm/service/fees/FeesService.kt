@@ -2,6 +2,7 @@ package com.kobe.beesm.service.fees
 
 import com.kobe.beesm.dto.fees.FeePaymentResponse
 import com.kobe.beesm.dto.fees.FeesAccessResponse
+import com.kobe.beesm.dto.fees.FeesUnpaidSummaryResponse
 import com.kobe.beesm.dto.fees.InstallmentSolvencyDto
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.SolvencySnapshotDto
@@ -277,6 +278,66 @@ class FeesService(
         return assertCanReadFees(currentUser, schoolId)
             .then(filterStudentIdsForViewer(currentUser, schoolId, studentIds))
             .flatMapMany { allowedIds -> solvencySnapshot(schoolId, academicYearId, allowedIds) }
+    }
+
+    /**
+     * Compteurs hub : impayés inscription / tranches + total insolvables (staff uniquement).
+     */
+    fun unpaidSummary(
+        currentUser: CurrentUser,
+        academicYearId: String,
+        schoolIdOverride: String? = null
+    ): Mono<FeesUnpaidSummaryResponse> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        if (!currentUser.hasAnyRole(
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN,
+                Role.SURVEILLANT_GENERAL
+            )
+        ) {
+            return Mono.error(ForbiddenException("FORBIDDEN", "Fees unpaid summary requires staff access"))
+        }
+        val today = LocalDate.now(zone)
+        return assertCanReadFees(currentUser, schoolId)
+            .thenMany(enrollmentApi.findEnrolledByYear(schoolId, academicYearId))
+            .map { it.studentId }
+            .distinct()
+            .flatMap({ studentId -> computeSolvency(schoolId, studentId, academicYearId, today) }, 16)
+            .collectList()
+            .map { accounts ->
+                var enrollmentUnpaid = 0
+                var i1 = 0
+                var i2 = 0
+                var i3 = 0
+                var insolvent = 0
+                for (account in accounts) {
+                    if (account.status == SolvencyStatus.NOT_APPLICABLE) continue
+                    if (account.status == SolvencyStatus.INSOLVENT) insolvent++
+                    val due = account.enrollmentFeeDue
+                    val paid = account.enrollmentFeePaid
+                    if (due != null && paid != null && !SolvencyCalculator.isSettled(due, paid)) {
+                        enrollmentUnpaid++
+                    }
+                    for (inst in account.installments) {
+                        if (inst.settled) continue
+                        if (inst.dueDate.isAfter(today)) continue
+                        when (inst.index) {
+                            1 -> i1++
+                            2 -> i2++
+                            3 -> i3++
+                        }
+                    }
+                }
+                FeesUnpaidSummaryResponse(
+                    academicYearId = academicYearId,
+                    enrollmentUnpaid = enrollmentUnpaid,
+                    installment1Unpaid = i1,
+                    installment2Unpaid = i2,
+                    installment3Unpaid = i3,
+                    insolventStudents = insolvent
+                )
+            }
     }
 
     override fun solvencySnapshot(
