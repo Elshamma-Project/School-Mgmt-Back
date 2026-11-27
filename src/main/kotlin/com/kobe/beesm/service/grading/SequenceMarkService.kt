@@ -19,7 +19,9 @@ import com.kobe.beesm.repository.grading.GradeAuditEntryRepository
 import com.kobe.beesm.repository.grading.GradeRepository
 import com.kobe.beesm.repository.grading.GradeSheetRepository
 import com.kobe.beesm.repository.grading.SequenceMarkRepository
+import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.ClassSubjectApi
+import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.service.grading.api.SequenceMarkApi
 import com.kobe.beesm.service.student.api.StudentApi
 import com.kobe.beesm.shared.security.CurrentUser
@@ -36,7 +38,9 @@ class SequenceMarkService(
     private val gradeSheetRepository: GradeSheetRepository,
     private val gradeAuditEntryRepository: GradeAuditEntryRepository,
     private val studentApi: StudentApi,
-    private val classSubjectApi: ClassSubjectApi
+    private val classSubjectApi: ClassSubjectApi,
+    private val academicYearApi: AcademicYearApi,
+    private val feesApi: FeesApi
 ) : SequenceMarkApi {
 
     /**
@@ -238,11 +242,33 @@ class SequenceMarkService(
             )
         }
         return assertCanViewSequenceMarks(currentUser, schoolId, studentId)
+            .then(assertFeesViewForStudent(currentUser, schoolId, studentId, academicYearId))
             .thenMany(source)
             .concatMap { mark ->
                 filterMarkForTeacher(currentUser, schoolId, mark.academicYearId, mark)
             }
             .map { GradingMapper.toSequenceMarkSummary(it) }
+    }
+
+    /** Porte scolarité sur l’année demandée, sinon année courante. */
+    private fun assertFeesViewForStudent(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String,
+        academicYearId: String?
+    ): Mono<Void> {
+        val yearMono =
+            if (!academicYearId.isNullOrBlank()) {
+                Mono.just(academicYearId.trim())
+            } else {
+                academicYearApi.findCurrent(schoolId).map { it.id }
+            }
+        return yearMono
+            .flatMap { yearId ->
+                feesApi.assertCanViewAcademics(currentUser, schoolId, yearId, studentId)
+            }
+            .onErrorResume(NotFoundException::class.java) { Mono.empty() }
+            .switchIfEmpty(Mono.empty())
     }
 
     private fun assertCanViewSequenceMarks(

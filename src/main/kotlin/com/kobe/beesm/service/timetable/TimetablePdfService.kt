@@ -14,9 +14,13 @@ import com.kobe.beesm.model.timetable.TimetableEntry
 import com.kobe.beesm.repository.timetable.TimeSlotGridRepository
 import com.kobe.beesm.repository.timetable.TimetableEntryRepository
 import com.kobe.beesm.repository.timetable.TimetableRepository
+import com.kobe.beesm.exception.ForbiddenException
+import com.kobe.beesm.model.user.ProfileType
+import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.SchoolBrandApi
 import com.kobe.beesm.service.academic.api.SchoolClassApi
+import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.shared.security.CurrentUser
 import com.lowagie.text.Document
 import com.lowagie.text.Element
@@ -49,20 +53,24 @@ class TimetablePdfService(
     private val gridRepository: TimeSlotGridRepository,
     private val schoolBrandApi: SchoolBrandApi,
     private val schoolClassApi: SchoolClassApi,
-    private val academicYearApi: AcademicYearApi
+    private val academicYearApi: AcademicYearApi,
+    private val feesApi: FeesApi
 ) {
     fun renderClassPdf(
         currentUser: CurrentUser,
         timetableId: String,
         classId: String,
         languageOverride: Language? = null,
-        schoolIdOverride: String? = null
+        schoolIdOverride: String? = null,
+        forStudentId: String? = null
     ): Mono<ByteArray> {
         TimetableAccess.assertCanRead(currentUser)
         val schoolId = TimetableAccess.resolveSchoolId(currentUser, schoolIdOverride)
         return timetableRepository.findByIdAndSchoolId(timetableId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("TIMETABLE_NOT_FOUND", "Timetable not found")))
             .flatMap { timetable ->
+                assertPortalFeesAccess(currentUser, schoolId, timetable.academicYearId, forStudentId)
+                    .then(
                 Mono.zip(
                     gridRepository.findByIdAndSchoolId(timetable.gridId, schoolId)
                         .switchIfEmpty(Mono.error(NotFoundException("GRID_NOT_FOUND", "Time slot grid not found"))),
@@ -91,7 +99,35 @@ class TimetablePdfService(
                         )
                     )
                 }
+                    )
             }
+    }
+
+    private fun assertPortalFeesAccess(
+        currentUser: CurrentUser,
+        schoolId: String,
+        academicYearId: String,
+        forStudentId: String?
+    ): Mono<Void> {
+        if (!currentUser.hasAnyRole(Role.PARENT, Role.STUDENT)) {
+            return Mono.empty()
+        }
+        val studentId =
+            forStudentId?.trim()?.takeIf { it.isNotEmpty() }
+                ?: currentUser.profileId?.takeIf {
+                    currentUser.hasRole(Role.STUDENT) &&
+                        currentUser.profileType == ProfileType.STUDENT &&
+                        !it.isNullOrBlank()
+                }
+        if (studentId.isNullOrBlank()) {
+            return Mono.error(
+                ForbiddenException(
+                    "FEES_STUDENT_REQUIRED",
+                    "Student id is required to open the timetable PDF when fees soft-block applies"
+                )
+            )
+        }
+        return feesApi.assertCanViewAcademics(currentUser, schoolId, academicYearId, studentId)
     }
 
     /** Rendu pur (testable) — refuse toute sortie > 1 page. */

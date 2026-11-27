@@ -437,6 +437,18 @@ class FeesService(
             .then(buildAccount(schoolId, studentId, academicYearId))
     }
 
+    /** BR-F05 / Q-65 : état de porte pour soft-block UI (staff, parent lié, élève soi-même). */
+    fun getAcademicAccess(
+        currentUser: CurrentUser,
+        studentId: String,
+        academicYearId: String,
+        schoolIdOverride: String? = null
+    ): Mono<FeesAccessGateDto> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        return assertCanQueryAcademicAccess(currentUser, schoolId, studentId)
+            .then(accessGate(schoolId, academicYearId, studentId))
+    }
+
     fun solvencyForStudents(
         currentUser: CurrentUser,
         academicYearId: String,
@@ -847,6 +859,14 @@ class FeesService(
                             FeePaymentStatus.RECORDED
                         )
                         .collectList(),
+                    paymentRepository
+                        .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                            schoolId,
+                            academicYearId,
+                            studentId,
+                            FeePaymentStatus.VOID
+                        )
+                        .collectList(),
                     stateRepository
                         .findBySchoolIdAndAcademicYearIdAndStudentId(
                             schoolId,
@@ -858,8 +878,9 @@ class FeesService(
                     studentApi.getSummary(schoolId, studentId)
                 ).map { tuple ->
                     val payments = tuple.t1
-                    val state = tuple.t2.orElse(null)
-                    val student = tuple.t3
+                    val voidedPayments = tuple.t2
+                    val state = tuple.t3.orElse(null)
+                    val student = tuple.t4
                     val penaltyAccrued = state?.penaltyTotalAccrued ?: BigDecimal.ZERO
                     val penaltyPaid = sumPayments(payments, FeePaymentKind.PENALTY, null)
                     val penaltySettled =
@@ -892,6 +913,7 @@ class FeesService(
                         enrollmentFeePaid = solvency.enrollmentFeePaid,
                         installments = solvency.installments,
                         payments = payments.map { toPaymentResponse(it) },
+                        voidedPayments = voidedPayments.map { toPaymentResponse(it) },
                         feesExcluded = feesExcluded,
                         penaltyTotalAccrued = penaltyAccrued,
                         penaltyPaid = penaltyPaid,
@@ -1151,6 +1173,23 @@ class FeesService(
                 Mono.error(ForbiddenException("FORBIDDEN", "Fees visible only for linked children"))
             )
             .then()
+    }
+
+    private fun assertCanQueryAcademicAccess(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String
+    ): Mono<Void> {
+        if (currentUser.hasRole(Role.STUDENT) &&
+            currentUser.profileType == ProfileType.STUDENT &&
+            currentUser.profileId == studentId
+        ) {
+            return Mono.empty()
+        }
+        if (isParentViewer(currentUser)) {
+            return assertCanViewStudentFees(currentUser, schoolId, studentId)
+        }
+        return assertCanReadFees(currentUser, schoolId)
     }
 
     private fun filterStudentIdsForViewer(

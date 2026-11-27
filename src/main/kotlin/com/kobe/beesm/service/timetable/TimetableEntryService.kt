@@ -15,8 +15,10 @@ import com.kobe.beesm.model.user.ProfileType
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.timetable.TimeSlotGridRepository
 import com.kobe.beesm.repository.timetable.TimetableEntryRepository
+import com.kobe.beesm.repository.timetable.TimetableRepository
 import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.SchoolBrandApi
+import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.shared.security.CurrentUser
 import org.slf4j.LoggerFactory
 import org.springframework.dao.DuplicateKeyException
@@ -29,10 +31,12 @@ import java.util.Optional
 class TimetableEntryService(
     private val entryRepository: TimetableEntryRepository,
     private val gridRepository: TimeSlotGridRepository,
+    private val timetableRepository: TimetableRepository,
     private val timetableService: TimetableService,
     private val conflictService: TimetableConflictService,
     private val academicYearApi: AcademicYearApi,
-    private val schoolBrandApi: SchoolBrandApi
+    private val schoolBrandApi: SchoolBrandApi,
+    private val feesApi: FeesApi
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -190,7 +194,8 @@ class TimetableEntryService(
         timetableId: String,
         classId: String? = null,
         teacherId: String? = null,
-        schoolIdOverride: String? = null
+        schoolIdOverride: String? = null,
+        forStudentId: String? = null
     ): Flux<TimetableEntryResponse> {
         TimetableAccess.assertCanRead(currentUser)
         val schoolId = TimetableAccess.resolveSchoolId(currentUser, schoolIdOverride)
@@ -225,7 +230,8 @@ class TimetableEntryService(
                         ownTeacherId
                     )
                 }
-            return source.map { TimetableMapper.toEntryResponse(it) }
+            return assertPortalFeesAccess(currentUser, schoolId, timetableId, forStudentId)
+                .thenMany(source.map { TimetableMapper.toEntryResponse(it) })
         }
         val source = when {
             classId != null ->
@@ -242,7 +248,45 @@ class TimetableEntryService(
                 )
             else -> entryRepository.findBySchoolIdAndTimetableId(schoolId, timetableId)
         }
-        return source.map { TimetableMapper.toEntryResponse(it) }
+        return assertPortalFeesAccess(currentUser, schoolId, timetableId, forStudentId)
+            .thenMany(source.map { TimetableMapper.toEntryResponse(it) })
+    }
+
+    /** BR-F05 / Q-65 : parent / élève — EDT lié à un élève bloqué si frais non soldés. */
+    private fun assertPortalFeesAccess(
+        currentUser: CurrentUser,
+        schoolId: String,
+        timetableId: String,
+        forStudentId: String?
+    ): Mono<Void> {
+        if (!currentUser.hasAnyRole(Role.PARENT, Role.STUDENT)) {
+            return Mono.empty()
+        }
+        val studentId =
+            forStudentId?.trim()?.takeIf { it.isNotEmpty() }
+                ?: currentUser.profileId?.takeIf {
+                    currentUser.hasRole(Role.STUDENT) &&
+                        currentUser.profileType == ProfileType.STUDENT &&
+                        !it.isNullOrBlank()
+                }
+        if (studentId.isNullOrBlank()) {
+            return Mono.error(
+                ForbiddenException(
+                    "FEES_STUDENT_REQUIRED",
+                    "Student id is required to open the timetable when fees soft-block applies"
+                )
+            )
+        }
+        return timetableRepository.findByIdAndSchoolId(timetableId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("TIMETABLE_NOT_FOUND", "Timetable not found")))
+            .flatMap { timetable ->
+                feesApi.assertCanViewAcademics(
+                    currentUser,
+                    schoolId,
+                    timetable.academicYearId,
+                    studentId
+                )
+            }
     }
 
     private fun findExisting(

@@ -1,6 +1,6 @@
 # 10 — Scolarité et solvabilité
 
-> Module `fees` (docs/08) — **v1** (API barèmes / paiements / solvabilité / politique / job rappels-pénalités-exclusion + UI liste, fiche, workspace Solvabilité ; **hub Direction Scolarité** `/director/fees` = barèmes niveau + N tranches, futurs paramètres paiement). Objectif : suivre l’**inscription annuelle** et les **tranches de scolarité**, afficher un **statut de solvabilité** dérivé, et permettre à la **direction / comptabilité** d’enregistrer les paiements.
+> Module `fees` (docs/08) — **v1** (API barèmes / paiements / solvabilité / politique / job rappels-pénalités-exclusion + UI liste, fiche, workspace Solvabilité ; **hub Direction Scolarité** `/director/fees` = onglets Barèmes + Politique, voir § 6.3). Objectif : suivre l’**inscription annuelle** et les **tranches de scolarité**, afficher un **statut de solvabilité** dérivé, et permettre à la **direction / comptabilité** d’enregistrer les paiements.
 >
 > Fuseau d’affichage et de calcul des échéances : **Africa/Douala**. Montants : `BigDecimal` / `DECIMAL128`, comparaison `compareTo`.
 
@@ -137,7 +137,7 @@ API inter-modules :
 | Bouton **Enregistrer un paiement** | `GET /fees/access` → `canRecordPayments` (**DIRECTOR** / **SUPER_ADMIN**, ou **ADMINISTRATION** + `StaffFunction.ACCOUNTANT`) **et** barème applicable |
 | Nav **Élèves → Solvabilité** (`/{role}/students/solvency`) | Même règle que `canRecordPayments` (masquée sinon) |
 | Hub élèves — onglet **Solvabilité** (après Inactifs) + cartes impayés | `canRecordPayments` ; clic → workspace Solvabilité |
-| Nav **Scolarité** (`/director/fees`) | Direction seule (`canManageSchedules`) ; hub paramètres (barèmes aujourd’hui ; politique / rappels ensuite) |
+| Nav **Scolarité** (`/director/fees`) | **Direction seule** (`canManageSchedules`) |
 
 ### 6.2 Surfaces
 
@@ -145,8 +145,31 @@ API inter-modules :
 - **Fiche élève** : section **Scolarité & solvabilité** (sous Photo / Tuteurs) ; héros **fond blanc** (pas de dégradé bleu).
 - **Q-80 UI** : bannière exclusion ; paiement `PENALTY` (espèces, montant exact, après tuition) ; bouton **Réactiver (scolarité)** Direction uniquement quand `canReactivateAfterFees` ; réactivation générique masquée si `inactiveReasonCode=FEES_INSOLVENCY_EXCLUSION`.
 - **Workspace Solvabilité** (`/director|administration/students/solvency`) : KPI montants (dû / encaissé / reste), inscription non soldée, pénalités (BR-F12), risque d’exclusion (grâce), donuts solvabilité & ponctualité, barres impayés / niveaux, **courbe** encaissements 30 j. (montant + cumul + volume) via `GET /fees/dashboard-summary`.
-- Direction : hub **Scolarité** (`/director/fees`) — **Barèmes** + **Politique** (rappels, pénalités, grâce, exclusion) ; notifications à chaque maj politique.
 - Portail parent : inbox `FEES_*` ; accès notes/EDT soumis à BR-F05.
+
+### 6.3 Hub Direction **Scolarité** (`/director/fees`)
+
+Paramétrage **réservé à la Direction** (pas Administration, pas comptable). L’UI n’affiche pas de bandeau explicatif : le titre vient de la nav ; le détail métier est ici.
+
+| Onglet | Contenu | Notes |
+|---|---|---|
+| **Barèmes** | Par **niveau** (colonnes FR / EN selon `Level.section`) : frais d’inscription + **N tranches** (montants et échéances libres, N ≤ 12) pour l’**année courante** | Q-66…Q-68 ; année verrouillée = lecture seule |
+| **Politique** | Rappels avant échéance (jours paramétrables, défaut 15/10/5/3/2/1 + jour J), pénalité hebdomadaire (XAF), délai de grâce / avertissement / exclusion auto | Q-77…Q-79 ; chaque enregistrement notifie Direction + Administration |
+
+Réactivation après exclusion (**Q-80**) : **pas** dans ce hub — sur la **fiche élève**, une fois inscription + tranches + pénalités soldées.
+
+### 6.4 Soft-block Q-65 / BR-F05
+
+- Critère : inscription non soldée **ou** solvabilité `INSOLVENT` (`PENDING` ne bloque pas).
+- **Parent / élève / enseignant** : pas de consultation notes, listes/PDF bulletins, EDT (entries + PDF avec `forStudentId`).
+- **Direction / Admin / SG** : consultation OK ; **modification** notes refusée.
+- API : `GET /api/v1/fees/students/{id}/academic-access?academicYearId=` → `FeesAccessGateDto` (messages FR/EN).
+- UI : bandeau `AcademicFeesSoftBlock` sur portail parent (notes, bulletins, EDT) et EDT élève.
+
+### 6.5 VOID paiement (Q-76)
+
+- API : `POST /api/v1/fees/payments/{id}/void` + motif (BR-F09).
+- UI : workspace Solvabilité → liste « Paiements enregistrés » → **Annuler** + dialogue motif ; historique `voidedPayments` sur le compte.
 
 ## 7. Périmètre livré vs suite
 
@@ -156,9 +179,10 @@ API inter-modules :
 | Paiement séquentiel + montant exact + CASH inscription | — |
 | Reçu PDF inscription (en-tête école) | Reçu tranche / cahier de caisse |
 | Rappels / pénalités / exclusion paramétrables | SMS / e-mail opt-in |
-| BR-F05 porte d’accès academics | Soft-block messages portail parent/élève |
+| BR-F05 + soft-block portail (notes / EDT / bulletins) + `GET …/academic-access` | — |
+| Q-76 VOID UI (workspace Solvabilité, motif) | — |
 | Q-80 réactivation Direction | — |
-| Solvabilité + dashboard KPI (Q-70/Q-72 ✅) | Soft-block messages portail |
+| Solvabilité + dashboard KPI (Q-70/Q-72 ✅) | — |
 | Seed démo | Import grille réelle |
 
 ## 8. Questions

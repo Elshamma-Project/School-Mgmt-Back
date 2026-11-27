@@ -17,6 +17,8 @@ import com.kobe.beesm.repository.grading.SequenceMarkRepository
 import com.kobe.beesm.service.academic.api.ClassSubjectApi
 import com.kobe.beesm.service.student.api.StudentApi
 import com.kobe.beesm.shared.security.CurrentUser
+import org.junit.jupiter.api.BeforeEach
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import reactor.core.publisher.Flux
@@ -33,6 +35,8 @@ class SequenceMarkAccessTest {
     private val gradeAuditEntryRepository: GradeAuditEntryRepository = mock()
     private val studentApi: StudentApi = mock()
     private val classSubjectApi: ClassSubjectApi = mock()
+    private val academicYearApi: com.kobe.beesm.service.academic.api.AcademicYearApi = mock()
+    private val feesApi: com.kobe.beesm.service.fees.api.FeesApi = mock()
 
     private val service = SequenceMarkService(
         sequenceMarkRepository,
@@ -41,8 +45,16 @@ class SequenceMarkAccessTest {
         gradeSheetRepository,
         gradeAuditEntryRepository,
         studentApi,
-        classSubjectApi
+        classSubjectApi,
+        academicYearApi,
+        feesApi
     )
+
+    @BeforeEach
+    fun stubFeesGateOpen() {
+        whenever(feesApi.assertCanViewAcademics(any(), any(), any(), any())).thenReturn(Mono.empty())
+        whenever(academicYearApi.findCurrent(any())).thenReturn(Mono.empty())
+    }
 
     @Test
     fun `parent with canViewGrades false cannot list sequence marks`() {

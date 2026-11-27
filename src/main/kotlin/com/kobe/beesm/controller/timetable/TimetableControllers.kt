@@ -123,10 +123,13 @@ class TimetableController(
         @PathVariable id: String,
         @RequestParam classId: String,
         @RequestParam(required = false) language: Language?,
-        @RequestParam(required = false) schoolId: String?
+        @RequestParam(required = false) schoolId: String?,
+        @RequestParam(required = false) forStudentId: String?
     ): Mono<ResponseEntity<ByteArray>> =
         SecuritySupport.currentUser().flatMap { user ->
-            timetablePdfService.renderClassPdf(user, id, classId, language, schoolId).map { bytes ->
+            timetablePdfService
+                .renderClassPdf(user, id, classId, language, schoolId, forStudentId)
+                .map { bytes ->
                 ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"timetable.pdf\"")
                     .contentType(MediaType.APPLICATION_PDF)
@@ -139,9 +142,10 @@ class TimetableController(
         @PathVariable id: String,
         @RequestParam(required = false) classId: String?,
         @RequestParam(required = false) teacherId: String?,
-        @RequestParam(required = false) schoolId: String?
+        @RequestParam(required = false) schoolId: String?,
+        @RequestParam(required = false) forStudentId: String?
     ) = SecuritySupport.currentUser().flatMapMany {
-        timetableEntryService.listByTimetable(it, id, classId, teacherId, schoolId)
+        timetableEntryService.listByTimetable(it, id, classId, teacherId, schoolId, forStudentId)
     }
 
     @PostMapping("/{id}/entries")

@@ -25,7 +25,8 @@ class TimetablePdfServiceTest {
         gridRepository = mock(),
         schoolBrandApi = mock(),
         schoolClassApi = mock(),
-        academicYearApi = mock()
+        academicYearApi = mock(),
+        feesApi = mock()
     )
 
     @Test

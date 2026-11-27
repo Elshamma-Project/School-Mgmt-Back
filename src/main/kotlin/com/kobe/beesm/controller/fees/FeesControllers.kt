@@ -89,6 +89,16 @@ class FeesController(
         feesService.getStudentAccount(it, studentId, academicYearId, schoolId)
     }
 
+    /** BR-F05 / Q-65 — porte d’accès notes / EDT / bulletins (message soft-block portail). */
+    @GetMapping("/students/{studentId}/academic-access")
+    fun academicAccess(
+        @PathVariable studentId: String,
+        @RequestParam academicYearId: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap {
+        feesService.getAcademicAccess(it, studentId, academicYearId, schoolId)
+    }
+
     /** Q-80 : Direction — réactivation après soldes tuition + pénalités. */
     @PostMapping("/students/{studentId}/reactivate")
     fun reactivateAfterFees(

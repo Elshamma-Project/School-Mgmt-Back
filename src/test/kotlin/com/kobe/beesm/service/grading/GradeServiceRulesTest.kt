@@ -53,6 +53,8 @@ class GradeServiceRulesTest {
         gradeSheetRepository,
         gradeAuditEntryRepository,
         mock(),
+        mock(),
+        mock(),
         mock()
     )
 

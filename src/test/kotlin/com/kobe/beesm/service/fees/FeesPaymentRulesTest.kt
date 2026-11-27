@@ -138,6 +138,9 @@ class FeesPaymentRulesTest {
             }
             Mono.just(p)
         }
+        whenever(
+            stateRepository.findBySchoolIdAndAcademicYearIdAndStudentId(any(), any(), any())
+        ).thenReturn(Mono.empty())
     }
 
     private fun existing(vararg payments: FeePayment): Flux<FeePayment> = Flux.fromArray(payments)

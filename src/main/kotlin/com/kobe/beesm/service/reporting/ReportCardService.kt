@@ -644,6 +644,7 @@ class ReportCardService(
     ): Flux<ReportCardSummaryResponse> {
         val schoolId = ReportingAccess.resolveSchoolId(currentUser, schoolIdOverride)
         return assertCanListStudentCards(currentUser, schoolId, studentId)
+            .then(assertFeesViewForList(currentUser, schoolId, studentId, academicYearId))
             .thenMany(
                 if (academicYearId.isNullOrBlank()) {
                     reportCardRepository.findBySchoolIdAndStudentId(schoolId, studentId)
@@ -658,6 +659,35 @@ class ReportCardService(
                     isPublishedAnnual(card)
             }
             .map { toSummary(it) }
+    }
+
+    private fun assertFeesViewForList(
+        currentUser: CurrentUser,
+        schoolId: String,
+        studentId: String,
+        academicYearId: String?
+    ): Mono<Void> {
+        if (currentUser.hasAnyRole(
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN,
+                Role.SURVEILLANT_GENERAL
+            )
+        ) {
+            return Mono.empty()
+        }
+        val yearMono =
+            if (!academicYearId.isNullOrBlank()) {
+                Mono.just(academicYearId.trim())
+            } else {
+                academicYearApi.findCurrent(schoolId).map { it.id }
+            }
+        return yearMono
+            .flatMap { yearId ->
+                feesApi.assertCanViewAcademics(currentUser, schoolId, yearId, studentId)
+            }
+            .onErrorResume(NotFoundException::class.java) { Mono.empty() }
+            .switchIfEmpty(Mono.empty())
     }
 
     private fun assertCanListStudentCards(

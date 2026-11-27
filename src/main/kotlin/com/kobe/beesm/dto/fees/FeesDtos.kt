@@ -143,6 +143,8 @@ data class StudentFeeAccountResponse(
     val enrollmentFeePaid: BigDecimal?,
     val installments: List<InstallmentSolvencyDto>,
     val payments: List<FeePaymentResponse>,
+    /** Écritures annulées (Q-76) — hors calcul de solvabilité. */
+    val voidedPayments: List<FeePaymentResponse> = emptyList(),
     /** Exclusion scolarité active (BR-F14 / Q-80). */
     val feesExcluded: Boolean = false,
     val penaltyTotalAccrued: BigDecimal = BigDecimal.ZERO,
