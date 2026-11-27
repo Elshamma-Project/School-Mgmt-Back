@@ -92,7 +92,8 @@ Pas de suppression physique : annulation = statut `VOID` + motif (Q-76).
 - **BR-F11** Au passage **INSOLVENT** : notification parent avec montant de pénalité hebdo et délai max d’exclusion (si définis).
 - **BR-F12** Pénalité hebdomadaire après insolvabilité : défaut **1000 XAF / semaine / enfant**, montant et devise dans `FeesPolicy` (Direction). Accrual idempotent (`fees_penalty_charges` + `fees_student_states`).
 - **BR-F13** Avertissement parent **N jours** avant exclusion (`exclusionWarningDaysBefore`, défaut 7).
-- **BR-F14** Après `maxInsolvencyGraceDays` (défaut 28, Direction) sans régularisation : **désactivation** de l’élève (`Student.active=false`, motif `FEES_INSOLVENCY_EXCLUSION`) + notification. Réactivation = **Direction seule** ; avant réinscription année : solder pénalités + tranches (**Q-80 figé**, workflow UI différé).
+- **BR-F14** Après `maxInsolvencyGraceDays` (défaut 28, Direction) sans régularisation : **désactivation** de l’élève (`Student.active=false`, `inactiveReasonCode=FEES_INSOLVENCY_EXCLUSION`) + notification.
+- **Q-80** Réactivation = **Direction seule** via `POST /api/v1/fees/students/{id}/reactivate` : inscription + **toutes** les tranches soldées **et** pénalités soldées (`FeePaymentKind.PENALTY`, montant exact). La réactivation générique `POST /students/{id}/reactivate` est **refusée** tant que le motif fees est posé.
 
 ### Fuseau et job
 
@@ -112,8 +113,9 @@ Module `fees` :
 | `GET` | `/api/v1/fees/solvency?academicYearId=&studentIds=` | lecture scoped | batch liste élèves (virgules) |
 | `GET` | `/api/v1/fees/unpaid-summary?academicYearId=` | **staff** Admin / Dir. / SG / SuperAdmin | compteurs hub : inscription + `installmentsUnpaid[]` + total insolvables |
 | `GET` | `/api/v1/fees/dashboard-summary?academicYearId=` | **staff** Admin / Dir. / SG / SuperAdmin | KPI workspace : montants XAF, inscription seule, pénalités, grâce J+14/21/max, niveaux, encaissements 7/30 j., ponctualité, série quotidienne 30 j. |
-| `POST` | `/api/v1/fees/payments` | **BR-F09** | enregistrer un paiement |
+| `POST` | `/api/v1/fees/payments` | **BR-F09** | enregistrer un paiement (`ENROLLMENT` / `INSTALLMENT` / `PENALTY`) |
 | `POST` | `/api/v1/fees/payments/{id}/void` | **BR-F09** | annuler (`VOID` + motif) |
+| `POST` | `/api/v1/fees/students/{id}/reactivate` | **DIRECTOR** | Q-80 : réactivation après soldes tuition + pénalités |
 
 API inter-modules :
 
@@ -141,6 +143,7 @@ API inter-modules :
 
 - **Liste élèves** : colonne **Solvabilité** ; onglets Tous / Actifs / Inactifs / **Solvabilité** ; cartes stats (Total, Actifs, Inactifs, Insolvables) + ligne impayés (Inscription + N tranches via `installmentsUnpaid[]`).
 - **Fiche élève** : section **Scolarité & solvabilité** (sous Photo / Tuteurs) ; héros **fond blanc** (pas de dégradé bleu).
+- **Q-80 UI** : bannière exclusion ; paiement `PENALTY` (espèces, montant exact, après tuition) ; bouton **Réactiver (scolarité)** Direction uniquement quand `canReactivateAfterFees` ; réactivation générique masquée si `inactiveReasonCode=FEES_INSOLVENCY_EXCLUSION`.
 - **Workspace Solvabilité** (`/director|administration/students/solvency`) : KPI montants (dû / encaissé / reste), inscription non soldée, pénalités (BR-F12), risque d’exclusion (grâce), donuts solvabilité & ponctualité, barres impayés / niveaux, **courbe** encaissements 30 j. (montant + cumul + volume) via `GET /fees/dashboard-summary`.
 - Direction : hub **Scolarité** (`/director/fees`) — **Barèmes** + **Politique** (rappels, pénalités, grâce, exclusion) ; notifications à chaque maj politique.
 - Portail parent : inbox `FEES_*` ; accès notes/EDT soumis à BR-F05.
@@ -153,7 +156,8 @@ API inter-modules :
 | Paiement séquentiel + montant exact + CASH inscription | — |
 | Reçu PDF inscription (en-tête école) | Reçu tranche / cahier de caisse |
 | Rappels / pénalités / exclusion paramétrables | SMS / e-mail opt-in |
-| BR-F05 porte d’accès academics | Write notes + lecture bulletins parent/élève ; soft-block UI + Q-80 réactivation UI |
+| BR-F05 porte d’accès academics | Soft-block messages portail parent/élève |
+| Q-80 réactivation Direction | — |
 | Solvabilité + dashboard KPI (Q-70/Q-72 ✅) | Soft-block messages portail |
 | Seed démo | Import grille réelle |
 

@@ -90,7 +90,9 @@ data class StudentResponse(
     val hasSchoolPhoto: Boolean,
     val contact: ContactInfoDto,
     val guardians: List<GuardianLinkDto>,
-    val active: Boolean
+    val active: Boolean,
+    /** Motif système de désactivation (ex. exclusion scolarité Q-80) ; null si actif ou désactivation manuelle. */
+    val inactiveReasonCode: String? = null
 )
 
 /** DTO public inter-modules (docs/08) — pas de coordonnées détaillées. */

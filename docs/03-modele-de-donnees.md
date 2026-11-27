@@ -39,7 +39,7 @@
 | academic | `academic_subject_groups` | `SubjectGroup` | Blocs de sous-total |
 | academic | `academic_class_subjects` | `ClassSubject` | **Pivot** matière-classe : coefficient, groupe, enseignant, heures, langue |
 | academic | `academic_term_competencies` | `TermCompetency` | Compétence visée par matière et trimestre (bulletin de trimestre) |
-| student | `student_students` | `Student` (+ `GuardianLink`) | Élèves ; `photoFileId` → photo **scolaire** (bulletin), pas l’avatar compte |
+| student | `student_students` | `Student` (+ `GuardianLink`) | Élèves ; `photoFileId` → photo **scolaire** (bulletin), pas l’avatar compte ; `inactiveReasonCode` (ex. `FEES_INSOLVENCY_EXCLUSION`, Q-80) bloque la réactivation générique |
 | student | `student_school_photos` | `StudentSchoolPhoto` | Binaire photo scolaire élève (bulletins / cartes) — distinct de `user_avatars` |
 | student | `student_guardians` | `Guardian` | Parents / tuteurs |
 | student | `student_enrollments` | `Enrollment` | Inscription d'un élève dans une classe pour une année |

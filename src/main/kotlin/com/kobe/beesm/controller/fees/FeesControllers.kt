@@ -1,5 +1,6 @@
 package com.kobe.beesm.controller.fees
 
+import com.kobe.beesm.dto.fees.ReactivateAfterFeesRequest
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.UpdateFeesPolicyRequest
 import com.kobe.beesm.dto.fees.UpsertTuitionScheduleRequest
@@ -86,6 +87,15 @@ class FeesController(
         @RequestParam(required = false) schoolId: String?
     ) = SecuritySupport.currentUser().flatMap {
         feesService.getStudentAccount(it, studentId, academicYearId, schoolId)
+    }
+
+    /** Q-80 : Direction — réactivation après soldes tuition + pénalités. */
+    @PostMapping("/students/{studentId}/reactivate")
+    fun reactivateAfterFees(
+        @PathVariable studentId: String,
+        @Valid @RequestBody request: ReactivateAfterFeesRequest
+    ) = SecuritySupport.currentUser().flatMap {
+        feesService.reactivateAfterFees(it, studentId, request)
     }
 
     /**

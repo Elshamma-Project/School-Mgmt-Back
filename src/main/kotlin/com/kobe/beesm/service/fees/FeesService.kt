@@ -13,6 +13,8 @@ import com.kobe.beesm.dto.fees.InstallmentUnpaidCountDto
 import com.kobe.beesm.dto.fees.LevelInsolvencyDto
 import com.kobe.beesm.dto.fees.PunctualityStatsDto
 import com.kobe.beesm.dto.fees.RecentPaymentsDto
+import com.kobe.beesm.dto.fees.ReactivateAfterFeesRequest
+import com.kobe.beesm.dto.fees.ReactivateAfterFeesResponse
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.SolvencySnapshotDto
 import com.kobe.beesm.dto.fees.StudentFeeAccountResponse
@@ -20,6 +22,7 @@ import com.kobe.beesm.dto.fees.TuitionInstallmentResponse
 import com.kobe.beesm.dto.fees.TuitionScheduleResponse
 import com.kobe.beesm.dto.fees.UpsertTuitionScheduleRequest
 import com.kobe.beesm.dto.fees.VoidFeePaymentRequest
+import com.kobe.beesm.model.fees.FeeStudentFeeState
 import com.kobe.beesm.exception.BusinessRuleException
 import com.kobe.beesm.exception.ForbiddenException
 import com.kobe.beesm.exception.NotFoundException
@@ -188,9 +191,12 @@ class FeesService(
                 BusinessRuleException("INSTALLMENT_INDEX_REQUIRED", "installmentIndex is required for INSTALLMENT")
             )
         }
-        if (request.kind == FeePaymentKind.ENROLLMENT && request.installmentIndex != null) {
+        if (request.kind != FeePaymentKind.INSTALLMENT && request.installmentIndex != null) {
             return Mono.error(
-                BusinessRuleException("INSTALLMENT_INDEX_FORBIDDEN", "installmentIndex must be null for ENROLLMENT")
+                BusinessRuleException(
+                    "INSTALLMENT_INDEX_FORBIDDEN",
+                    "installmentIndex must be null for ${request.kind}"
+                )
             )
         }
 
@@ -210,41 +216,120 @@ class FeesService(
                         )
                     )
                     .flatMap { (schedule, _) ->
-                        paymentRepository
-                            .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
-                                schoolId,
-                                request.academicYearId,
-                                request.studentId,
-                                FeePaymentStatus.RECORDED
-                            )
-                            .collectList()
-                            .flatMap { existingPayments ->
-                                validatePaymentRules(schedule, request, existingPayments)
-                                    .then(
-                                        paymentRepository.save(
-                                            FeePayment(
-                                                schoolId = schoolId,
-                                                academicYearId = request.academicYearId,
-                                                studentId = request.studentId,
-                                                enrollmentId = enrollment.id,
-                                                classId = enrollment.classId,
-                                                scheduleId = schedule.id!!,
-                                                kind = request.kind,
-                                                installmentIndex = request.installmentIndex,
-                                                amount = request.amount,
-                                                paidAt = request.paidAt ?: Instant.now(),
-                                                method = request.method,
-                                                reference = request.reference?.trim()?.ifBlank { null },
-                                                recordedByAccountId = currentUser.accountId,
-                                                note = request.note?.trim()?.ifBlank { null },
-                                                status = FeePaymentStatus.RECORDED
-                                            )
+                        Mono.zip(
+                            paymentRepository
+                                .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                                    schoolId,
+                                    request.academicYearId,
+                                    request.studentId,
+                                    FeePaymentStatus.RECORDED
+                                )
+                                .collectList(),
+                            stateRepository
+                                .findBySchoolIdAndAcademicYearIdAndStudentId(
+                                    schoolId,
+                                    request.academicYearId,
+                                    request.studentId
+                                )
+                                .map { java.util.Optional.of(it) }
+                                .defaultIfEmpty(java.util.Optional.empty())
+                        ).flatMap { tuple ->
+                            val existingPayments = tuple.t1
+                            val state = tuple.t2.orElse(null)
+                            validatePaymentRules(schedule, request, existingPayments, state)
+                                .then(
+                                    paymentRepository.save(
+                                        FeePayment(
+                                            schoolId = schoolId,
+                                            academicYearId = request.academicYearId,
+                                            studentId = request.studentId,
+                                            enrollmentId = enrollment.id,
+                                            classId = enrollment.classId,
+                                            scheduleId = schedule.id!!,
+                                            kind = request.kind,
+                                            installmentIndex = request.installmentIndex,
+                                            amount = request.amount,
+                                            paidAt = request.paidAt ?: Instant.now(),
+                                            method = request.method,
+                                            reference = request.reference?.trim()?.ifBlank { null },
+                                            recordedByAccountId = currentUser.accountId,
+                                            note = request.note?.trim()?.ifBlank { null },
+                                            status = FeePaymentStatus.RECORDED
                                         )
                                     )
-                            }
+                                )
+                        }
                     }
             }
             .map { toPaymentResponse(it) }
+    }
+
+    /**
+     * Q-80 / BR-F14 : Direction seule — réactive après soldes tuition + pénalités.
+     */
+    fun reactivateAfterFees(
+        currentUser: CurrentUser,
+        studentId: String,
+        request: ReactivateAfterFeesRequest
+    ): Mono<ReactivateAfterFeesResponse> {
+        val schoolId = currentUser.requireSchoolId(request.schoolId)
+        if (!currentUser.hasAnyRole(Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            return Mono.error(
+                ForbiddenException(
+                    "FEES_REACTIVATION_FORBIDDEN",
+                    "Only DIRECTOR can reactivate a student after fees exclusion (Q-80)"
+                )
+            )
+        }
+        return buildAccount(schoolId, studentId, request.academicYearId)
+            .flatMap { account ->
+                if (!account.feesExcluded) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException(
+                            "NOT_FEES_EXCLUDED",
+                            "Student is not currently excluded for unpaid fees"
+                        )
+                    )
+                }
+                if (!account.tuitionSettled) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException(
+                            "TUITION_NOT_SETTLED",
+                            "Enrollment and all installments must be settled before reactivation"
+                        )
+                    )
+                }
+                if (!account.penaltySettled) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException(
+                            "PENALTIES_NOT_SETTLED",
+                            "Penalties must be settled before reactivation"
+                        )
+                    )
+                }
+                studentApi.reactivateAfterFeeExclusion(schoolId, studentId)
+                    .flatMap { summary ->
+                        stateRepository
+                            .findBySchoolIdAndAcademicYearIdAndStudentId(
+                                schoolId,
+                                request.academicYearId,
+                                studentId
+                            )
+                            .flatMap { state ->
+                                state.excludedAt = null
+                                state.exclusionReasonCode = null
+                                stateRepository.save(state)
+                            }
+                            .thenReturn(
+                                ReactivateAfterFeesResponse(
+                                    studentId = summary.id,
+                                    academicYearId = request.academicYearId,
+                                    active = summary.active,
+                                    feesExcluded = false
+                                )
+                            )
+                    }
+            }
     }
 
     /**
@@ -753,31 +838,68 @@ class FeesService(
         val today = LocalDate.now(zone)
         return computeSolvency(schoolId, studentId, academicYearId, today)
             .flatMap { solvency ->
-                paymentRepository
-                    .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
-                        schoolId,
-                        academicYearId,
-                        studentId,
-                        FeePaymentStatus.RECORDED
-                    )
-                    .map { toPaymentResponse(it) }
-                    .collectList()
-                    .map { payments ->
-                        StudentFeeAccountResponse(
-                            studentId = studentId,
-                            academicYearId = academicYearId,
-                            enrollmentId = solvency.enrollmentId,
-                            classId = solvency.classId,
-                            classLabel = solvency.classLabel,
-                            scheduleId = solvency.scheduleId,
-                            currency = solvency.currency,
-                            solvency = solvency.status,
-                            enrollmentFeeDue = solvency.enrollmentFeeDue,
-                            enrollmentFeePaid = solvency.enrollmentFeePaid,
-                            installments = solvency.installments,
-                            payments = payments
+                Mono.zip(
+                    paymentRepository
+                        .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                            schoolId,
+                            academicYearId,
+                            studentId,
+                            FeePaymentStatus.RECORDED
                         )
-                    }
+                        .collectList(),
+                    stateRepository
+                        .findBySchoolIdAndAcademicYearIdAndStudentId(
+                            schoolId,
+                            academicYearId,
+                            studentId
+                        )
+                        .map { java.util.Optional.of(it) }
+                        .defaultIfEmpty(java.util.Optional.empty()),
+                    studentApi.getSummary(schoolId, studentId)
+                ).map { tuple ->
+                    val payments = tuple.t1
+                    val state = tuple.t2.orElse(null)
+                    val student = tuple.t3
+                    val penaltyAccrued = state?.penaltyTotalAccrued ?: BigDecimal.ZERO
+                    val penaltyPaid = sumPayments(payments, FeePaymentKind.PENALTY, null)
+                    val penaltySettled =
+                        penaltyAccrued.compareTo(BigDecimal.ZERO) <= 0 ||
+                            SolvencyCalculator.isSettled(penaltyAccrued, penaltyPaid)
+                    val enrollmentSettled =
+                        solvency.enrollmentFeeDue == null ||
+                            SolvencyCalculator.isSettled(
+                                solvency.enrollmentFeeDue,
+                                solvency.enrollmentFeePaid ?: BigDecimal.ZERO
+                            )
+                    val installmentsSettled =
+                        solvency.installments.isEmpty() ||
+                            solvency.installments.all { it.settled }
+                    val tuitionSettled = enrollmentSettled && installmentsSettled
+                    val feesExcluded =
+                        state?.excludedAt != null &&
+                            state.exclusionReasonCode == "FEES_INSOLVENCY_EXCLUSION" &&
+                            !student.active
+                    StudentFeeAccountResponse(
+                        studentId = studentId,
+                        academicYearId = academicYearId,
+                        enrollmentId = solvency.enrollmentId,
+                        classId = solvency.classId,
+                        classLabel = solvency.classLabel,
+                        scheduleId = solvency.scheduleId,
+                        currency = solvency.currency,
+                        solvency = solvency.status,
+                        enrollmentFeeDue = solvency.enrollmentFeeDue,
+                        enrollmentFeePaid = solvency.enrollmentFeePaid,
+                        installments = solvency.installments,
+                        payments = payments.map { toPaymentResponse(it) },
+                        feesExcluded = feesExcluded,
+                        penaltyTotalAccrued = penaltyAccrued,
+                        penaltyPaid = penaltyPaid,
+                        penaltySettled = penaltySettled,
+                        tuitionSettled = tuitionSettled,
+                        canReactivateAfterFees = feesExcluded && tuitionSettled && penaltySettled
+                    )
+                }
             }
     }
 
@@ -1110,13 +1232,35 @@ class FeesService(
         }
 
     /**
-     * Q-68/Q-74/Q-75 : CASH pour inscription ; montant exact ; ordre inscription → T1 → T2…
+     * Q-68/Q-74/Q-75/Q-80 : CASH inscription ; montant exact ; ordre inscription → T1 → T2… ;
+     * pénalités = montant exact du reste dû.
      */
     private fun validatePaymentRules(
         schedule: TuitionSchedule,
         request: RecordFeePaymentRequest,
-        existingPayments: List<FeePayment>
+        existingPayments: List<FeePayment>,
+        state: FeeStudentFeeState?
     ): Mono<Void> {
+        if (request.kind == FeePaymentKind.PENALTY) {
+            val accrued = state?.penaltyTotalAccrued ?: BigDecimal.ZERO
+            val paid = sumPayments(existingPayments, FeePaymentKind.PENALTY, null)
+            val remaining = accrued.subtract(paid)
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                return Mono.error(
+                    BusinessRuleException("PENALTIES_ALREADY_SETTLED", "Penalties are already settled")
+                )
+            }
+            if (request.amount.compareTo(remaining) != 0) {
+                return Mono.error(
+                    BusinessRuleException(
+                        "AMOUNT_MUST_MATCH_DUE",
+                        "Payment amount must equal the exact remaining penalty due ($remaining)"
+                    )
+                )
+            }
+            return Mono.empty()
+        }
+
         if (request.kind == FeePaymentKind.ENROLLMENT) {
             if (request.method != FeePaymentMethod.CASH) {
                 return Mono.error(

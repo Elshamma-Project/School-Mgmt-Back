@@ -19,7 +19,9 @@ enum class SolvencyStatus {
 
 enum class FeePaymentKind {
     ENROLLMENT,
-    INSTALLMENT
+    INSTALLMENT,
+    /** Règlement des pénalités hebdomadaires accrues (Q-80). */
+    PENALTY
 }
 
 enum class FeePaymentMethod {

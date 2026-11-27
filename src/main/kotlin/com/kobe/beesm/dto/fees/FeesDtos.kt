@@ -142,7 +142,29 @@ data class StudentFeeAccountResponse(
     val enrollmentFeeDue: BigDecimal?,
     val enrollmentFeePaid: BigDecimal?,
     val installments: List<InstallmentSolvencyDto>,
-    val payments: List<FeePaymentResponse>
+    val payments: List<FeePaymentResponse>,
+    /** Exclusion scolarité active (BR-F14 / Q-80). */
+    val feesExcluded: Boolean = false,
+    val penaltyTotalAccrued: BigDecimal = BigDecimal.ZERO,
+    val penaltyPaid: BigDecimal = BigDecimal.ZERO,
+    val penaltySettled: Boolean = true,
+    /** Tuition (inscription + toutes tranches) soldée. */
+    val tuitionSettled: Boolean = false,
+    /** Direction seule : tuition + pénalités OK et exclusion fees. */
+    val canReactivateAfterFees: Boolean = false
+)
+
+data class ReactivateAfterFeesRequest(
+    @field:NotBlank
+    val academicYearId: String,
+    val schoolId: String? = null
+)
+
+data class ReactivateAfterFeesResponse(
+    val studentId: String,
+    val academicYearId: String,
+    val active: Boolean,
+    val feesExcluded: Boolean
 )
 
 /**

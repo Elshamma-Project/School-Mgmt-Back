@@ -33,11 +33,20 @@ interface StudentApi {
 
     /**
      * Désactivation système pour exclusion scolarité (BR-F14) — sans jeton utilisateur.
-     * Émet `student.changed` comme une désactivation manuelle.
+     * Pose `inactiveReasonCode` ; émet `student.changed`.
      */
     fun deactivateForFeeExclusion(
         schoolId: String,
         studentId: String,
         reasonCode: String
+    ): Mono<StudentSummaryDto>
+
+    /**
+     * Réactivation après exclusion scolarité (Q-80) — appelée uniquement par le module `fees`
+     * une fois tranches + pénalités soldées. Efface `inactiveReasonCode`.
+     */
+    fun reactivateAfterFeeExclusion(
+        schoolId: String,
+        studentId: String
     ): Mono<StudentSummaryDto>
 }

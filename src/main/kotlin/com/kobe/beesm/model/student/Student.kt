@@ -53,7 +53,12 @@ data class Student(
 
     /** Tuteurs / parents liés (plusieurs enfants par parent : le lien est porté ici). */
     var guardians: List<GuardianLink> = emptyList(),
-    var active: Boolean = true
+    var active: Boolean = true,
+    /**
+     * Motif de désactivation système (ex. `FEES_INSOLVENCY_EXCLUSION`, Q-80 / BR-F14).
+     * Null = désactivation manuelle ou élève actif. Bloque `reactivate` générique.
+     */
+    var inactiveReasonCode: String? = null
 ) : TenantDocument() {
     /** Nom tel qu'imprimé sur le bulletin : « NOM PRÉNOMS ». */
     fun fullName(): String = listOf(lastName, firstName).filter { it.isNotBlank() }.joinToString(" ")

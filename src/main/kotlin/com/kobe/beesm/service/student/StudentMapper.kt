@@ -79,7 +79,8 @@ object StudentMapper {
             hasSchoolPhoto = !student.photoFileId.isNullOrBlank(),
             contact = toContactDto(student.contact),
             guardians = student.guardians.map { toGuardianLinkDto(it) },
-            active = student.active
+            active = student.active,
+            inactiveReasonCode = student.inactiveReasonCode?.trim()?.ifBlank { null }
         )
 
     fun toStudentSummary(student: Student): StudentSummaryDto =

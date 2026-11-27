@@ -386,6 +386,7 @@ class StudentService(
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .flatMap { student ->
                 student.active = false
+                student.inactiveReasonCode = null
                 studentRepository.save(student)
             }
             .flatMap { saved -> emitStudentChanged(saved).thenReturn(StudentMapper.toStudentResponse(saved)) }
@@ -406,7 +407,17 @@ class StudentService(
         return studentRepository.findByIdAndSchoolId(id, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .flatMap { student ->
+                val reason = student.inactiveReasonCode?.trim().orEmpty()
+                if (reason == "FEES_INSOLVENCY_EXCLUSION") {
+                    return@flatMap Mono.error(
+                        ForbiddenException(
+                            "FEES_REACTIVATION_REQUIRED",
+                            "Student was excluded for unpaid fees; use fees reactivation after settling tuition and penalties (Q-80)"
+                        )
+                    )
+                }
                 student.active = true
+                student.inactiveReasonCode = null
                 studentRepository.save(student)
             }
             .flatMap { saved -> emitStudentChanged(saved).thenReturn(StudentMapper.toStudentResponse(saved)) }
@@ -446,18 +457,34 @@ class StudentService(
         studentId: String,
         reasonCode: String
     ): Mono<StudentSummaryDto> {
+        val code = reasonCode.trim().ifBlank { "FEES_INSOLVENCY_EXCLUSION" }
         log.info(
             "student.deactivateForFeeExclusion schoolId={} reason={}",
             schoolId,
-            reasonCode.trim().take(64)
+            code.take(64)
         )
         return studentRepository.findByIdAndSchoolId(studentId, schoolId)
             .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
             .flatMap { student ->
-                if (!student.active) {
-                    return@flatMap Mono.just(StudentMapper.toStudentSummary(student))
-                }
                 student.active = false
+                student.inactiveReasonCode = code
+                studentRepository.save(student)
+                    .flatMap { saved ->
+                        emitStudentChanged(saved).thenReturn(StudentMapper.toStudentSummary(saved))
+                    }
+            }
+    }
+
+    override fun reactivateAfterFeeExclusion(
+        schoolId: String,
+        studentId: String
+    ): Mono<StudentSummaryDto> {
+        log.info("student.reactivateAfterFeeExclusion schoolId={}", schoolId)
+        return studentRepository.findByIdAndSchoolId(studentId, schoolId)
+            .switchIfEmpty(Mono.error(NotFoundException("STUDENT_NOT_FOUND", "Student not found")))
+            .flatMap { student ->
+                student.active = true
+                student.inactiveReasonCode = null
                 studentRepository.save(student)
                     .flatMap { saved ->
                         emitStudentChanged(saved).thenReturn(StudentMapper.toStudentSummary(saved))
