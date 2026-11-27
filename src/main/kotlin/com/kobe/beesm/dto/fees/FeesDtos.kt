@@ -174,6 +174,69 @@ data class InstallmentUnpaidCountDto(
     val unpaidCount: Int
 )
 
+/**
+ * Tableau de bord Solvabilité (workspace) : KPI montants, pénalités, grâce,
+ * niveaux, encaissements récents, ponctualité + séries pour courbes.
+ */
+data class FeesDashboardSummaryResponse(
+    val academicYearId: String,
+    val currency: String = "XAF",
+    val enrollmentUnpaid: Int,
+    val installmentsUnpaid: List<InstallmentUnpaidCountDto> = emptyList(),
+    val insolventStudents: Int,
+    val solventStudents: Int = 0,
+    val pendingStudents: Int = 0,
+    val notApplicableStudents: Int = 0,
+    /** Total dû (inscription + tranches) pour les élèves avec barème. */
+    val totalDue: BigDecimal = BigDecimal.ZERO,
+    /** Total encaissé (paiements RECORDED). */
+    val totalCollected: BigDecimal = BigDecimal.ZERO,
+    /** Reste à recouvrer (max 0). */
+    val totalOutstanding: BigDecimal = BigDecimal.ZERO,
+    val enrollmentFeeUnpaidStudents: Int = 0,
+    val studentsWithPenalties: Int = 0,
+    val penaltyTotalAmount: BigDecimal = BigDecimal.ZERO,
+    val exclusionRisk: ExclusionRiskDto = ExclusionRiskDto(),
+    val insolventByLevel: List<LevelInsolvencyDto> = emptyList(),
+    val recentPayments: RecentPaymentsDto = RecentPaymentsDto(),
+    val punctuality: PunctualityStatsDto = PunctualityStatsDto(),
+    /** Série quotidienne 30 j. (encaissements) pour courbes. */
+    val dailyCollections: List<DailyAmountDto> = emptyList()
+)
+
+data class ExclusionRiskDto(
+    val day14: Int = 0,
+    val day21: Int = 0,
+    val day28OrMax: Int = 0,
+    val graceDays: Int = 28
+)
+
+data class LevelInsolvencyDto(
+    val levelId: String,
+    val levelLabel: String,
+    val insolventCount: Int,
+    val studentCount: Int
+)
+
+data class RecentPaymentsDto(
+    val last7DaysCount: Int = 0,
+    val last7DaysAmount: BigDecimal = BigDecimal.ZERO,
+    val last30DaysCount: Int = 0,
+    val last30DaysAmount: BigDecimal = BigDecimal.ZERO
+)
+
+data class PunctualityStatsDto(
+    val onTimeCount: Int = 0,
+    val lateCount: Int = 0,
+    val unpaidDueCount: Int = 0
+)
+
+data class DailyAmountDto(
+    val date: LocalDate,
+    val amount: BigDecimal,
+    val count: Int
+)
+
 data class FeesPolicyResponse(
     val id: String,
     val schoolId: String,

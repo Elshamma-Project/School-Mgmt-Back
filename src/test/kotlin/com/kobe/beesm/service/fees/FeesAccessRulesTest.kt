@@ -6,6 +6,8 @@ import com.kobe.beesm.model.staff.StaffFunction
 import com.kobe.beesm.model.user.ProfileType
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.fees.FeePaymentRepository
+import com.kobe.beesm.repository.fees.FeeStudentFeeStateRepository
+import com.kobe.beesm.repository.fees.FeesPolicyRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
 import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.LevelApi
@@ -32,6 +34,8 @@ class FeesAccessRulesTest {
 
     private val scheduleRepository = mock<TuitionScheduleRepository>()
     private val paymentRepository = mock<FeePaymentRepository>()
+    private val stateRepository = mock<FeeStudentFeeStateRepository>()
+    private val policyRepository = mock<FeesPolicyRepository>()
     private val academicYearApi = mock<AcademicYearApi>()
     private val levelApi = mock<LevelApi>()
     private val schoolClassApi = mock<SchoolClassApi>()
@@ -42,6 +46,8 @@ class FeesAccessRulesTest {
     private val service = FeesService(
         scheduleRepository,
         paymentRepository,
+        stateRepository,
+        policyRepository,
         academicYearApi,
         levelApi,
         schoolClassApi,

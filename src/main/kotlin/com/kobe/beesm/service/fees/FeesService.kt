@@ -1,11 +1,17 @@
 package com.kobe.beesm.service.fees
 
 import com.kobe.beesm.dto.academic.LocalizedTextDto
+import com.kobe.beesm.dto.fees.DailyAmountDto
+import com.kobe.beesm.dto.fees.ExclusionRiskDto
 import com.kobe.beesm.dto.fees.FeePaymentResponse
 import com.kobe.beesm.dto.fees.FeesAccessResponse
+import com.kobe.beesm.dto.fees.FeesDashboardSummaryResponse
 import com.kobe.beesm.dto.fees.FeesUnpaidSummaryResponse
 import com.kobe.beesm.dto.fees.InstallmentSolvencyDto
 import com.kobe.beesm.dto.fees.InstallmentUnpaidCountDto
+import com.kobe.beesm.dto.fees.LevelInsolvencyDto
+import com.kobe.beesm.dto.fees.PunctualityStatsDto
+import com.kobe.beesm.dto.fees.RecentPaymentsDto
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.SolvencySnapshotDto
 import com.kobe.beesm.dto.fees.StudentFeeAccountResponse
@@ -26,6 +32,8 @@ import com.kobe.beesm.model.staff.StaffFunction
 import com.kobe.beesm.model.user.ProfileType
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.fees.FeePaymentRepository
+import com.kobe.beesm.repository.fees.FeeStudentFeeStateRepository
+import com.kobe.beesm.repository.fees.FeesPolicyRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
 import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.LevelApi
@@ -42,6 +50,7 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 /**
  * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F14).
@@ -54,6 +63,8 @@ import java.time.ZoneId
 class FeesService(
     private val scheduleRepository: TuitionScheduleRepository,
     private val paymentRepository: FeePaymentRepository,
+    private val stateRepository: FeeStudentFeeStateRepository,
+    private val policyRepository: FeesPolicyRepository,
     private val academicYearApi: AcademicYearApi,
     private val levelApi: LevelApi,
     private val schoolClassApi: SchoolClassApi,
@@ -177,7 +188,7 @@ class FeesService(
                             )
                         )
                     )
-                    .flatMap { schedule ->
+                    .flatMap { (schedule, _) ->
                         if (request.kind == FeePaymentKind.INSTALLMENT) {
                             val idx = request.installmentIndex!!
                             if (schedule.installments.none { it.index == idx }) {
@@ -323,6 +334,242 @@ class FeesService(
             }
     }
 
+    /**
+     * Tableau de bord Solvabilité : montants, pénalités, grâce, niveaux,
+     * encaissements 7/30 j., ponctualité, série quotidienne 30 j.
+     */
+    fun dashboardSummary(
+        currentUser: CurrentUser,
+        academicYearId: String,
+        schoolIdOverride: String? = null
+    ): Mono<FeesDashboardSummaryResponse> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        if (!currentUser.hasAnyRole(
+                Role.ADMINISTRATION,
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN,
+                Role.SURVEILLANT_GENERAL
+            )
+        ) {
+            return Mono.error(ForbiddenException("FORBIDDEN", "Fees dashboard requires staff access"))
+        }
+        val today = LocalDate.now(zone)
+        val start7 = today.minusDays(6)
+        val start30 = today.minusDays(29)
+
+        return assertCanReadFees(currentUser, schoolId)
+            .then(
+                Mono.zip(
+                    enrollmentApi.findEnrolledByYear(schoolId, academicYearId)
+                        .map { it.studentId }
+                        .distinct()
+                        .flatMap({ studentId -> computeSolvency(schoolId, studentId, academicYearId, today) }, 16)
+                        .collectList(),
+                    paymentRepository
+                        .findBySchoolIdAndAcademicYearIdAndStatus(
+                            schoolId,
+                            academicYearId,
+                            FeePaymentStatus.RECORDED
+                        )
+                        .collectList(),
+                    stateRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId).collectList(),
+                    policyRepository.findBySchoolId(schoolId)
+                        .defaultIfEmpty(
+                            com.kobe.beesm.model.fees.FeesPolicy(schoolId = schoolId)
+                        )
+                )
+            )
+            .map { tuple ->
+                val accounts = tuple.t1
+                val payments = tuple.t2
+                val states = tuple.t3
+                val policy = tuple.t4
+                val graceDays = policy.maxInsolvencyGraceDays.coerceAtLeast(1)
+
+                var enrollmentUnpaid = 0
+                var insolvent = 0
+                var solvent = 0
+                var pending = 0
+                var notApplicable = 0
+                var totalDue = BigDecimal.ZERO
+                var totalCollected = BigDecimal.ZERO
+                var onTime = 0
+                var late = 0
+                var unpaidDue = 0
+                val unpaidByIndex = sortedMapOf<Int, Int>()
+                val insolventByLevel = linkedMapOf<String, Pair<String, IntArray>>()
+                var currency = policy.currency.ifBlank { "XAF" }
+
+                for (account in accounts) {
+                    when (account.status) {
+                        SolvencyStatus.NOT_APPLICABLE -> {
+                            notApplicable++
+                            continue
+                        }
+                        SolvencyStatus.INSOLVENT -> insolvent++
+                        SolvencyStatus.PENDING -> pending++
+                        SolvencyStatus.SOLVENT -> solvent++
+                    }
+                    if (!account.currency.isNullOrBlank()) {
+                        currency = account.currency
+                    }
+                    val levelKey = account.levelId ?: "_unknown"
+                    val levelLabel = account.classLabel ?: levelKey
+                    val bucket = insolventByLevel.getOrPut(levelKey) {
+                        levelLabel to intArrayOf(0, 0)
+                    }
+                    bucket.second[1]++
+                    if (account.status == SolvencyStatus.INSOLVENT) {
+                        bucket.second[0]++
+                    }
+
+                    val dueEnroll = account.enrollmentFeeDue ?: BigDecimal.ZERO
+                    val paidEnroll = account.enrollmentFeePaid ?: BigDecimal.ZERO
+                    totalDue = totalDue.add(dueEnroll)
+                    totalCollected = totalCollected.add(paidEnroll)
+                    if (dueEnroll.compareTo(BigDecimal.ZERO) > 0 &&
+                        !SolvencyCalculator.isSettled(dueEnroll, paidEnroll)
+                    ) {
+                        enrollmentUnpaid++
+                    }
+
+                    for (inst in account.installments) {
+                        totalDue = totalDue.add(inst.amount)
+                        totalCollected = totalCollected.add(inst.paidAmount)
+                        if (!inst.settled && !inst.dueDate.isAfter(today)) {
+                            unpaidByIndex[inst.index] = (unpaidByIndex[inst.index] ?: 0) + 1
+                        }
+                    }
+                }
+
+                for (account in accounts) {
+                    if (account.status == SolvencyStatus.NOT_APPLICABLE) continue
+                    for (inst in account.installments) {
+                        if (!inst.settled) {
+                            if (!inst.dueDate.isAfter(today)) unpaidDue++
+                            continue
+                        }
+                        val earliest = payments
+                            .asSequence()
+                            .filter {
+                                it.studentId == account.studentId &&
+                                    it.kind == FeePaymentKind.INSTALLMENT &&
+                                    it.installmentIndex == inst.index
+                            }
+                            .map { it.paidAt }
+                            .minOrNull()
+                        if (earliest == null) {
+                            onTime++
+                            continue
+                        }
+                        val paidDay = earliest.atZone(zone).toLocalDate()
+                        if (!paidDay.isAfter(inst.dueDate)) onTime++ else late++
+                    }
+                }
+
+                val statesWithPenalty = states.filter {
+                    it.penaltyWeeksAccrued > 0 || it.penaltyTotalAccrued.compareTo(BigDecimal.ZERO) > 0
+                }
+                val penaltyTotal = states.fold(BigDecimal.ZERO) { acc, s ->
+                    acc.add(s.penaltyTotalAccrued)
+                }
+
+                var band14 = 0
+                var band21 = 0
+                var bandMax = 0
+                for (state in states) {
+                    val since = state.insolvencySince ?: continue
+                    if (state.excludedAt != null) continue
+                    val days = ChronoUnit.DAYS.between(since, today).toInt()
+                    when {
+                        days >= graceDays -> bandMax++
+                        days >= 21 -> band21++
+                        days >= 14 -> band14++
+                    }
+                }
+
+                fun amountInRange(from: LocalDate, to: LocalDate): Pair<Int, BigDecimal> {
+                    var count = 0
+                    var amount = BigDecimal.ZERO
+                    for (p in payments) {
+                        val day = p.paidAt.atZone(zone).toLocalDate()
+                        if (!day.isBefore(from) && !day.isAfter(to)) {
+                            count++
+                            amount = amount.add(p.amount)
+                        }
+                    }
+                    return count to amount
+                }
+                val (c7, a7) = amountInRange(start7, today)
+                val (c30, a30) = amountInRange(start30, today)
+
+                val dailyMap = (0L..29L).associate { offset ->
+                    start30.plusDays(offset) to (0 to BigDecimal.ZERO)
+                }.toMutableMap()
+                for (p in payments) {
+                    val day = p.paidAt.atZone(zone).toLocalDate()
+                    if (day.isBefore(start30) || day.isAfter(today)) continue
+                    val prev = dailyMap[day] ?: (0 to BigDecimal.ZERO)
+                    dailyMap[day] = (prev.first + 1) to prev.second.add(p.amount)
+                }
+                val daily = dailyMap.entries
+                    .sortedBy { it.key }
+                    .map { (date, pair) ->
+                        DailyAmountDto(date = date, amount = pair.second, count = pair.first)
+                    }
+
+                val outstanding = totalDue.subtract(totalCollected).max(BigDecimal.ZERO)
+
+                FeesDashboardSummaryResponse(
+                    academicYearId = academicYearId,
+                    currency = currency,
+                    enrollmentUnpaid = enrollmentUnpaid,
+                    installmentsUnpaid = unpaidByIndex.map { (index, count) ->
+                        InstallmentUnpaidCountDto(index = index, unpaidCount = count)
+                    },
+                    insolventStudents = insolvent,
+                    solventStudents = solvent,
+                    pendingStudents = pending,
+                    notApplicableStudents = notApplicable,
+                    totalDue = totalDue,
+                    totalCollected = totalCollected,
+                    totalOutstanding = outstanding,
+                    enrollmentFeeUnpaidStudents = enrollmentUnpaid,
+                    studentsWithPenalties = statesWithPenalty.size,
+                    penaltyTotalAmount = penaltyTotal,
+                    exclusionRisk = ExclusionRiskDto(
+                        day14 = band14,
+                        day21 = band21,
+                        day28OrMax = bandMax,
+                        graceDays = graceDays
+                    ),
+                    insolventByLevel = insolventByLevel.entries
+                        .map { (levelId, pair) ->
+                            LevelInsolvencyDto(
+                                levelId = levelId,
+                                levelLabel = pair.first,
+                                insolventCount = pair.second[0],
+                                studentCount = pair.second[1]
+                            )
+                        }
+                        .sortedByDescending { it.insolventCount }
+                        .take(12),
+                    recentPayments = RecentPaymentsDto(
+                        last7DaysCount = c7,
+                        last7DaysAmount = a7,
+                        last30DaysCount = c30,
+                        last30DaysAmount = a30
+                    ),
+                    punctuality = PunctualityStatsDto(
+                        onTimeCount = onTime,
+                        lateCount = late,
+                        unpaidDueCount = unpaidDue
+                    ),
+                    dailyCollections = daily
+                )
+            }
+    }
+
     override fun solvencySnapshot(
         schoolId: String,
         academicYearId: String,
@@ -377,9 +624,11 @@ class FeesService(
     }
 
     private data class SolvencyInternal(
+        val studentId: String,
         val status: SolvencyStatus,
         val enrollmentId: String?,
         val classId: String?,
+        val levelId: String?,
         val classLabel: String?,
         val scheduleId: String?,
         val currency: String?,
@@ -393,14 +642,14 @@ class FeesService(
         schoolId: String,
         academicYearId: String,
         classId: String
-    ): Mono<TuitionSchedule> =
+    ): Mono<Pair<TuitionSchedule, String>> =
         schoolClassApi.getSummary(schoolId, classId)
             .flatMap { clazz ->
                 scheduleRepository.findBySchoolIdAndAcademicYearIdAndLevelId(
                     schoolId,
                     academicYearId,
                     clazz.levelId
-                )
+                ).map { schedule -> schedule to clazz.levelId }
             }
             .onErrorResume(NotFoundException::class.java) { Mono.empty() }
 
@@ -418,85 +667,115 @@ class FeesService(
         enrollmentApi.findByStudentAndYear(schoolId, studentId, academicYearId)
             .onErrorResume(NotFoundException::class.java) { Mono.empty() }
             .flatMap { enrollment ->
-                findScheduleForClass(schoolId, academicYearId, enrollment.classId)
-                    .flatMap { schedule ->
-                        paymentRepository
-                            .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                schoolClassApi.getSummary(schoolId, enrollment.classId)
+                    .onErrorResume(NotFoundException::class.java) { Mono.empty() }
+                    .flatMap { clazz ->
+                        scheduleRepository
+                            .findBySchoolIdAndAcademicYearIdAndLevelId(
                                 schoolId,
                                 academicYearId,
-                                studentId,
-                                FeePaymentStatus.RECORDED
+                                clazz.levelId
                             )
-                            .collectList()
-                            .map { payments ->
-                                val enrollmentPaid = sumPayments(
-                                    payments,
-                                    FeePaymentKind.ENROLLMENT,
-                                    null
-                                )
-                                val installmentDtos = schedule.installments
-                                    .sortedBy { it.index }
-                                    .map { inst ->
-                                        val paid = sumPayments(
+                            .flatMap { schedule ->
+                                paymentRepository
+                                    .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                                        schoolId,
+                                        academicYearId,
+                                        studentId,
+                                        FeePaymentStatus.RECORDED
+                                    )
+                                    .collectList()
+                                    .map { payments ->
+                                        val enrollmentPaid = sumPayments(
                                             payments,
-                                            FeePaymentKind.INSTALLMENT,
-                                            inst.index
+                                            FeePaymentKind.ENROLLMENT,
+                                            null
                                         )
-                                        InstallmentSolvencyDto(
-                                            index = inst.index,
-                                            amount = inst.amount,
-                                            dueDate = inst.dueDate,
-                                            paidAmount = paid,
-                                            settled = SolvencyCalculator.isSettled(inst.amount, paid)
+                                        val installmentDtos = schedule.installments
+                                            .sortedBy { it.index }
+                                            .map { inst ->
+                                                val paid = sumPayments(
+                                                    payments,
+                                                    FeePaymentKind.INSTALLMENT,
+                                                    inst.index
+                                                )
+                                                InstallmentSolvencyDto(
+                                                    index = inst.index,
+                                                    amount = inst.amount,
+                                                    dueDate = inst.dueDate,
+                                                    paidAmount = paid,
+                                                    settled = SolvencyCalculator.isSettled(inst.amount, paid)
+                                                )
+                                            }
+                                        val status = SolvencyCalculator.compute(
+                                            today = today,
+                                            enrollmentFeeDue = schedule.enrollmentFee,
+                                            enrollmentFeePaid = enrollmentPaid,
+                                            installments = installmentDtos.map {
+                                                SolvencyCalculator.InstallmentInput(
+                                                    index = it.index,
+                                                    amount = it.amount,
+                                                    dueDate = it.dueDate,
+                                                    paidAmount = it.paidAmount
+                                                )
+                                            }
+                                        )
+                                        SolvencyInternal(
+                                            studentId = studentId,
+                                            status = status,
+                                            enrollmentId = enrollment.id,
+                                            classId = enrollment.classId,
+                                            levelId = clazz.levelId,
+                                            classLabel = schedule.levelLabel,
+                                            scheduleId = schedule.id,
+                                            currency = schedule.currency,
+                                            enrollmentFeeDue = schedule.enrollmentFee,
+                                            enrollmentFeePaid = enrollmentPaid,
+                                            installments = installmentDtos
                                         )
                                     }
-                                val status = SolvencyCalculator.compute(
-                                    today = today,
-                                    enrollmentFeeDue = schedule.enrollmentFee,
-                                    enrollmentFeePaid = enrollmentPaid,
-                                    installments = installmentDtos.map {
-                                        SolvencyCalculator.InstallmentInput(
-                                            index = it.index,
-                                            amount = it.amount,
-                                            dueDate = it.dueDate,
-                                            paidAmount = it.paidAmount
-                                        )
-                                    }
-                                )
-                                SolvencyInternal(
-                                    status = status,
-                                    enrollmentId = enrollment.id,
-                                    classId = enrollment.classId,
-                                    classLabel = schedule.levelLabel,
-                                    scheduleId = schedule.id,
-                                    currency = schedule.currency,
-                                    enrollmentFeeDue = schedule.enrollmentFee,
-                                    enrollmentFeePaid = enrollmentPaid,
-                                    installments = installmentDtos
-                                )
                             }
-                    }
-                    .switchIfEmpty(
-                        Mono.just(
-                            SolvencyInternal(
-                                status = SolvencyStatus.NOT_APPLICABLE,
-                                enrollmentId = enrollment.id,
-                                classId = enrollment.classId,
-                                classLabel = null,
-                                scheduleId = null,
-                                currency = null,
-                                enrollmentFeeDue = null,
-                                enrollmentFeePaid = null,
-                                installments = emptyList()
+                            .switchIfEmpty(
+                                Mono.just(
+                                    SolvencyInternal(
+                                        studentId = studentId,
+                                        status = SolvencyStatus.NOT_APPLICABLE,
+                                        enrollmentId = enrollment.id,
+                                        classId = enrollment.classId,
+                                        levelId = clazz.levelId,
+                                        classLabel = null,
+                                        scheduleId = null,
+                                        currency = null,
+                                        enrollmentFeeDue = null,
+                                        enrollmentFeePaid = null,
+                                        installments = emptyList()
+                                    )
+                                )
                             )
+                    }
+                    .defaultIfEmpty(
+                        SolvencyInternal(
+                            studentId = studentId,
+                            status = SolvencyStatus.NOT_APPLICABLE,
+                            enrollmentId = enrollment.id,
+                            classId = enrollment.classId,
+                            levelId = null,
+                            classLabel = null,
+                            scheduleId = null,
+                            currency = null,
+                            enrollmentFeeDue = null,
+                            enrollmentFeePaid = null,
+                            installments = emptyList()
                         )
                     )
             }
             .defaultIfEmpty(
                 SolvencyInternal(
+                    studentId = studentId,
                     status = SolvencyStatus.NOT_APPLICABLE,
                     enrollmentId = null,
                     classId = null,
+                    levelId = null,
                     classLabel = null,
                     scheduleId = null,
                     currency = null,

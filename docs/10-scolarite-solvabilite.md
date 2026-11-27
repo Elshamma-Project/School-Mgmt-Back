@@ -105,6 +105,7 @@ Module `fees` :
 | `GET` | `/api/v1/fees/students/{studentId}/account?academicYearId=` | lecture scoped | détail + solvabilité + paiements |
 | `GET` | `/api/v1/fees/solvency?academicYearId=&studentIds=` | lecture scoped | batch liste élèves (virgules) |
 | `GET` | `/api/v1/fees/unpaid-summary?academicYearId=` | **staff** Admin / Dir. / SG / SuperAdmin | compteurs hub : inscription + `installmentsUnpaid[]` + total insolvables |
+| `GET` | `/api/v1/fees/dashboard-summary?academicYearId=` | **staff** Admin / Dir. / SG / SuperAdmin | KPI workspace : montants XAF, inscription seule, pénalités, grâce J+14/21/max, niveaux, encaissements 7/30 j., ponctualité, série quotidienne 30 j. |
 | `POST` | `/api/v1/fees/payments` | **BR-F09** | enregistrer un paiement |
 | `POST` | `/api/v1/fees/payments/{id}/void` | **BR-F09** | annuler (`VOID` + motif) |
 
@@ -134,7 +135,7 @@ API inter-modules :
 
 - **Liste élèves** : colonne **Solvabilité** ; onglets Tous / Actifs / Inactifs / **Solvabilité** ; cartes stats (Total, Actifs, Inactifs, Insolvables) + ligne impayés (Inscription + N tranches via `installmentsUnpaid[]`).
 - **Fiche élève** : section **Scolarité & solvabilité** (sous Photo / Tuteurs) ; héros **fond blanc** (pas de dégradé bleu).
-- **Workspace Solvabilité** (`/director|administration/students/solvency`).
+- **Workspace Solvabilité** (`/director|administration/students/solvency`) : KPI montants (dû / encaissé / reste), inscription non soldée, pénalités (BR-F12), risque d’exclusion (grâce), donuts solvabilité & ponctualité, barres impayés / niveaux, **courbe** encaissements 30 j. (montant + cumul + volume) via `GET /fees/dashboard-summary`.
 - Direction : écran **Barèmes** (niveaux + N tranches) ; écran **Politique** (roadmap UI).
 - Portail parent : inbox rappels `FEES_*` (deep-link roadmap).
 

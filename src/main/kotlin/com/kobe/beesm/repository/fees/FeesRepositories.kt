@@ -75,4 +75,10 @@ interface FeePaymentRepository : ReactiveMongoRepository<FeePayment, String> {
         studentIds: Collection<String>,
         status: FeePaymentStatus
     ): Flux<FeePayment>
+
+    fun findBySchoolIdAndAcademicYearIdAndStatus(
+        schoolId: String,
+        academicYearId: String,
+        status: FeePaymentStatus
+    ): Flux<FeePayment>
 }

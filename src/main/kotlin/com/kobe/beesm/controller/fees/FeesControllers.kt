@@ -88,4 +88,13 @@ class FeesController(
     ) = SecuritySupport.currentUser().flatMap {
         feesService.unpaidSummary(it, academicYearId, schoolId)
     }
+
+    /** Tableau de bord Solvabilité (montants, pénalités, grâce, courbes). */
+    @GetMapping("/dashboard-summary")
+    fun dashboardSummary(
+        @RequestParam academicYearId: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap {
+        feesService.dashboardSummary(it, academicYearId, schoolId)
+    }
 }
