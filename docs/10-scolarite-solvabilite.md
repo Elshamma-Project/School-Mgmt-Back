@@ -12,19 +12,25 @@
    - les montants et échéances de **N tranches** (**Q-68 ✅**, N = 1…12, dates **libres**).
 3. Suggestion UI des échéances : fin de mois `startDate` +(k−1) ; librement modifiable.
 4. **Paiement séquentiel** : inscription → T1 → T2… ; montant du reçu = **exactement** le reste dû (**Q-74 ✅**). Inscription = **CASH** à l’école + **reçu PDF** (**Q-69/Q-75 ✅**) ; tranches = reçu banque papier → saisie Direction/comptable.
-5. La **solvabilité** affichée est **dérivée** (Q-70 encore à confirmer formallement).
+5. La **solvabilité** affichée est **dérivée** (**Q-70 ✅**, **Q-72 ✅** — BR-F06).
 6. Résolution barème : `Enrollment.classId` → `SchoolClass.levelId` → `TuitionSchedule`.
 
-## 2. Statut de solvabilité (UI)
+## 2. Statut de solvabilité (UI) — Q-70 / Q-72 figés
 
-| Code | Libellé FR | Libellé EN | Couleur | Règle (Q-70) |
+Comparaison par **mois civil** (`YearMonth`, fuseau **Africa/Douala**) de la `dueDate` de chaque tranche — **pas** le jour exact d’échéance.
+
+| Code | Libellé FR | Libellé EN | Couleur | Règle |
 |---|---|---|---|---|
-| `SOLVENT` | Solvable | Solvent | vert | La **tranche dont le mois civil est en cours** (parmi les N échéances) est **payée** ; **et** aucune tranche **échue** n’est impayée. Si hors période des échéances : toutes les tranches exigibles à ce jour sont payées (+ inscription si exigée). |
-| `PENDING` | En attente | Pending | ambre | La tranche du **mois en cours** n’est **pas encore** payée, **mais** toutes les tranches des **mois précédents** (échues) sont payées (et l’inscription si exigée). |
-| `INSOLVENT` | Insolvable | Insolvent | rouge | Au moins une tranche **échue** **n’est pas payée**, ou l’**inscription** obligatoire n’est pas payée alors qu’elle est exigée. |
-| `NOT_APPLICABLE` | — / Non concerné | N/A | neutre | Pas d’inscription année, ou barème non paramétré pour le **niveau**, ou année hors scolarité (Q-71). |
+| `SOLVENT` | Solvable | Solvent | vert | Inscription soldée ; **aucune** tranche de mois **strictement antérieur** impayée ; et soit pas de tranche échue ce mois-ci, soit celle du mois civil courant est payée. |
+| `PENDING` | En attente | Pending | ambre | Inscription soldée ; aucune tranche de mois passé impayée ; **mais** une tranche a son échéance **ce mois-ci** et n’est pas encore soldée. |
+| `INSOLVENT` | Insolvable | Insolvent | rouge | Inscription **non** soldée, **ou** au moins une tranche dont le mois d’échéance est **passé** reste impayée. |
+| `NOT_APPLICABLE` | — / Non concerné | N/A | neutre | Pas d’inscription année, ou barème non paramétré pour le **niveau** (Q-71). |
 
-**Précision mois « en cours »** : mois civil `Africa/Douala` égal au mois d’une `dueDate` de tranche ; avant la 1ʳᵉ échéance → inscription seule ; après la dernière → seules les impayés échus / inscription comptent (Q-70 / Q-72).
+**Q-72 — hors période des tranches** :
+- **Avant** le mois de la 1ʳᵉ échéance → seul le paiement d’inscription compte (impayé → `INSOLVENT`, payé → `SOLVENT` ; pas de `PENDING` tranche).
+- **Après** le mois de la dernière échéance → inscription + tranches **échues** uniquement (plus de `PENDING` « mois courant »).
+
+Exemple : échéances 31/10, 30/11, 31/12 ; aujourd’hui = 15/11 ; T1 payée, T2 non → `PENDING` ; T1 non payée → `INSOLVENT`.
 
 ## 3. Modèle de données (module `fees`)
 
@@ -78,7 +84,7 @@ Pas de suppression physique : annulation = statut `VOID` + motif (Q-76).
 - **BR-F03** Les échéances de tranche sont **saisies** ; suggestion = dernier jour du mois de `AcademicYear.startDate` +(index−1), fuseau Douala (**Q-68**).
 - **BR-F04** L’inscription annuelle (`Enrollment`) ne suffit pas seule pour « accès école » si BR-F05 est actif : il faut aussi le **paiement d’inscription** (**Q-65**).
 - **BR-F05** (**Q-65 ✅**) : si inscription non soldée **ou** statut `INSOLVENT` → bloquer notes / EDT / portail pour parent, élève, enseignant ; Direction/Admin/SG = **lecture** seule (pas de modification des notes). Message métier explicite + notifications.
-- **BR-F06** Solvabilité calculée dans `service/fees` uniquement ; la liste élèves consomme `FeesApi.solvencyForStudents(...)`.
+- **BR-F06** (**Q-70 ✅**, **Q-72 ✅**) Solvabilité calculée dans `SolvencyCalculator` / `service/fees` uniquement (mois civil Douala) ; la liste élèves consomme `FeesApi.solvencySnapshot(...)`. Matrice § 2.
 - **BR-F07** Tout `BigDecimal` stocké : `@Field(DECIMAL128)` ; comparaisons `compareTo`.
 - **BR-F08** Toute requête filtre `schoolId` ; index composites commencent par `schoolId`.
 - **BR-F09** Saisie / annulation des paiements (reçu banque → mise à jour solvabilité) : `DIRECTOR` / `SUPER_ADMIN`, ou `ADMINISTRATION` dont la fiche Staff porte la fonction `ACCOUNTANT`. Barèmes (montants) : Direction seule. Lecture solvabilité : admin / dir. / SG ; **parent = enfants liés uniquement** ; **enseignant : pas d’accès**.
@@ -148,9 +154,9 @@ API inter-modules :
 | Reçu PDF inscription (en-tête école) | Reçu tranche / cahier de caisse |
 | Rappels / pénalités / exclusion paramétrables | SMS / e-mail opt-in |
 | BR-F05 porte d’accès academics | Write notes + lecture bulletins parent/élève ; soft-block UI + Q-80 réactivation UI |
-| Solvabilité + dashboard KPI | Confirmation formelle Q-70 |
+| Solvabilité + dashboard KPI (Q-70/Q-72 ✅) | Soft-block messages portail |
 | Seed démo | Import grille réelle |
 
 ## 8. Questions
 
-**Q-65…Q-69, Q-71, Q-73…Q-80 ✅ figées** — détail `07`. **Q-70** et **Q-72** encore 💡 (matrice / hors période).
+**Q-65…Q-80 ✅ figées** — détail `07` (matrice solvabilité Q-70/Q-72 incluse).

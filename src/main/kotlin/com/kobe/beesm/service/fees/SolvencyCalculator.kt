@@ -6,11 +6,13 @@ import java.time.LocalDate
 import java.time.YearMonth
 
 /**
- * Calcul pur de solvabilité (docs/10 § 2, BR-F06) — testable sans Mongo.
+ * Calcul pur de solvabilité (docs/10 § 2, BR-F06, **Q-70 / Q-72 figés**) — testable sans Mongo.
  *
+ * Comparaison par **mois civil** (`YearMonth`) des `dueDate` (pas le jour exact).
  * - Inscription non soldée → [SolvencyStatus.INSOLVENT]
  * - Tranche d’un mois civil **strictement antérieur** non soldée → INSOLVENT
  * - Tranche du mois civil **en cours** non soldée → PENDING
+ * - Avant 1ʳᵉ / après dernière échéance (sans impayé passé) → SOLVENT (Q-72)
  * - Sinon → SOLVENT
  */
 object SolvencyCalculator {

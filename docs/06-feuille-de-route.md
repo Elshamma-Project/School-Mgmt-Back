@@ -13,7 +13,7 @@
 | 6 | Emploi du temps (`timetable`) : grille, saisie, conflits, PDF une page A4 | ✅ **phases 0–J** (dont seed privé + notif broadcast publish) — doc de référence `09-emploi-du-temps.md` ; Q-59/60/61 |
 | 7 | Sécurité (`user`) : authentification, rôles, sessions (max 2), appartenance | ✅ auth/JWT/sessions/lockout ; appartenance colmatée sur grading/reporting/student ; portail élève prod encore hors scope |
 | 8 | Notifications, dashboard (`portal`), signalements | ✅ inbox + outbox handlers + `GET /api/v1/dashboard/summary` |
-| 9 | Modules suivants : cartes, frais, import massif, file-storage | 🟡 `fees` : barèmes **niveau + N tranches** + UI Direction `/fees/schedules` + solvabilité + unpaid dynamique (`10`, Q-65…Q-80 figées) ; reste : blocage notes Q-65, Politique UI, VOID UI, Q-80, portail parent, cartes / import / file-storage |
+| 9 | Modules suivants : cartes, frais, import massif, file-storage | 🟡 `fees` : barèmes niveau + N tranches + hub `/director/fees` + solvabilité Q-70/Q-72 + politique ; reste : soft-block portail, VOID UI, Q-80 réactivation, cartes / import / file-storage |
 | — | Espace UI Surveillant Général | ✅ `/surveillant-general` (fiches de report) — Q-38 v1 |
 
 **Prochaines priorités** : portail parent/élève · PDF GradeSheet · docker-compose VPS.

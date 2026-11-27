@@ -66,9 +66,9 @@
 | Q-67 | Barème par **classe** ou par **niveau** ? | ✅ | **Figé** : par **niveau** (`levelId`). |
 | Q-68 | Nombre / mois des tranches | ✅ | **Figé** : N tranches + échéances **libres** (Direction). Paiement **séquentiel** inscription → T1 → T2… ; montants fixes. |
 | Q-69 | Modes de paiement v1 | ✅ | **Figé** : inscription = espèces à l’école + **reçu PDF** système ; tranches = reçu banque papier → saisie Direction/comptable. |
-| Q-70 | Règles exactes SOLVENT / PENDING / INSOLVENT | 💡 | Voir `10-scolarite-solvabilite.md` § 2 — confirmation école différée |
+| Q-70 | Règles exactes SOLVENT / PENDING / INSOLVENT | ✅ | **Figé** : mois civil Douala ; INSOLVENT = inscription ou tranche mois **passé** impayée ; PENDING = tranche **du mois** impayée ; SOLVENT sinon ; `NOT_APPLICABLE` sans barème/inscription (voir `10` § 2, BR-F06). |
 | Q-71 | Élève sans barème / sans inscription année | ✅ | Inscription **obligatoire** (délai) ; sans barème → `NOT_APPLICABLE` ; paiement séquentiel obligatoire. |
-| Q-72 | Avant septembre / hors 3 mois | 💡 | Avant 1ʳᵉ échéance : inscription ; après dernière : échus uniquement |
+| Q-72 | Avant septembre / hors 3 mois | ✅ | **Figé** : avant 1ʳᵉ échéance → inscription seule ; après dernière → échus + inscription (plus de PENDING « mois courant »). |
 | Q-73 | Devise | ✅ | **Figé** : `XAF` (franc CFA). |
 | Q-74 | Paiement partiel d’une tranche | ✅ | **Figé** : montant du reçu = **exactement** le reste dû de la cible. |
 | Q-75 | Catalogue des modes de paiement | ✅ | **Figé** : inscription = **CASH** uniquement ; tranches = reçu banque. |
@@ -125,9 +125,9 @@
 | Q-67 | Barème **par classe** ou **par niveau** ? | ✅ | Par **niveau** (`levelId`). | fees |
 | Q-68 | Mois des tranches imposés (sept./oct./nov.) ? | ✅ | **Non** — échéances libres (Direction). Paiement **séquentiel** : inscription → T1 → T2… ; montants fixes. | fees |
 | Q-69 | **Comment** l’école enregistre un paiement ? Reçu PDF ? | ✅ | Inscription = espèces à l’école + **reçu PDF** (en-tête type bulletin + logo). Tranches = reçu banque papier → saisie manuelle. | fees |
-| Q-70 | Confirmer la matrice **Solvable / En attente / Insolvable** | 💡 | Proposition dans `10` § 2 — **confirmation école différée** | fees |
+| Q-70 | Confirmer la matrice **Solvable / En attente / Insolvable** | ✅ | **Figé** : mois civil Africa/Douala des `dueDate`. INSOLVENT = inscription non soldée **ou** tranche mois passé impayée. PENDING = tranche du mois civil courant impayée (sans impayé passé). SOLVENT sinon. | fees |
 | Q-71 | Élève **sans** inscription année / sans barème | ✅ | Inscription obligatoire (+ délai). Sans barème → `NOT_APPLICABLE`. Séquentiel obligatoire. | fees + UI |
-| Q-72 | **Avant** / **après** période des tranches | 💡 | Avant : inscription ; après : échus + inscription | fees |
+| Q-72 | **Avant** / **après** période des tranches | ✅ | **Figé** : avant 1ʳᵉ échéance → inscription seule ; après dernière → échus + inscription uniquement. | fees |
 | Q-73 | Devise | ✅ | `XAF` (franc CFA) | fees |
 | Q-74 | Paiement partiel d’une tranche | ✅ | Reçu = **exactement** le montant demandé (reste dû). | fees |
 | Q-75 | Modes de paiement | ✅ | Inscription = **CASH** uniquement ; tranches = reçu banque. | fees |

@@ -7,7 +7,7 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
- * BR-F03 / BR-F06 / docs/10 § 2 — matrice Solvable / En attente / Insolvable.
+ * BR-F03 / BR-F06 / Q-70 / Q-72 / docs/10 § 2 — matrice Solvable / En attente / Insolvable.
  */
 class SolvencyCalculatorTest {
 
@@ -27,7 +27,7 @@ class SolvencyCalculatorTest {
     )
 
     @Test
-    fun `BR-F06 unpaid enrollment is insolvent`() {
+    fun `Q-70 unpaid enrollment is insolvent`() {
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 9, 15),
             enrollmentFeeDue = enrollment,
@@ -38,7 +38,7 @@ class SolvencyCalculatorTest {
     }
 
     @Test
-    fun `BR-F06 before first month with enrollment paid is solvent`() {
+    fun `Q-72 before first due month with enrollment paid is solvent`() {
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 8, 20),
             enrollmentFeeDue = enrollment,
@@ -49,7 +49,19 @@ class SolvencyCalculatorTest {
     }
 
     @Test
-    fun `BR-F06 current month unpaid is pending when previous settled`() {
+    fun `Q-72 before first due month unpaid enrollment is insolvent`() {
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 8, 20),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = BigDecimal.ZERO,
+            installments = installments()
+        )
+        assertEquals(SolvencyStatus.INSOLVENT, status)
+    }
+
+    @Test
+    fun `Q-70 current month unpaid is pending when previous settled`() {
+        // Ex. plan : 15/11, T1 (oct) payée, T2 (nov) non → PENDING
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 10, 12),
             enrollmentFeeDue = enrollment,
@@ -59,8 +71,41 @@ class SolvencyCalculatorTest {
         assertEquals(SolvencyStatus.PENDING, status)
     }
 
+    /** Exemple plan Q-70 : échéances 31/10, 30/11, 31/12. */
+    private fun installmentsOctNovDec(
+        paid1: BigDecimal = BigDecimal.ZERO,
+        paid2: BigDecimal = BigDecimal.ZERO,
+        paid3: BigDecimal = BigDecimal.ZERO
+    ) = listOf(
+        SolvencyCalculator.InstallmentInput(1, t1, LocalDate.of(2026, 10, 31), paid1),
+        SolvencyCalculator.InstallmentInput(2, t2, LocalDate.of(2026, 11, 30), paid2),
+        SolvencyCalculator.InstallmentInput(3, t3, LocalDate.of(2026, 12, 31), paid3)
+    )
+
     @Test
-    fun `BR-F06 current month paid is solvent`() {
+    fun `Q-70 november example T1 paid T2 unpaid is pending`() {
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 11, 15),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = enrollment,
+            installments = installmentsOctNovDec(paid1 = t1)
+        )
+        assertEquals(SolvencyStatus.PENDING, status)
+    }
+
+    @Test
+    fun `Q-70 november example T1 unpaid is insolvent`() {
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 11, 15),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = enrollment,
+            installments = installmentsOctNovDec()
+        )
+        assertEquals(SolvencyStatus.INSOLVENT, status)
+    }
+
+    @Test
+    fun `Q-70 current month paid is solvent`() {
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 10, 12),
             enrollmentFeeDue = enrollment,
@@ -71,7 +116,18 @@ class SolvencyCalculatorTest {
     }
 
     @Test
-    fun `BR-F06 previous month unpaid is insolvent`() {
+    fun `Q-70 previous month unpaid is insolvent even if current paid`() {
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 10, 12),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = enrollment,
+            installments = installments(paid2 = t2)
+        )
+        assertEquals(SolvencyStatus.INSOLVENT, status)
+    }
+
+    @Test
+    fun `Q-70 previous month unpaid is insolvent`() {
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 10, 12),
             enrollmentFeeDue = enrollment,
@@ -82,7 +138,7 @@ class SolvencyCalculatorTest {
     }
 
     @Test
-    fun `BR-F06 after last month unpaid installment is insolvent`() {
+    fun `Q-72 after last month unpaid installment is insolvent not pending`() {
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 12, 5),
             enrollmentFeeDue = enrollment,
@@ -93,12 +149,23 @@ class SolvencyCalculatorTest {
     }
 
     @Test
-    fun `BR-F06 after last month all paid is solvent`() {
+    fun `Q-72 after last month all paid is solvent`() {
         val status = SolvencyCalculator.compute(
             today = LocalDate.of(2026, 12, 5),
             enrollmentFeeDue = enrollment,
             enrollmentFeePaid = enrollment,
             installments = installments(paid1 = t1, paid2 = t2, paid3 = t3)
+        )
+        assertEquals(SolvencyStatus.SOLVENT, status)
+    }
+
+    @Test
+    fun `Q-70 enrollment only schedule with no installments is solvent when paid`() {
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 10, 1),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = enrollment,
+            installments = emptyList()
         )
         assertEquals(SolvencyStatus.SOLVENT, status)
     }
