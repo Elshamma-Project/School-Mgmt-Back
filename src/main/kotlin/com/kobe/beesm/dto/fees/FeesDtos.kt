@@ -19,12 +19,12 @@ data class UpsertTuitionScheduleRequest(
     @field:NotBlank
     val academicYearId: String,
     @field:NotBlank
-    val classId: String,
+    val levelId: String,
     @field:NotNull
     @field:DecimalMin("0.0", inclusive = true)
     val enrollmentFee: BigDecimal,
     @field:NotNull
-    @field:Size(min = 3, max = 3)
+    @field:Size(min = 1, max = 12)
     @field:Valid
     val installments: List<TuitionInstallmentAmountDto>,
     val currency: String? = "XAF",
@@ -33,11 +33,13 @@ data class UpsertTuitionScheduleRequest(
 
 data class TuitionInstallmentAmountDto(
     @field:Min(1)
-    @field:Max(3)
+    @field:Max(12)
     val index: Int,
     @field:NotNull
     @field:DecimalMin("0.0", inclusive = true)
-    val amount: BigDecimal
+    val amount: BigDecimal,
+    @field:NotNull
+    val dueDate: LocalDate
 )
 
 data class TuitionInstallmentResponse(
@@ -50,8 +52,8 @@ data class TuitionScheduleResponse(
     val id: String,
     val schoolId: String,
     val academicYearId: String,
-    val classId: String,
-    val classLabel: String,
+    val levelId: String,
+    val levelLabel: String,
     val enrollmentFee: BigDecimal,
     val installments: List<TuitionInstallmentResponse>,
     val currency: String,
@@ -66,7 +68,7 @@ data class RecordFeePaymentRequest(
     @field:NotNull
     val kind: FeePaymentKind,
     @field:Min(1)
-    @field:Max(3)
+    @field:Max(12)
     val installmentIndex: Int? = null,
     @field:NotNull
     @field:DecimalMin("0.01", inclusive = true)
@@ -162,11 +164,14 @@ data class FeesAccessResponse(
 data class FeesUnpaidSummaryResponse(
     val academicYearId: String,
     val enrollmentUnpaid: Int,
-    val installment1Unpaid: Int,
-    val installment2Unpaid: Int,
-    val installment3Unpaid: Int,
+    val installmentsUnpaid: List<InstallmentUnpaidCountDto> = emptyList(),
     /** Élèves au statut dérivé INSOLVENT. */
     val insolventStudents: Int
+)
+
+data class InstallmentUnpaidCountDto(
+    val index: Int,
+    val unpaidCount: Int
 )
 
 data class FeesPolicyResponse(

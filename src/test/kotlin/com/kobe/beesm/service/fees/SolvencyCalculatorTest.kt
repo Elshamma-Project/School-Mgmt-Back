@@ -104,16 +104,18 @@ class SolvencyCalculatorTest {
     }
 
     @Test
-    fun `BR-F03 due dates are end of three months from year start`() {
-        val dues = SolvencyCalculator.installmentDueDates(LocalDate.of(2026, 9, 7))
+    fun `BR-F03 due dates are end of months from year start for N installments`() {
+        val yearStart = LocalDate.of(2026, 9, 7)
         assertEquals(
             listOf(
                 LocalDate.of(2026, 9, 30),
                 LocalDate.of(2026, 10, 31),
                 LocalDate.of(2026, 11, 30)
             ),
-            dues
+            SolvencyCalculator.installmentDueDates(yearStart, 3)
         )
+        assertEquals(LocalDate.of(2026, 12, 31), SolvencyCalculator.defaultDueDate(yearStart, 4))
+        assertEquals(4, SolvencyCalculator.installmentDueDates(yearStart, 4).size)
     }
 
     @Test

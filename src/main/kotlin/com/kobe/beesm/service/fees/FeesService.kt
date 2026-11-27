@@ -1,9 +1,11 @@
 package com.kobe.beesm.service.fees
 
+import com.kobe.beesm.dto.academic.LocalizedTextDto
 import com.kobe.beesm.dto.fees.FeePaymentResponse
 import com.kobe.beesm.dto.fees.FeesAccessResponse
 import com.kobe.beesm.dto.fees.FeesUnpaidSummaryResponse
 import com.kobe.beesm.dto.fees.InstallmentSolvencyDto
+import com.kobe.beesm.dto.fees.InstallmentUnpaidCountDto
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.SolvencySnapshotDto
 import com.kobe.beesm.dto.fees.StudentFeeAccountResponse
@@ -26,6 +28,7 @@ import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.fees.FeePaymentRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
 import com.kobe.beesm.service.academic.api.AcademicYearApi
+import com.kobe.beesm.service.academic.api.LevelApi
 import com.kobe.beesm.service.academic.api.SchoolClassApi
 import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.service.staff.api.StaffApi
@@ -52,6 +55,7 @@ class FeesService(
     private val scheduleRepository: TuitionScheduleRepository,
     private val paymentRepository: FeePaymentRepository,
     private val academicYearApi: AcademicYearApi,
+    private val levelApi: LevelApi,
     private val schoolClassApi: SchoolClassApi,
     private val enrollmentApi: EnrollmentApi,
     private val staffApi: StaffApi,
@@ -94,60 +98,50 @@ class FeesService(
 
         return assertCanManageSchedules(currentUser, schoolId)
             .then(academicYearApi.assertWritable(schoolId, request.academicYearId))
-            .flatMap { year ->
-                schoolClassApi.getSummary(schoolId, request.classId)
-                    .flatMap { clazz ->
-                        if (clazz.academicYearId != request.academicYearId) {
-                            return@flatMap Mono.error(
-                                BusinessRuleException(
-                                    "CLASS_YEAR_MISMATCH",
-                                    "Class does not belong to the given academic year"
+            .then(levelApi.getSummary(schoolId, request.levelId))
+            .flatMap { level ->
+                val levelLabel = frozenLevelLabel(level.name, level.code)
+                val installmentDocs = request.installments
+                    .sortedBy { it.index }
+                    .map { dto ->
+                        TuitionInstallment(
+                            index = dto.index,
+                            amount = dto.amount,
+                            dueDate = dto.dueDate
+                        )
+                    }
+                    .toMutableList()
+
+                scheduleRepository
+                    .findBySchoolIdAndAcademicYearIdAndLevelId(
+                        schoolId,
+                        request.academicYearId,
+                        request.levelId
+                    )
+                    .flatMap { existing ->
+                        existing.levelLabel = levelLabel
+                        existing.enrollmentFee = request.enrollmentFee
+                        existing.installments = installmentDocs
+                        existing.currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF"
+                        existing.active = true
+                        scheduleRepository.save(existing)
+                    }
+                    .switchIfEmpty(
+                        Mono.defer {
+                            scheduleRepository.save(
+                                TuitionSchedule(
+                                    schoolId = schoolId,
+                                    academicYearId = request.academicYearId,
+                                    levelId = request.levelId,
+                                    levelLabel = levelLabel,
+                                    enrollmentFee = request.enrollmentFee,
+                                    installments = installmentDocs,
+                                    currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF",
+                                    active = true
                                 )
                             )
                         }
-                        val dueDates = SolvencyCalculator.installmentDueDates(year.startDate)
-                        val installmentDocs = request.installments
-                            .sortedBy { it.index }
-                            .map { dto ->
-                                TuitionInstallment(
-                                    index = dto.index,
-                                    amount = dto.amount,
-                                    dueDate = dueDates[dto.index - 1]
-                                )
-                            }
-                            .toMutableList()
-
-                        scheduleRepository
-                            .findBySchoolIdAndAcademicYearIdAndClassId(
-                                schoolId,
-                                request.academicYearId,
-                                request.classId
-                            )
-                            .flatMap { existing ->
-                                existing.classLabel = clazz.name
-                                existing.enrollmentFee = request.enrollmentFee
-                                existing.installments = installmentDocs
-                                existing.currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF"
-                                existing.active = true
-                                scheduleRepository.save(existing)
-                            }
-                            .switchIfEmpty(
-                                Mono.defer {
-                                    scheduleRepository.save(
-                                        TuitionSchedule(
-                                            schoolId = schoolId,
-                                            academicYearId = request.academicYearId,
-                                            classId = request.classId,
-                                            classLabel = clazz.name,
-                                            enrollmentFee = request.enrollmentFee,
-                                            installments = installmentDocs,
-                                            currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF",
-                                            active = true
-                                        )
-                                    )
-                                }
-                            )
-                    }
+                    )
             }
             .map { toScheduleResponse(it) }
     }
@@ -174,17 +168,12 @@ class FeesService(
                 enrollmentApi.findByStudentAndYear(schoolId, request.studentId, request.academicYearId)
             )
             .flatMap { enrollment ->
-                scheduleRepository
-                    .findBySchoolIdAndAcademicYearIdAndClassId(
-                        schoolId,
-                        request.academicYearId,
-                        enrollment.classId
-                    )
+                findScheduleForClass(schoolId, request.academicYearId, enrollment.classId)
                     .switchIfEmpty(
                         Mono.error(
                             NotFoundException(
                                 "TUITION_SCHEDULE_NOT_FOUND",
-                                "No tuition schedule for this class"
+                                "No tuition schedule for this student's level"
                             )
                         )
                     )
@@ -307,10 +296,8 @@ class FeesService(
             .collectList()
             .map { accounts ->
                 var enrollmentUnpaid = 0
-                var i1 = 0
-                var i2 = 0
-                var i3 = 0
                 var insolvent = 0
+                val unpaidByIndex = sortedMapOf<Int, Int>()
                 for (account in accounts) {
                     if (account.status == SolvencyStatus.NOT_APPLICABLE) continue
                     if (account.status == SolvencyStatus.INSOLVENT) insolvent++
@@ -322,19 +309,15 @@ class FeesService(
                     for (inst in account.installments) {
                         if (inst.settled) continue
                         if (inst.dueDate.isAfter(today)) continue
-                        when (inst.index) {
-                            1 -> i1++
-                            2 -> i2++
-                            3 -> i3++
-                        }
+                        unpaidByIndex[inst.index] = (unpaidByIndex[inst.index] ?: 0) + 1
                     }
                 }
                 FeesUnpaidSummaryResponse(
                     academicYearId = academicYearId,
                     enrollmentUnpaid = enrollmentUnpaid,
-                    installment1Unpaid = i1,
-                    installment2Unpaid = i2,
-                    installment3Unpaid = i3,
+                    installmentsUnpaid = unpaidByIndex.map { (index, count) ->
+                        InstallmentUnpaidCountDto(index = index, unpaidCount = count)
+                    },
                     insolventStudents = insolvent
                 )
             }
@@ -405,6 +388,27 @@ class FeesService(
         val installments: List<InstallmentSolvencyDto>
     )
 
+    /** Enrollment.classId → SchoolClass.levelId → TuitionSchedule (Q-67). */
+    private fun findScheduleForClass(
+        schoolId: String,
+        academicYearId: String,
+        classId: String
+    ): Mono<TuitionSchedule> =
+        schoolClassApi.getSummary(schoolId, classId)
+            .flatMap { clazz ->
+                scheduleRepository.findBySchoolIdAndAcademicYearIdAndLevelId(
+                    schoolId,
+                    academicYearId,
+                    clazz.levelId
+                )
+            }
+            .onErrorResume(NotFoundException::class.java) { Mono.empty() }
+
+    private fun frozenLevelLabel(name: LocalizedTextDto, code: String): String =
+        name.fr?.trim()?.takeIf { it.isNotEmpty() }
+            ?: name.en?.trim()?.takeIf { it.isNotEmpty() }
+            ?: code
+
     private fun computeSolvency(
         schoolId: String,
         studentId: String,
@@ -414,12 +418,7 @@ class FeesService(
         enrollmentApi.findByStudentAndYear(schoolId, studentId, academicYearId)
             .onErrorResume(NotFoundException::class.java) { Mono.empty() }
             .flatMap { enrollment ->
-                scheduleRepository
-                    .findBySchoolIdAndAcademicYearIdAndClassId(
-                        schoolId,
-                        academicYearId,
-                        enrollment.classId
-                    )
+                findScheduleForClass(schoolId, academicYearId, enrollment.classId)
                     .flatMap { schedule ->
                         paymentRepository
                             .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
@@ -468,7 +467,7 @@ class FeesService(
                                     status = status,
                                     enrollmentId = enrollment.id,
                                     classId = enrollment.classId,
-                                    classLabel = schedule.classLabel,
+                                    classLabel = schedule.levelLabel,
                                     scheduleId = schedule.id,
                                     currency = schedule.currency,
                                     enrollmentFeeDue = schedule.enrollmentFee,
@@ -517,11 +516,19 @@ class FeesService(
             .fold(BigDecimal.ZERO) { acc, p -> acc.add(p.amount) }
 
     private fun validateInstallmentIndexes(request: UpsertTuitionScheduleRequest) {
-        val indexes = request.installments.map { it.index }.sorted()
-        if (indexes != listOf(1, 2, 3)) {
+        val n = request.installments.size
+        if (n !in 1..12) {
             throw BusinessRuleException(
                 "INVALID_INSTALLMENTS",
-                "Exactly three installments with indexes 1, 2 and 3 are required"
+                "Between 1 and 12 installments are required"
+            )
+        }
+        val indexes = request.installments.map { it.index }.sorted()
+        val expected = (1..n).toList()
+        if (indexes != expected) {
+            throw BusinessRuleException(
+                "INVALID_INSTALLMENTS",
+                "Installment indexes must be contiguous from 1 to $n"
             )
         }
     }
@@ -670,8 +677,8 @@ class FeesService(
             id = schedule.id!!,
             schoolId = schedule.schoolId,
             academicYearId = schedule.academicYearId,
-            classId = schedule.classId,
-            classLabel = schedule.classLabel,
+            levelId = schedule.levelId,
+            levelLabel = schedule.levelLabel,
             enrollmentFee = schedule.enrollmentFee,
             installments = schedule.installments
                 .sortedBy { it.index }

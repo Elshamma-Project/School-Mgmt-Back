@@ -64,15 +64,17 @@ object SolvencyCalculator {
     }
 
     /**
-     * Dernier jour calendaire des mois M0, M1, M2 à partir du mois de [yearStart]
-     * (BR-F03 / Q-68).
+     * Dernier jour calendaire du mois de [yearStart] +(index−1) (BR-F03 / Q-68).
+     * Suggestion UI / seed — les échéances réelles sont saisies sur le barème.
      */
-    fun installmentDueDates(yearStart: LocalDate): List<LocalDate> {
-        val m0 = YearMonth.from(yearStart)
-        return listOf(
-            m0.atEndOfMonth(),
-            m0.plusMonths(1).atEndOfMonth(),
-            m0.plusMonths(2).atEndOfMonth()
-        )
+    fun defaultDueDate(yearStart: LocalDate, index: Int): LocalDate {
+        require(index in 1..12) { "Installment index must be 1..12" }
+        return YearMonth.from(yearStart).plusMonths((index - 1).toLong()).atEndOfMonth()
+    }
+
+    /** Suggestions pour N tranches (1…[count]). */
+    fun installmentDueDates(yearStart: LocalDate, count: Int = 3): List<LocalDate> {
+        require(count in 1..12) { "Installment count must be 1..12" }
+        return (1..count).map { defaultDueDate(yearStart, it) }
     }
 }

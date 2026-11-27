@@ -64,7 +64,7 @@
 | timetable | `timetable_change_requests` | `TimetableChangeRequest` (+ `TimetableEntrySnapshot`) | Demandes de modif de créneau enseignant → admin/dir. (BR-67) ; libellés figés |
 | notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégories `TIMETABLE_PUBLISHED`, `TIMETABLE_CHANGE_REQUESTED`, `TIMETABLE_CHANGE_DECIDED`, `TIMETABLE_UPDATE_NEEDED`, `SESSION_SCHEDULE_CHANGED` |
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
-| fees | `fees_tuition_schedules` | `TuitionSchedule` (+ `TuitionInstallment`) | Barème inscription + 3 tranches par année/classe (docs/10) |
+| fees | `fees_tuition_schedules` | `TuitionSchedule` (+ `TuitionInstallment`) | Barème inscription + N tranches (1…12) par année/**niveau** (`levelId`, Q-67/Q-68, docs/10) ; index `uk_school_year_level` |
 | fees | `fees_payments` | `FeePayment` | Écritures de paiement (ENROLLMENT / INSTALLMENT) ; annulation = `VOID` |
 | fees | `fees_policies` | `FeesPolicy` | Rappels (jours), pénalité hebdo, grâce / exclusion (BR-F10…F14) ; 1 doc / école |
 | fees | `fees_student_states` | `FeeStudentFeeState` | Ancre insolvabilité, semaines de pénalité, exclusion (effets de bord) |

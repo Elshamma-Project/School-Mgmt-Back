@@ -80,7 +80,7 @@ class FeesController(
         feesService.solvencyForStudents(user, academicYearId, ids, schoolId)
     }
 
-    /** Compteurs d’impayés (inscription + 3 tranches) pour le hub élèves. */
+    /** Compteurs d’impayés (inscription + N tranches) pour le hub élèves. */
     @GetMapping("/unpaid-summary")
     fun unpaidSummary(
         @RequestParam academicYearId: String,

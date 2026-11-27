@@ -11,14 +11,14 @@ import java.math.BigDecimal
 import java.time.LocalDate
 
 /**
- * Barème de scolarité pour une classe et une année (BR-F01, BR-F02).
- * Échéances des 3 tranches = dernier jour des mois M0..M2 de la rentrée (BR-F03).
+ * Barème de scolarité pour un **niveau** et une année (BR-F01, BR-F02, Q-67).
+ * N tranches (1…12) avec échéances saisies (BR-F03, Q-68).
  */
 @Document(collection = "fees_tuition_schedules")
 @CompoundIndexes(
     CompoundIndex(
-        name = "uk_school_year_class",
-        def = "{'schoolId': 1, 'academicYearId': 1, 'classId': 1}",
+        name = "uk_school_year_level",
+        def = "{'schoolId': 1, 'academicYearId': 1, 'levelId': 1}",
         unique = true
     ),
     CompoundIndex(
@@ -31,9 +31,9 @@ data class TuitionSchedule(
     var id: String? = null,
     override var schoolId: String,
     var academicYearId: String,
-    var classId: String,
+    var levelId: String,
     /** Libellé figé au moment de la création / maj (docs/08). */
-    var classLabel: String,
+    var levelLabel: String,
     @Field(targetType = FieldType.DECIMAL128)
     var enrollmentFee: BigDecimal,
     var installments: MutableList<TuitionInstallment> = mutableListOf(),
@@ -42,7 +42,7 @@ data class TuitionSchedule(
 ) : TenantDocument()
 
 data class TuitionInstallment(
-    /** 1, 2 ou 3. */
+    /** 1…N (N ≤ 12). */
     var index: Int,
     @Field(targetType = FieldType.DECIMAL128)
     var amount: BigDecimal,

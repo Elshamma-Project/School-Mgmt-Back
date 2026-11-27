@@ -16,6 +16,7 @@ import com.kobe.beesm.repository.fees.FeeStudentFeeStateRepository
 import com.kobe.beesm.repository.fees.FeesPolicyRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
 import com.kobe.beesm.service.academic.api.AcademicYearApi
+import com.kobe.beesm.service.academic.api.SchoolClassApi
 import com.kobe.beesm.service.student.api.EnrollmentApi
 import com.kobe.beesm.service.student.api.StudentApi
 import com.kobe.beesm.service.user.api.UserAccountApi
@@ -43,6 +44,7 @@ class FeesReminderService(
     private val stateRepository: FeeStudentFeeStateRepository,
     private val penaltyRepository: FeePenaltyChargeRepository,
     private val academicYearApi: AcademicYearApi,
+    private val schoolClassApi: SchoolClassApi,
     private val enrollmentApi: EnrollmentApi,
     private val studentApi: StudentApi,
     private val userAccountApi: UserAccountApi,
@@ -82,10 +84,19 @@ class FeesReminderService(
                             return@flatMap Mono.empty()
                         }
                         val studentIds = enrollments.map { it.studentId }.distinct()
+                        val classIds = enrollments.map { it.classId }.distinct()
                         scheduleRepository
                             .findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, academicYearId)
-                            .collectMap({ it.classId }, { it })
-                            .flatMap { schedules ->
+                            .collectMap({ it.levelId }, { it })
+                            .flatMap { schedulesByLevel ->
+                                Flux.fromIterable(classIds)
+                                    .flatMap({ classId ->
+                                        schoolClassApi.getSummary(schoolId, classId)
+                                            .map { summary -> classId to summary.levelId }
+                                            .onErrorResume { Mono.empty() }
+                                    }, 16)
+                                    .collectMap({ it.first }, { it.second })
+                                    .flatMap { classToLevel ->
                                 paymentRepository
                                     .findBySchoolIdAndAcademicYearIdAndStudentIdInAndStatus(
                                         schoolId,
@@ -110,7 +121,9 @@ class FeesReminderService(
                                                         val children = studentIds.mapNotNull { studentId ->
                                                             val enrollment = enrollmentByStudent[studentId]
                                                                 ?: return@mapNotNull null
-                                                            val schedule = schedules[enrollment.classId]
+                                                            val levelId = classToLevel[enrollment.classId]
+                                                                ?: return@mapNotNull null
+                                                            val schedule = schedulesByLevel[levelId]
                                                                 ?: return@mapNotNull null
                                                             val meta = guardianByStudent[studentId]
                                                             toChildView(
@@ -146,7 +159,8 @@ class FeesReminderService(
                                                     }
                                             }
                                     }
-                            }
+                                    } // classToLevel
+                            } // schedulesByLevel
                     }
             }
             .onErrorResume { err ->

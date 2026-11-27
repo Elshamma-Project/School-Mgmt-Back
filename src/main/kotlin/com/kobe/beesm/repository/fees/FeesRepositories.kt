@@ -40,10 +40,10 @@ interface FeePenaltyChargeRepository : ReactiveMongoRepository<FeePenaltyCharge,
 interface TuitionScheduleRepository : ReactiveMongoRepository<TuitionSchedule, String> {
     fun findByIdAndSchoolId(id: String, schoolId: String): Mono<TuitionSchedule>
 
-    fun findBySchoolIdAndAcademicYearIdAndClassId(
+    fun findBySchoolIdAndAcademicYearIdAndLevelId(
         schoolId: String,
         academicYearId: String,
-        classId: String
+        levelId: String
     ): Mono<TuitionSchedule>
 
     fun findBySchoolIdAndAcademicYearIdAndActiveTrue(

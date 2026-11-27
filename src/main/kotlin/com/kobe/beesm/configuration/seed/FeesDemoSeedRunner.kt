@@ -11,6 +11,7 @@ import com.kobe.beesm.model.fees.TuitionInstallment
 import com.kobe.beesm.model.fees.TuitionSchedule
 import com.kobe.beesm.model.student.EnrollmentStatus
 import com.kobe.beesm.repository.academic.AcademicYearRepository
+import com.kobe.beesm.repository.academic.LevelRepository
 import com.kobe.beesm.repository.academic.SchoolClassRepository
 import com.kobe.beesm.repository.academic.SchoolRepository
 import com.kobe.beesm.repository.fees.FeePaymentRepository
@@ -28,7 +29,7 @@ import java.time.Instant
 import java.time.temporal.ChronoUnit
 
 /**
- * Seed DEV scolarité : barème + paiements variés pour visualiser SOLVENT / PENDING / INSOLVENT.
+ * Seed DEV scolarité : barème **par niveau** + paiements variés pour visualiser SOLVENT / PENDING / INSOLVENT.
  *
  * - `@Order(26)` : après [TeacherDemoSeedRunner] (élèves + inscriptions).
  * - Insert-if-absent ; n’écrase jamais un paiement déjà présent.
@@ -41,6 +42,7 @@ class FeesDemoSeedRunner(
     private val schoolRepository: SchoolRepository,
     private val academicYearRepository: AcademicYearRepository,
     private val schoolClassRepository: SchoolClassRepository,
+    private val levelRepository: LevelRepository,
     private val enrollmentRepository: EnrollmentRepository,
     private val scheduleRepository: TuitionScheduleRepository,
     private val paymentRepository: FeePaymentRepository,
@@ -83,18 +85,24 @@ class FeesDemoSeedRunner(
         if (enrollment.status != EnrollmentStatus.ENROLLED) return
         val classId = enrollment.classId
         val clazz = schoolClassRepository.findByIdAndSchoolId(classId, schoolId).block() ?: return
+        val levelId = clazz.levelId
+        val level = levelRepository.findByIdAndSchoolId(levelId, schoolId).block()
+        val levelLabel = level?.name?.fr?.takeIf { it.isNotBlank() }
+            ?: level?.name?.en?.takeIf { it.isNotBlank() }
+            ?: level?.code
+            ?: clazz.name
 
-        val dueDates = SolvencyCalculator.installmentDueDates(year.startDate)
+        val dueDates = SolvencyCalculator.installmentDueDates(year.startDate, 3)
         val schedule = scheduleRepository
-            .findBySchoolIdAndAcademicYearIdAndClassId(schoolId, yearId, classId)
+            .findBySchoolIdAndAcademicYearIdAndLevelId(schoolId, yearId, levelId)
             .block()
             ?: scheduleRepository.save(
                 TuitionSchedule(
-                    id = "fees-sched-demo-$classId",
+                    id = "fees-sched-demo-$levelId",
                     schoolId = schoolId,
                     academicYearId = yearId,
-                    classId = classId,
-                    classLabel = clazz.name,
+                    levelId = levelId,
+                    levelLabel = levelLabel,
                     enrollmentFee = BigDecimal("25000"),
                     installments = mutableListOf(
                         TuitionInstallment(1, BigDecimal("50000"), dueDates[0]),

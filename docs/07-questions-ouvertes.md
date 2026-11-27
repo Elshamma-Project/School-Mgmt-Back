@@ -61,11 +61,11 @@
 | Q-62 | Envoi e-mail automatique pour mot de passe oublié / invitation | ❓ | v1 : demande publique + notif admin ; reset manuel `POST /users/{id}/reset-password` |
 | Q-63 | Mapping EDT `FRANÇAIS` / `?FRANCAIS` → matières bulletin (`LANG_FR` vs `EXP_*`) | ❓ | Seed EDT mappe vers `LANG_FR` ; cases junior peuvent rester sans `classSubjectIds` |
 | Q-64 | Examens dans la grille semaine type vs calendrier sessions | 🟡 | **v1** : calendrier `EvaluationSession` synchronisé (onglet Examens + notif) ; pas de cases examen dans l’EDT hebdo |
-| Q-65 | Accès école bloqué sans paiement d’inscription ? | ❓ | Affichage solvabilité d’abord ; blocage notes/portail plus tard |
+| Q-65 | Accès école bloqué sans paiement d’inscription ? | 🟡 | **Figé** : bloquer consultation **et** modification des notes si non-paiement (inscription / échéances exigibles) ; garder l’affichage solvabilité. Portail parent : même logique. **Implémentation différée** (après UI Barèmes) |
 | Q-66 | Qui paramètre les barèmes / saisit les paiements ? | 🟡 | Barèmes = Direction ; paiements = Direction **ou** Administration avec fonction RH `ACCOUNTANT` (BR-F09) ; workspace UI `/students/solvency` aligné sur `canRecordPayments` |
-| Q-67 | Barème par **classe** ou par **niveau** ? | 💡 | Par **classe** (montants peuvent différer 6ème A / 6ème B) |
-| Q-68 | Mois des 3 tranches si rentrée ≠ 1er sept. | 💡 | 3 premiers mois civils à partir du mois de `AcademicYear.startDate` |
-| Q-69 | Modes de paiement v1 | 💡 | Saisie manuelle (espèces / mobile money / autre + référence) |
+| Q-67 | Barème par **classe** ou par **niveau** ? | 🟡 | **Figé** : par **niveau** (`levelId`) ; résolution élève = `Enrollment.classId` → `SchoolClass.levelId` → barème |
+| Q-68 | Nombre / mois des tranches | 🟡 | **Figé** : N tranches (1…12) définies par la Direction ; échéances **saisies** ; défaut UI = fin du mois de `AcademicYear.startDate` +(k−1) |
+| Q-69 | Modes de paiement v1 | 🟡 | **Figé** : paiement banque hors système ; reçu papier → saisie manuelle comptable / directeur ; pas de PDF reçu v1 |
 | Q-70 | Règles exactes SOLVENT / PENDING / INSOLVENT | 💡 | Voir `10-scolarite-solvabilite.md` § 2 |
 | Q-71 | Élève sans barème / sans inscription année | 💡 | `NOT_APPLICABLE` (neutre) |
 | Q-72 | Avant septembre / hors 3 mois | 💡 | Avant M0 : inscription seule ; après M2 : échus uniquement |
@@ -120,11 +120,11 @@
 | Q-62 | **Mot de passe oublié / invitation** : envoi automatique d’e-mail (lien ou MDP temporaire) ? Canal (SMTP école) ? | ❓ | **v1** : `POST /api/v1/auth/forgot-password` (réponse uniforme) + notif in-app admin/directeur ; réinitialisation manuelle via `POST /users/{id}/reset-password` | Auth publique |
 | Q-63 | **FRANÇAIS** imprimé sur l’EDT (`?FRANCAIS`) : une matière catalogue, ou répartition vers `EXP_ECR` / `EXP_ORA` / `CORR_ORTH` / `ETUDE_TXT` / `LANG_FR` selon le niveau ? (lié à Q-56) | ❓ | Seed EDT : code cible provisoire `LANG_FR` ; case créée même si aucun `ClassSubject` junior ne matche | Chargeur EDT |
 | Q-64 | **Examens dans l’EDT semaine type** : faut-il des cases `ACTIVITY` « composition » qui remplacent les cours la semaine d’examens, ou seulement le calendrier des `EvaluationSession.examDate` (synchro live) ? | 🟡 | **v1** : source unique = sessions (onglet Examens + notif `SESSION_SCHEDULE_CHANGED`) ; **pas** de cases examen dans la grille hebdo (cohérent Q-33 remplacements hors EDT annuel) | EDT ↔ grading |
-| Q-65 | **Sans paiement des frais d’inscription**, bloque-t-on l’accès école (notes, EDT, portail parent) ou seulement un **indicateur** de solvabilité ? | ❓ | Proposition v1 : **indicateur** + saisie paiements ; blocages métier en v2 | fees |
+| Q-65 | **Sans paiement des frais d’inscription**, bloque-t-on l’accès école (notes, EDT, portail parent) ou seulement un **indicateur** de solvabilité ? | 🟡 | **Figé** : bloquer consultation **et** modification des notes si inscription / échéances exigibles non soldées ; garder affichage solvabilité ; portail parent idem. **Code différé** après UI Barèmes | fees |
 | Q-66 | **Qui** définit les montants (inscription + tranches) et **qui** enregistre les paiements ? Direction seule, ou aussi Administration ? | 🟡 | **Figé v1** : barèmes = `DIRECTOR` ; paiements = `DIRECTOR` **ou** `ADMINISTRATION` + `StaffFunction.ACCOUNTANT` (BR-F09) | fees + roles |
-| Q-67 | Barème **par classe** ou **par niveau** (toutes les 6èmes identiques) ? Exceptions possibles ? | 💡 | Proposition : **par classe** | fees |
-| Q-68 | Si la rentrée est le **7 septembre** (ex. 2026-2027), les 3 mois sont-ils toujours **sept. / oct. / nov.** (dernier jour de chaque mois), ou décalés depuis `startDate` ? | 💡 | Proposition : mois civils du mois de `startDate` puis +1, +2 | fees |
-| Q-69 | **Comment** l’école enregistre un paiement en v1 (caisse, Mobile Money, virement) ? Faut-il un reçu PDF ? | 💡 | Proposition v1 : saisie manuelle + référence ; pas de PDF reçu | fees |
+| Q-67 | Barème **par classe** ou **par niveau** (toutes les 6èmes identiques) ? Exceptions possibles ? | 🟡 | **Figé** : par **niveau** (`levelId`) ; pas d’exception classe en v1 | fees |
+| Q-68 | Si la rentrée est le **7 septembre** (ex. 2026-2027), les 3 mois sont-ils toujours **sept. / oct. / nov.** (dernier jour de chaque mois), ou décalés depuis `startDate` ? | 🟡 | **Figé** : N tranches (1…12) **saisies** par la Direction ; suggestion UI = fin du mois `startDate` +(k−1) ; plus de hardcode 3 | fees |
+| Q-69 | **Comment** l’école enregistre un paiement en v1 (caisse, Mobile Money, virement) ? Faut-il un reçu PDF ? | 🟡 | **Figé** : banque hors système ; reçu papier → saisie manuelle ; pas de PDF reçu v1 | fees |
 | Q-70 | Confirmer la matrice **Solvable / En attente / Insolvable** (`10` § 2) : surtout le cas « n’a pas payé le mois **en cours** » = En attente, et « n’a pas payé le mois **précédent** échu » = Insolvable | 💡 | Proposition figée dans `10` tant que non contredite | fees |
 | Q-71 | Élève **sans** inscription année, ou classe **sans** barème : que montrer ? | 💡 | `NOT_APPLICABLE` / « — » | fees + UI |
 | Q-72 | **Avant** le 1er des 3 mois, et **après** le 3e mois : quelle solvabilité si tout est payé / si inscription seule manque ? | 💡 | Avant : inscription ; après : toutes tranches + inscription | fees |
@@ -135,7 +135,7 @@
 | Q-77 | Jours de rappel avant échéance (15/10/5/3/2/1) figés ou 100 % paramétrables ? | 🟡 | **Figé v1** : défauts 15/10/5/3/2/1 + jour J ; Direction peut ajuster via `FeesPolicy` (BR-F10) | fees |
 | Q-78 | Montant pénalité hebdo après insolvabilité ? | 🟡 | **Figé v1** : défaut **1000 XAF**/semaine/enfant, paramétrable Direction (BR-F12) | fees |
 | Q-79 | Délai max avant exclusion définitive ? | 🟡 | **Figé v1** : défaut **28 jours** calendaires après 1er jour d’insolvabilité ; paramétrable ; exclusion = `Student.active=false` (BR-F14) | fees |
-| Q-80 | Réactivation après exclusion pour insolvabilité : qui, et faut-il solder pénalités d’abord ? | ❓ | Proposition : Direction/Admin manuellement ; soldes pénalités + tranches avant réinscription année | fees |
+| Q-80 | Réactivation après exclusion pour insolvabilité : qui, et faut-il solder pénalités d’abord ? | 🟡 | **Figé** : réactivation = **Direction** seule ; avant réinscription année : **solder pénalités + tranches**. **Workflow UI différé** | fees |
 
 ## 3. Décisions provisoires (résumé)
 
@@ -173,4 +173,4 @@ Priorité 2 :
 7. Le **document d'inscription** et une **carte d'élève** (modules suivants).
 8. Les emplois du temps **par enseignant** s'ils existent, la **liste des salles**, les **heures hebdomadaires par matière** (Q-32).
 9. À l'oral avec la secrétaire : Q-05, Q-12, Q-13, Q-21, Q-22.
-10. **Grille des frais** (inscription + 3 tranches) pour 2026-2027 par classe, et un **exemple de reçu** / cahier de caisse (Q-65…Q-76, doc `10`).
+10. **Grille des frais** (inscription + N tranches) pour 2026-2027 **par niveau**, et un **exemple de reçu** / cahier de caisse (Q-65…Q-76, doc `10`).
