@@ -60,6 +60,7 @@ class ReportCardService(
     private val studentApi: StudentApi,
     private val staffApi: StaffApi,
     private val evaluationSessionApi: EvaluationSessionApi,
+    private val feesApi: com.kobe.beesm.service.fees.api.FeesApi,
     private val outboxWriter: OutboxWriter
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -327,6 +328,7 @@ class ReportCardService(
 
     private fun assertCanRead(currentUser: CurrentUser, card: ReportCard): Mono<Void> {
         if (currentUser.hasAnyRole(Role.ADMINISTRATION, Role.DIRECTOR, Role.SUPER_ADMIN)) {
+            // BR-F05 / Q-65 : consultation OK pour Direction/Admin (pas de blocage lecture).
             return Mono.empty()
         }
         if (currentUser.hasAnyRole(Role.TEACHER)) {
@@ -337,31 +339,40 @@ class ReportCardService(
                 ForbiddenException("FORBIDDEN", "Only published annual report cards are accessible")
             )
         }
-        if (currentUser.hasAnyRole(Role.STUDENT) &&
-            currentUser.profileType == ProfileType.STUDENT &&
-            currentUser.profileId == card.studentId
-        ) {
-            return Mono.empty()
-        }
-        if (currentUser.hasAnyRole(Role.PARENT) &&
-            currentUser.profileType == ProfileType.GUARDIAN &&
-            currentUser.profileId != null
-        ) {
-            return studentApi.findGuardianLink(card.schoolId, card.studentId, currentUser.profileId!!)
-                .flatMap<Void> { link ->
-                    if (!link.canDownloadReportCards) {
-                        Mono.error(
-                            ForbiddenException("FORBIDDEN", "Guardian cannot download report cards for this student")
-                        )
-                    } else {
-                        Mono.empty()
+        val ownership: Mono<Void> = when {
+            currentUser.hasAnyRole(Role.STUDENT) &&
+                currentUser.profileType == ProfileType.STUDENT &&
+                currentUser.profileId == card.studentId -> Mono.empty()
+            currentUser.hasAnyRole(Role.PARENT) &&
+                currentUser.profileType == ProfileType.GUARDIAN &&
+                currentUser.profileId != null ->
+                studentApi.findGuardianLink(card.schoolId, card.studentId, currentUser.profileId!!)
+                    .flatMap<Void> { link ->
+                        if (!link.canDownloadReportCards) {
+                            Mono.error(
+                                ForbiddenException(
+                                    "FORBIDDEN",
+                                    "Guardian cannot download report cards for this student"
+                                )
+                            )
+                        } else {
+                            Mono.empty()
+                        }
                     }
-                }
-                .onErrorMap(NotFoundException::class.java) {
-                    ForbiddenException("FORBIDDEN", "Guardian is not linked to this student")
-                }
+                    .onErrorMap(NotFoundException::class.java) {
+                        ForbiddenException("FORBIDDEN", "Guardian is not linked to this student")
+                    }
+            else -> Mono.error(ForbiddenException("FORBIDDEN", "Cannot read this report card"))
         }
-        return Mono.error(ForbiddenException("FORBIDDEN", "Cannot read this report card"))
+        // Parent / élève : bloqués si frais non soldés (BR-F05).
+        return ownership.then(
+            feesApi.assertCanViewAcademics(
+                currentUser,
+                card.schoolId,
+                card.academicYearId,
+                card.studentId
+            )
+        )
     }
 
     private fun assertCanDownload(currentUser: CurrentUser, card: ReportCard): Mono<Void> =

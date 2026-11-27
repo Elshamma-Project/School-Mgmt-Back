@@ -1,19 +1,19 @@
 # 10 — Scolarité et solvabilité
 
-> Module `fees` (docs/08) — **v1** (API barèmes / paiements / solvabilité / politique / job rappels-pénalités-exclusion + UI liste, fiche, workspace Solvabilité ; **écran Direction Barèmes** = niveau + N tranches). Objectif : suivre l’**inscription annuelle** et les **tranches de scolarité**, afficher un **statut de solvabilité** dérivé, et permettre à la **direction / comptabilité** d’enregistrer les paiements.
+> Module `fees` (docs/08) — **v1** (API barèmes / paiements / solvabilité / politique / job rappels-pénalités-exclusion + UI liste, fiche, workspace Solvabilité ; **hub Direction Scolarité** `/director/fees` = barèmes niveau + N tranches, futurs paramètres paiement). Objectif : suivre l’**inscription annuelle** et les **tranches de scolarité**, afficher un **statut de solvabilité** dérivé, et permettre à la **direction / comptabilité** d’enregistrer les paiements.
 >
 > Fuseau d’affichage et de calcul des échéances : **Africa/Douala**. Montants : `BigDecimal` / `DECIMAL128`, comparaison `compareTo`.
 
 ## 1. Processus métier
 
-1. **Chaque année scolaire**, tout élève (nouveau, promu, redoublant) doit être **inscrit** pour l’année (`Enrollment`) **et** s’acquitter des **frais d’inscription** pour accéder à l’école (règle d’accès — **Q-65 figé**, code différé : bloquer consultation et modification des notes si non-paiement ; garder l’affichage solvabilité).
-2. La **direction** (Q-66) définit, **par année et par niveau** (**Q-67 figé**) :
+1. **Chaque année scolaire**, tout élève doit être **inscrit** (`Enrollment`) **et** payer les **frais d’inscription** pour accéder à l’école (**Q-65 ✅** : blocage notes / EDT / portail parent ; Direction/Admin = consultation seule, pas de modification).
+2. La **direction** (**Q-66 ✅**) définit, **par année et par niveau** (**Q-67 ✅**) :
    - le montant d’**inscription** ;
-   - les montants et échéances de **N tranches** de scolarité (**Q-68 figé**, N = 1…12, dates saisies).
-3. Suggestion UI des échéances : dernier jour calendaire du mois de `AcademicYear.startDate` +(k−1) ; la Direction peut les modifier à la saisie.
-4. Les **paiements** sont saisis manuellement (reçu banque papier — **Q-69 figé**) et rattachés à un élève + année (+ tranche ou inscription).
-5. La **solvabilité** affichée est **dérivée** (non stockée) de la date du jour et des paiements enregistrés.
-6. Résolution barème élève : `Enrollment.classId` → `SchoolClass.levelId` → `TuitionSchedule`.
+   - les montants et échéances de **N tranches** (**Q-68 ✅**, N = 1…12, dates **libres**).
+3. Suggestion UI des échéances : fin de mois `startDate` +(k−1) ; librement modifiable.
+4. **Paiement séquentiel** : inscription → T1 → T2… ; montant du reçu = **exactement** le reste dû (**Q-74 ✅**). Inscription = **CASH** à l’école + **reçu PDF** (**Q-69/Q-75 ✅**) ; tranches = reçu banque papier → saisie Direction/comptable.
+5. La **solvabilité** affichée est **dérivée** (Q-70 encore à confirmer formallement).
+6. Résolution barème : `Enrollment.classId` → `SchoolClass.levelId` → `TuitionSchedule`.
 
 ## 2. Statut de solvabilité (UI)
 
@@ -77,7 +77,7 @@ Pas de suppression physique : annulation = statut `VOID` + motif (Q-76).
 - **BR-F02** Les montants et le nombre de tranches sont paramétrables depuis l’UI (FR/EN), sans seuil codé en dur (hors bornes 1…12).
 - **BR-F03** Les échéances de tranche sont **saisies** ; suggestion = dernier jour du mois de `AcademicYear.startDate` +(index−1), fuseau Douala (**Q-68**).
 - **BR-F04** L’inscription annuelle (`Enrollment`) ne suffit pas seule pour « accès école » si BR-F05 est actif : il faut aussi le **paiement d’inscription** (**Q-65**).
-- **BR-F05** Bloquer consultation **et** modification des notes tant que l’inscription / échéances exigibles ne sont pas soldées — **figé Q-65**, **implémentation différée** après UI Barèmes ; v1 actuelle = affichage solvabilité seulement.
+- **BR-F05** (**Q-65 ✅**) : si inscription non soldée **ou** statut `INSOLVENT` → bloquer notes / EDT / portail pour parent, élève, enseignant ; Direction/Admin/SG = **lecture** seule (pas de modification des notes). Message métier explicite + notifications.
 - **BR-F06** Solvabilité calculée dans `service/fees` uniquement ; la liste élèves consomme `FeesApi.solvencyForStudents(...)`.
 - **BR-F07** Tout `BigDecimal` stocké : `@Field(DECIMAL128)` ; comparaisons `compareTo`.
 - **BR-F08** Toute requête filtre `schoolId` ; index composites commencent par `schoolId`.
@@ -129,30 +129,28 @@ API inter-modules :
 | Bouton **Enregistrer un paiement** | `GET /fees/access` → `canRecordPayments` (**DIRECTOR** / **SUPER_ADMIN**, ou **ADMINISTRATION** + `StaffFunction.ACCOUNTANT`) **et** barème applicable |
 | Nav **Élèves → Solvabilité** (`/{role}/students/solvency`) | Même règle que `canRecordPayments` (masquée sinon) |
 | Hub élèves — onglet **Solvabilité** (après Inactifs) + cartes impayés | `canRecordPayments` ; clic → workspace Solvabilité |
-| **Scolarité → Barèmes** (`/director/fees/schedules`) | Direction seule (`canManageSchedules`) |
+| Nav **Scolarité** (`/director/fees`) | Direction seule (`canManageSchedules`) ; hub paramètres (barèmes aujourd’hui ; politique / rappels ensuite) |
 
 ### 6.2 Surfaces
 
 - **Liste élèves** : colonne **Solvabilité** ; onglets Tous / Actifs / Inactifs / **Solvabilité** ; cartes stats (Total, Actifs, Inactifs, Insolvables) + ligne impayés (Inscription + N tranches via `installmentsUnpaid[]`).
 - **Fiche élève** : section **Scolarité & solvabilité** (sous Photo / Tuteurs) ; héros **fond blanc** (pas de dégradé bleu).
 - **Workspace Solvabilité** (`/director|administration/students/solvency`) : KPI montants (dû / encaissé / reste), inscription non soldée, pénalités (BR-F12), risque d’exclusion (grâce), donuts solvabilité & ponctualité, barres impayés / niveaux, **courbe** encaissements 30 j. (montant + cumul + volume) via `GET /fees/dashboard-summary`.
-- Direction : écran **Barèmes** (niveaux + N tranches) ; écran **Politique** (roadmap UI).
-- Portail parent : inbox rappels `FEES_*` (deep-link roadmap).
+- Direction : hub **Scolarité** (`/director/fees`) — **Barèmes** + **Politique** (rappels, pénalités, grâce, exclusion) ; notifications à chaque maj politique.
+- Portail parent : inbox `FEES_*` ; accès notes/EDT soumis à BR-F05.
 
 ## 7. Périmètre livré vs suite
 
 | Livré / en cours | Suite |
 |---|---|
-| Barèmes par **niveau** + **N** tranches + inscription | Remises, bourses |
-| Saisie manuelle des paiements (dialog) | Mobile money / reçu PDF (sans marque tierce) |
-| Rappels inbox 15/10/5/3/2/1 + insolvabilité | SMS / e-mail opt-in |
-| Pénalité 1000 XAF/sem. paramétrable | Plafond ; remise de peine |
-| Exclusion auto après grâce | Soft-block portail avant exclusion |
-| Un message multi-enfants | Récap mensuel PDF famille |
-| Devise XAF | Multi-devises |
-| Solvabilité liste + fiche + workspace + unpaid-summary dynamique | **Q-65** blocage notes ; UI Politique ; VOID UI ; **Q-80** réactivation ; portail parent état de compte |
-| Seed démo variété solvabilité (`FeesDemoSeedRunner`) | Import cahier de caisse / grille réelle |
+| Barèmes niveau + N tranches + hub Politique | Remises, bourses |
+| Paiement séquentiel + montant exact + CASH inscription | — |
+| Reçu PDF inscription (en-tête école) | Reçu tranche / cahier de caisse |
+| Rappels / pénalités / exclusion paramétrables | SMS / e-mail opt-in |
+| BR-F05 porte d’accès academics | Write notes + lecture bulletins parent/élève ; soft-block UI + Q-80 réactivation UI |
+| Solvabilité + dashboard KPI | Confirmation formelle Q-70 |
+| Seed démo | Import grille réelle |
 
 ## 8. Questions
 
-**Q-65, Q-67, Q-68, Q-69, Q-80 figées** — détail dans `07-questions-ouvertes.md`. Q-70…Q-76 et Q-77…Q-79 restent les défauts déjà documentés.
+**Q-65…Q-69, Q-71, Q-73…Q-80 ✅ figées** — détail `07`. **Q-70** et **Q-72** encore 💡 (matrice / hors période).

@@ -4,6 +4,7 @@ import com.kobe.beesm.dto.academic.LocalizedTextDto
 import com.kobe.beesm.dto.fees.DailyAmountDto
 import com.kobe.beesm.dto.fees.ExclusionRiskDto
 import com.kobe.beesm.dto.fees.FeePaymentResponse
+import com.kobe.beesm.dto.fees.FeesAccessGateDto
 import com.kobe.beesm.dto.fees.FeesAccessResponse
 import com.kobe.beesm.dto.fees.FeesDashboardSummaryResponse
 import com.kobe.beesm.dto.fees.FeesUnpaidSummaryResponse
@@ -24,6 +25,7 @@ import com.kobe.beesm.exception.ForbiddenException
 import com.kobe.beesm.exception.NotFoundException
 import com.kobe.beesm.model.fees.FeePayment
 import com.kobe.beesm.model.fees.FeePaymentKind
+import com.kobe.beesm.model.fees.FeePaymentMethod
 import com.kobe.beesm.model.fees.FeePaymentStatus
 import com.kobe.beesm.model.fees.SolvencyStatus
 import com.kobe.beesm.model.fees.TuitionInstallment
@@ -35,8 +37,10 @@ import com.kobe.beesm.repository.fees.FeePaymentRepository
 import com.kobe.beesm.repository.fees.FeeStudentFeeStateRepository
 import com.kobe.beesm.repository.fees.FeesPolicyRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
+import com.kobe.beesm.dto.academic.SchoolBulletinBrandDto
 import com.kobe.beesm.service.academic.api.AcademicYearApi
 import com.kobe.beesm.service.academic.api.LevelApi
+import com.kobe.beesm.service.academic.api.SchoolBrandApi
 import com.kobe.beesm.service.academic.api.SchoolClassApi
 import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.service.staff.api.StaffApi
@@ -68,9 +72,11 @@ class FeesService(
     private val academicYearApi: AcademicYearApi,
     private val levelApi: LevelApi,
     private val schoolClassApi: SchoolClassApi,
+    private val schoolBrandApi: SchoolBrandApi,
     private val enrollmentApi: EnrollmentApi,
     private val staffApi: StaffApi,
-    private val studentApi: StudentApi
+    private val studentApi: StudentApi,
+    private val enrollmentReceiptPdfService: FeeEnrollmentReceiptPdfService
 ) : FeesApi {
 
     private val zone: ZoneId = ZoneId.of("Africa/Douala")
@@ -84,19 +90,34 @@ class FeesService(
         currentUser: CurrentUser,
         academicYearId: String,
         schoolIdOverride: String? = null
-    ): Flux<TuitionScheduleResponse> {
+    ): Mono<List<TuitionScheduleResponse>> {
         val schoolId = currentUser.requireSchoolId(schoolIdOverride)
-        return resolveAccess(currentUser, schoolId).flatMapMany { access ->
+        return resolveAccess(currentUser, schoolId).flatMap { access ->
             if (!access.canManageSchedules && !access.canRecordPayments) {
-                return@flatMapMany Flux.error(
+                return@flatMap Mono.error(
                     ForbiddenException(
                         "FEES_SCHEDULE_FORBIDDEN",
                         "Tuition schedules require DIRECTOR or accountant access"
                     )
                 )
             }
+            // collectList : JSON complet ; on ignore les barèmes legacy sans levelId (ex-classId).
             scheduleRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
-                .map { toScheduleResponse(it) }
+                .concatMap { schedule ->
+                    val levelId = schedule.levelId?.trim().orEmpty()
+                    if (levelId.isEmpty()) {
+                        val id = schedule.id
+                        if (id.isNullOrBlank()) {
+                            Mono.empty()
+                        } else {
+                            scheduleRepository.deleteById(id).then(Mono.empty())
+                        }
+                    } else {
+                        Mono.fromCallable { toScheduleResponse(schedule) }
+                            .onErrorResume { Mono.empty() }
+                    }
+                }
+                .collectList()
         }
     }
 
@@ -189,39 +210,102 @@ class FeesService(
                         )
                     )
                     .flatMap { (schedule, _) ->
-                        if (request.kind == FeePaymentKind.INSTALLMENT) {
-                            val idx = request.installmentIndex!!
-                            if (schedule.installments.none { it.index == idx }) {
-                                return@flatMap Mono.error(
-                                    BusinessRuleException(
-                                        "INVALID_INSTALLMENT_INDEX",
-                                        "Installment index $idx not in schedule"
-                                    )
-                                )
-                            }
-                        }
-                        paymentRepository.save(
-                            FeePayment(
-                                schoolId = schoolId,
-                                academicYearId = request.academicYearId,
-                                studentId = request.studentId,
-                                enrollmentId = enrollment.id,
-                                classId = enrollment.classId,
-                                scheduleId = schedule.id!!,
-                                kind = request.kind,
-                                installmentIndex = request.installmentIndex,
-                                amount = request.amount,
-                                paidAt = request.paidAt ?: Instant.now(),
-                                method = request.method,
-                                reference = request.reference?.trim()?.ifBlank { null },
-                                recordedByAccountId = currentUser.accountId,
-                                note = request.note?.trim()?.ifBlank { null },
-                                status = FeePaymentStatus.RECORDED
+                        paymentRepository
+                            .findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                                schoolId,
+                                request.academicYearId,
+                                request.studentId,
+                                FeePaymentStatus.RECORDED
                             )
-                        )
+                            .collectList()
+                            .flatMap { existingPayments ->
+                                validatePaymentRules(schedule, request, existingPayments)
+                                    .then(
+                                        paymentRepository.save(
+                                            FeePayment(
+                                                schoolId = schoolId,
+                                                academicYearId = request.academicYearId,
+                                                studentId = request.studentId,
+                                                enrollmentId = enrollment.id,
+                                                classId = enrollment.classId,
+                                                scheduleId = schedule.id!!,
+                                                kind = request.kind,
+                                                installmentIndex = request.installmentIndex,
+                                                amount = request.amount,
+                                                paidAt = request.paidAt ?: Instant.now(),
+                                                method = request.method,
+                                                reference = request.reference?.trim()?.ifBlank { null },
+                                                recordedByAccountId = currentUser.accountId,
+                                                note = request.note?.trim()?.ifBlank { null },
+                                                status = FeePaymentStatus.RECORDED
+                                            )
+                                        )
+                                    )
+                            }
                     }
             }
             .map { toPaymentResponse(it) }
+    }
+
+    /**
+     * Reçu PDF inscription (Q-69) — Direction / comptable.
+     * Uniquement pour un paiement `ENROLLMENT` enregistré.
+     */
+    fun enrollmentReceiptPdf(
+        currentUser: CurrentUser,
+        paymentId: String,
+        schoolIdOverride: String? = null
+    ): Mono<ByteArray> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        return assertCanRecordPayments(currentUser, schoolId)
+            .then(paymentRepository.findByIdAndSchoolId(paymentId, schoolId))
+            .switchIfEmpty(Mono.error(NotFoundException("FEE_PAYMENT_NOT_FOUND", "Payment not found")))
+            .flatMap { payment ->
+                if (payment.kind != FeePaymentKind.ENROLLMENT) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException(
+                            "RECEIPT_ENROLLMENT_ONLY",
+                            "PDF receipt is only available for enrollment payments"
+                        )
+                    )
+                }
+                if (payment.status != FeePaymentStatus.RECORDED) {
+                    return@flatMap Mono.error(
+                        BusinessRuleException("PAYMENT_VOID", "Cannot print receipt for a void payment")
+                    )
+                }
+                Mono.zip(
+                    studentApi.getSummary(schoolId, payment.studentId),
+                    schoolClassApi.getSummary(schoolId, payment.classId)
+                        .map { it.name }
+                        .onErrorReturn("—")
+                        .defaultIfEmpty("—"),
+                    academicYearApi.getSummary(schoolId, payment.academicYearId)
+                        .map { it.label }
+                        .onErrorReturn(payment.academicYearId)
+                        .defaultIfEmpty(payment.academicYearId),
+                    schoolBrandApi.getBulletinBrand(schoolId)
+                        .onErrorReturn(emptyBrand(schoolId))
+                        .defaultIfEmpty(emptyBrand(schoolId)),
+                    scheduleRepository.findByIdAndSchoolId(payment.scheduleId, schoolId)
+                        .map { it.currency }
+                        .defaultIfEmpty("XAF")
+                ).map { tuple ->
+                    val student = tuple.t1
+                    enrollmentReceiptPdfService.render(
+                        brand = tuple.t4,
+                        studentName = student.displayName,
+                        matricule = student.matricule,
+                        classLabel = tuple.t2,
+                        academicYearLabel = tuple.t3,
+                        amount = payment.amount,
+                        currency = tuple.t5,
+                        paidAt = payment.paidAt,
+                        paymentReference = payment.reference,
+                        receiptId = payment.id!!
+                    )
+                }
+            }
     }
 
     fun voidPayment(
@@ -585,6 +669,80 @@ class FeesService(
                 computeSolvency(schoolId, studentId, academicYearId, today)
                     .map { SolvencySnapshotDto(studentId = studentId, status = it.status) }
             }, 16)
+    }
+
+    override fun accessGate(
+        schoolId: String,
+        academicYearId: String,
+        studentId: String
+    ): Mono<FeesAccessGateDto> {
+        val today = LocalDate.now(zone)
+        return computeSolvency(schoolId, studentId, academicYearId, today)
+            .map { solvency ->
+                val enrollmentSettled =
+                    solvency.enrollmentFeeDue == null ||
+                        SolvencyCalculator.isSettled(
+                            solvency.enrollmentFeeDue,
+                            solvency.enrollmentFeePaid ?: BigDecimal.ZERO
+                        )
+                val blocked =
+                    solvency.status != SolvencyStatus.NOT_APPLICABLE &&
+                        (!enrollmentSettled || solvency.status == SolvencyStatus.INSOLVENT)
+                FeesAccessGateDto(
+                    studentId = studentId,
+                    academicYearId = academicYearId,
+                    solvency = solvency.status,
+                    blocked = blocked,
+                    enrollmentSettled = enrollmentSettled,
+                    reasonCode = if (blocked) "FEES_UNPAID" else null,
+                    messageFr = if (blocked) {
+                        "Consultation ou modification impossible : frais de scolarité non soldés."
+                    } else {
+                        null
+                    },
+                    messageEn = if (blocked) {
+                        "Access denied: tuition fees are not settled."
+                    } else {
+                        null
+                    }
+                )
+            }
+    }
+
+    override fun assertCanModifyAcademics(
+        schoolId: String,
+        academicYearId: String,
+        studentId: String
+    ): Mono<Void> =
+        accessGate(schoolId, academicYearId, studentId).flatMap { gate ->
+            if (!gate.blocked) {
+                Mono.empty()
+            } else {
+                Mono.error(
+                    ForbiddenException(
+                        gate.reasonCode ?: "FEES_UNPAID",
+                        gate.messageEn ?: "Access denied: tuition fees are not settled."
+                    )
+                )
+            }
+        }
+
+    override fun assertCanViewAcademics(
+        currentUser: CurrentUser,
+        schoolId: String,
+        academicYearId: String,
+        studentId: String
+    ): Mono<Void> {
+        if (currentUser.hasAnyRole(
+                Role.DIRECTOR,
+                Role.SUPER_ADMIN,
+                Role.ADMINISTRATION,
+                Role.SURVEILLANT_GENERAL
+            )
+        ) {
+            return Mono.empty()
+        }
+        return assertCanModifyAcademics(schoolId, academicYearId, studentId)
     }
 
     private fun buildAccount(
@@ -951,13 +1109,104 @@ class FeesService(
             else Mono.error(ForbiddenException("FORBIDDEN", "Fees read access denied"))
         }
 
-    private fun toScheduleResponse(schedule: TuitionSchedule): TuitionScheduleResponse =
-        TuitionScheduleResponse(
-            id = schedule.id!!,
+    /**
+     * Q-68/Q-74/Q-75 : CASH pour inscription ; montant exact ; ordre inscription → T1 → T2…
+     */
+    private fun validatePaymentRules(
+        schedule: TuitionSchedule,
+        request: RecordFeePaymentRequest,
+        existingPayments: List<FeePayment>
+    ): Mono<Void> {
+        if (request.kind == FeePaymentKind.ENROLLMENT) {
+            if (request.method != FeePaymentMethod.CASH) {
+                return Mono.error(
+                    BusinessRuleException(
+                        "ENROLLMENT_CASH_ONLY",
+                        "Enrollment fees must be paid in cash at the school"
+                    )
+                )
+            }
+            val due = schedule.enrollmentFee
+            val paid = sumPayments(existingPayments, FeePaymentKind.ENROLLMENT, null)
+            val remaining = due.subtract(paid)
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                return Mono.error(
+                    BusinessRuleException("ENROLLMENT_ALREADY_SETTLED", "Enrollment fee is already settled")
+                )
+            }
+            if (request.amount.compareTo(remaining) != 0) {
+                return Mono.error(
+                    BusinessRuleException(
+                        "AMOUNT_MUST_MATCH_DUE",
+                        "Payment amount must equal the exact remaining due ($remaining)"
+                    )
+                )
+            }
+            return Mono.empty()
+        }
+
+        val idx = request.installmentIndex
+            ?: return Mono.error(
+                BusinessRuleException("INSTALLMENT_INDEX_REQUIRED", "installmentIndex is required for INSTALLMENT")
+            )
+        val installment = schedule.installments.firstOrNull { it.index == idx }
+            ?: return Mono.error(
+                BusinessRuleException("INVALID_INSTALLMENT_INDEX", "Installment index $idx not in schedule")
+            )
+
+        val enrollmentPaid = sumPayments(existingPayments, FeePaymentKind.ENROLLMENT, null)
+        if (!SolvencyCalculator.isSettled(schedule.enrollmentFee, enrollmentPaid)) {
+            return Mono.error(
+                BusinessRuleException(
+                    "ENROLLMENT_REQUIRED_FIRST",
+                    "Enrollment fee must be settled before installment payments"
+                )
+            )
+        }
+
+        val priorIndexes = schedule.installments.map { it.index }.filter { it < idx }.sorted()
+        for (prior in priorIndexes) {
+            val priorDue = schedule.installments.first { it.index == prior }.amount
+            val priorPaid = sumPayments(existingPayments, FeePaymentKind.INSTALLMENT, prior)
+            if (!SolvencyCalculator.isSettled(priorDue, priorPaid)) {
+                return Mono.error(
+                    BusinessRuleException(
+                        "INSTALLMENTS_MUST_BE_SEQUENTIAL",
+                        "Installment $prior must be settled before installment $idx"
+                    )
+                )
+            }
+        }
+
+        val paid = sumPayments(existingPayments, FeePaymentKind.INSTALLMENT, idx)
+        val remaining = installment.amount.subtract(paid)
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            return Mono.error(
+                BusinessRuleException("INSTALLMENT_ALREADY_SETTLED", "Installment $idx is already settled")
+            )
+        }
+        if (request.amount.compareTo(remaining) != 0) {
+            return Mono.error(
+                BusinessRuleException(
+                    "AMOUNT_MUST_MATCH_DUE",
+                    "Payment amount must equal the exact remaining due ($remaining)"
+                )
+            )
+        }
+        return Mono.empty()
+    }
+
+    private fun toScheduleResponse(schedule: TuitionSchedule): TuitionScheduleResponse {
+        val id = schedule.id?.trim().orEmpty()
+        val levelId = schedule.levelId?.trim().orEmpty()
+        require(id.isNotEmpty()) { "Tuition schedule id missing" }
+        require(levelId.isNotEmpty()) { "Tuition schedule levelId missing" }
+        return TuitionScheduleResponse(
+            id = id,
             schoolId = schedule.schoolId,
             academicYearId = schedule.academicYearId,
-            levelId = schedule.levelId,
-            levelLabel = schedule.levelLabel,
+            levelId = levelId,
+            levelLabel = schedule.levelLabel?.trim().orEmpty().ifEmpty { levelId },
             enrollmentFee = schedule.enrollmentFee,
             installments = schedule.installments
                 .sortedBy { it.index }
@@ -971,6 +1220,7 @@ class FeesService(
             currency = schedule.currency,
             active = schedule.active
         )
+    }
 
     private fun toPaymentResponse(payment: FeePayment): FeePaymentResponse =
         FeePaymentResponse(
@@ -992,6 +1242,24 @@ class FeesService(
             status = payment.status,
             voidedAt = payment.voidedAt,
             voidReason = payment.voidReason
+        )
+
+    private fun emptyBrand(schoolId: String): SchoolBulletinBrandDto =
+        SchoolBulletinBrandDto(
+            schoolId = schoolId,
+            nameFr = "",
+            nameEn = "",
+            postalBox = null,
+            republicFr = null,
+            republicEn = null,
+            mottoFr = null,
+            mottoEn = null,
+            ministryFr = null,
+            ministryEn = null,
+            regionalDelegationFr = null,
+            regionalDelegationEn = null,
+            divisionalDelegationFr = null,
+            divisionalDelegationEn = null
         )
 
 }

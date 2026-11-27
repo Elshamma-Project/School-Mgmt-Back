@@ -57,6 +57,7 @@ class GradeServiceRulesTest {
     )
 
     private val academicYearApi: com.kobe.beesm.service.academic.api.AcademicYearApi = mock()
+    private val feesApi: com.kobe.beesm.service.fees.api.FeesApi = mock()
     private val gradeService = GradeService(
         gradeRepository,
         assessmentRepository,
@@ -65,6 +66,7 @@ class GradeServiceRulesTest {
         gradeAuditEntryRepository,
         enrollmentApi,
         academicYearApi,
+        feesApi,
         sequenceMarkService,
         outboxWriter
     )
@@ -243,6 +245,7 @@ class GradeServiceRulesTest {
     }
 
     private fun stubEnrollment() {
+        whenever(feesApi.assertCanModifyAcademics(any(), any(), any())).thenReturn(Mono.empty())
         whenever(enrollmentApi.findByStudentAndYear("school-1", "stu-1", "year-1"))
             .thenReturn(
                 Mono.just(

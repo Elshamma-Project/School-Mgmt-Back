@@ -83,6 +83,8 @@ enum class NotificationCategory {
     FEES_PENALTY,
     /** Avertissement / exclusion pour insolvabilité. */
     FEES_EXCLUSION,
+    /** Politique scolarité mise à jour (Direction) — `fees.policy.updated`. */
+    FEES_POLICY_UPDATED,
     SYSTEM
 }
 

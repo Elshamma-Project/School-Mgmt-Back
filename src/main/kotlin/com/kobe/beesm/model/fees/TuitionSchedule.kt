@@ -31,9 +31,13 @@ data class TuitionSchedule(
     var id: String? = null,
     override var schoolId: String,
     var academicYearId: String,
-    var levelId: String,
+    /**
+     * Niveau (Q-67). Nullable uniquement pour tolérer d’anciens documents `classId`
+     * encore en base ; la couche service ignore / purge ceux sans `levelId`.
+     */
+    var levelId: String? = null,
     /** Libellé figé au moment de la création / maj (docs/08). */
-    var levelLabel: String,
+    var levelLabel: String? = null,
     @Field(targetType = FieldType.DECIMAL128)
     var enrollmentFee: BigDecimal,
     var installments: MutableList<TuitionInstallment> = mutableListOf(),

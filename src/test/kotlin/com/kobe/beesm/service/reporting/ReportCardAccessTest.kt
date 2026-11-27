@@ -25,6 +25,7 @@ import com.kobe.beesm.service.student.api.EnrollmentApi
 import com.kobe.beesm.service.student.api.StudentApi
 import com.kobe.beesm.shared.outbox.OutboxWriter
 import com.kobe.beesm.shared.security.CurrentUser
+import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import reactor.core.publisher.Mono
@@ -32,6 +33,7 @@ import reactor.test.StepVerifier
 import java.math.BigDecimal
 import java.time.Instant
 import kotlin.test.Test
+import org.junit.jupiter.api.BeforeEach
 
 class ReportCardAccessTest {
     private val reportCardRepository: ReportCardRepository = mock()
@@ -46,6 +48,7 @@ class ReportCardAccessTest {
     private val studentApi: StudentApi = mock()
     private val staffApi: StaffApi = mock()
     private val evaluationSessionApi: EvaluationSessionApi = mock()
+    private val feesApi: com.kobe.beesm.service.fees.api.FeesApi = mock()
     private val outboxWriter: OutboxWriter = mock()
 
     private val service = ReportCardService(
@@ -61,8 +64,14 @@ class ReportCardAccessTest {
         studentApi,
         staffApi,
         evaluationSessionApi,
+        feesApi,
         outboxWriter
     )
+
+    @BeforeEach
+    fun stubFeesGate() {
+        whenever(feesApi.assertCanViewAcademics(any(), any(), any(), any())).thenReturn(Mono.empty())
+    }
 
     @Test
     fun `parent can read published annual card of linked child`() {

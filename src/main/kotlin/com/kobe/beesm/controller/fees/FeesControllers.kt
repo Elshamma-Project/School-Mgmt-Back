@@ -8,6 +8,9 @@ import com.kobe.beesm.service.fees.FeesPolicyService
 import com.kobe.beesm.service.fees.FeesService
 import com.kobe.beesm.shared.security.SecuritySupport
 import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @RestController
 @RequestMapping("/api/v1/fees")
@@ -39,7 +43,7 @@ class FeesController(
     fun listSchedules(
         @RequestParam academicYearId: String,
         @RequestParam(required = false) schoolId: String?
-    ) = SecuritySupport.currentUser().flatMapMany {
+    ) = SecuritySupport.currentUser().flatMap {
         feesService.listSchedules(it, academicYearId, schoolId)
     }
 
@@ -56,6 +60,24 @@ class FeesController(
         @PathVariable id: String,
         @Valid @RequestBody request: VoidFeePaymentRequest
     ) = SecuritySupport.currentUser().flatMap { feesService.voidPayment(it, id, request) }
+
+    /** Reçu PDF inscription (Q-69) — A4 portrait, 1 page. */
+    @GetMapping("/payments/{id}/receipt-pdf")
+    fun enrollmentReceiptPdf(
+        @PathVariable id: String,
+        @RequestParam(required = false) schoolId: String?
+    ): Mono<ResponseEntity<ByteArray>> =
+        SecuritySupport.currentUser().flatMap { user ->
+            feesService.enrollmentReceiptPdf(user, id, schoolId).map { bytes ->
+                ResponseEntity.ok()
+                    .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"recu-inscription-$id.pdf\""
+                    )
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .body(bytes)
+            }
+        }
 
     @GetMapping("/students/{studentId}/account")
     fun studentAccount(

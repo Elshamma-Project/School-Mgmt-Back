@@ -12,8 +12,8 @@
 | `academic` | établissement, années, niveaux, classes, salles, matières, groupes, matières de classe, compétences | `academic_schools`, `academic_years`, `academic_levels`, `academic_classes`, `academic_rooms`, `academic_subjects`, `academic_subject_groups`, `academic_class_subjects`, `academic_term_competencies` | `staff` (ids) |
 | `student` | élèves, tuteurs, inscriptions (CRUD sur leurs informations) | `student_students`, `student_guardians`, `student_enrollments` | `academic` (ids de classe, année) |
 | `staff` | enseignants et administration | `staff_members` | rien |
-| `grading` | séquences, fiches de notes, notes, notes de séquence, audit, barèmes | `grading_sessions`, `grading_sheets`, `grading_assessments`, `grading_grades`, `grading_sequence_marks`, `grading_audit_entries`, `grading_schemes` | `academic`, `student`, `staff` (ids) |
-| `reporting` | gabarits, bulletins, absences/sanctions/décisions | `reporting_templates`, `reporting_report_cards`, `reporting_period_reviews` | `grading`, `academic`, `student`, `staff` |
+| `grading` | séquences, fiches de notes, notes, notes de séquence, audit, barèmes | `grading_sessions`, `grading_sheets`, `grading_assessments`, `grading_grades`, `grading_sequence_marks`, `grading_audit_entries`, `grading_schemes` | `academic`, `student`, `staff` (ids), `fees` (porte BR-F05 écriture notes) |
+| `reporting` | gabarits, bulletins, absences/sanctions/décisions | `reporting_templates`, `reporting_report_cards`, `reporting_period_reviews` | `grading`, `academic`, `student`, `staff`, `fees` (porte BR-F05 lecture parent/élève) |
 | `timetable` | grille, EDT, cases, alias matières | `timetable_grids`, `timetable_timetables`, `timetable_entries`, `timetable_subject_aliases` | `academic`, `staff` (ids) |
 | `notification` | boîte in-app, signalements officiels | `notification_inbox`, `notification_staff_signals` | `user` (ids de comptes) ; consomme outbox |
 | `portal` | agrégats lecture seule (tableau de bord) — **pas de collections** | — | `academic`, `student`, `staff`, `grading`, `notification` (via `service/*/api` uniquement) |
@@ -25,8 +25,8 @@ Futurs : `file-storage` (photos, logos, PDF), canaux externes SMS/WhatsApp/e-mai
 flowchart LR
   user --> staff & student
   student --> academic
-  grading --> academic & student & staff
-  reporting --> grading & academic & student & staff
+  grading --> academic & student & staff & fees
+  reporting --> grading & academic & student & staff & fees
   timetable --> academic & staff
   academic --> staff
   notification --> user
@@ -95,6 +95,7 @@ Chaque module écrit ses événements dans sa boîte d'envoi (`OutboxEvent`, mê
 | `timetable.change.requested` | timetable | notification | `requestId`, `timetableId`, `teacherId`, `teacherLabel`, `classLabel`, `changeKind`, `status` |
 | `timetable.change.approved` / `timetable.change.rejected` | timetable | notification | `requestId`, `requestedBy`, `teacherId`, `classLabel`, `decision` ; rejet : `reviewNote` ; approbation : `appliedTimetableId` |
 | `fees.tuition.reminder` | fees | notification | `dedupeKey`, `recipientAccountId`, `kind` (`BEFORE_DUE`\|`ON_DUE`\|`INSOLVENT`\|`PENALTY_WEEKLY`\|`EXCLUSION_WARNING`\|`EXCLUDED`), `daysBeforeDue?`, `severity`, `children[]` (nom, statut, payé/non payé, échéance), montants pénalité / grâce ; inbox parent groupé multi-enfants (BR-F10…F14) |
+| `fees.policy.updated` | fees | notification | `policyId`, `updatedByAccountId`, rappels / pénalité / grâce ; inbox Direction + Administration (Q-77) |
 | *(alias EDT)* | — | — | `TimetableSubjectAlias` tenu à jour par chargeur / admin ; pas d’événement dédié en v1 (rafraîchissement des libellés d’entrée via `academic.subject.renamed` + republish) |
 
 Versionner chaque charge utile (`schemaVersion`) ; n'y mettre que des identifiants et les valeurs nécessaires.

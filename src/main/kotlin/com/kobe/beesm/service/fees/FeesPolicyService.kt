@@ -7,6 +7,7 @@ import com.kobe.beesm.exception.ForbiddenException
 import com.kobe.beesm.model.fees.FeesPolicy
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.fees.FeesPolicyRepository
+import com.kobe.beesm.shared.outbox.OutboxWriter
 import com.kobe.beesm.shared.security.CurrentUser
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -18,7 +19,8 @@ import java.math.BigDecimal
  */
 @Service
 class FeesPolicyService(
-    private val policyRepository: FeesPolicyRepository
+    private val policyRepository: FeesPolicyRepository,
+    private val outboxWriter: OutboxWriter
 ) {
 
     fun getPolicy(currentUser: CurrentUser, schoolIdOverride: String? = null): Mono<FeesPolicyResponse> {
@@ -50,6 +52,24 @@ class FeesPolicyService(
                 existing.exclusionWarningDaysBefore = request.exclusionWarningDaysBefore
                 existing.active = request.active
                 policyRepository.save(existing)
+            }
+            .flatMap { saved ->
+                val policyId = saved.id ?: schoolId
+                outboxWriter.append(
+                    schoolId = schoolId,
+                    module = "fees",
+                    aggregateType = "FeesPolicy",
+                    aggregateId = policyId,
+                    eventType = "fees.policy.updated",
+                    payload = mapOf(
+                        "policyId" to policyId,
+                        "updatedByAccountId" to currentUser.accountId,
+                        "weeklyPenaltyAmount" to saved.weeklyPenaltyAmount.toPlainString(),
+                        "maxInsolvencyGraceDays" to saved.maxInsolvencyGraceDays,
+                        "reminderDaysBeforeDue" to saved.reminderDaysBeforeDue.toList()
+                    ),
+                    schemaVersion = 1
+                ).thenReturn(saved)
             }
             .map { toResponse(it) }
     }

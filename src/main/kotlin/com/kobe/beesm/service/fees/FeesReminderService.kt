@@ -87,7 +87,8 @@ class FeesReminderService(
                         val classIds = enrollments.map { it.classId }.distinct()
                         scheduleRepository
                             .findBySchoolIdAndAcademicYearIdAndActiveTrue(schoolId, academicYearId)
-                            .collectMap({ it.levelId }, { it })
+                            .filter { !it.levelId.isNullOrBlank() }
+                            .collectMap({ it.levelId!! }, { it })
                             .flatMap { schedulesByLevel ->
                                 Flux.fromIterable(classIds)
                                     .flatMap({ classId ->

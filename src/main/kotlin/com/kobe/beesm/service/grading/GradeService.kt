@@ -21,6 +21,7 @@ import com.kobe.beesm.repository.grading.GradeRepository
 import com.kobe.beesm.repository.grading.GradeSheetRepository
 import com.kobe.beesm.model.student.EnrollmentStatus
 import com.kobe.beesm.service.academic.api.AcademicYearApi
+import com.kobe.beesm.service.fees.api.FeesApi
 import com.kobe.beesm.service.student.api.EnrollmentApi
 import com.kobe.beesm.shared.outbox.OutboxWriter
 import com.kobe.beesm.shared.security.CurrentUser
@@ -33,6 +34,7 @@ import java.time.Instant
 
 /**
  * UNIQUE chemin d'écriture des notes (AGENTS.md, BR-11..BR-18, BR-21..22).
+ * BR-F05 / Q-65 : pas de modification si frais non soldés.
  */
 @Service
 class GradeService(
@@ -43,6 +45,7 @@ class GradeService(
     private val gradeAuditEntryRepository: GradeAuditEntryRepository,
     private val enrollmentApi: EnrollmentApi,
     private val academicYearApi: AcademicYearApi,
+    private val feesApi: FeesApi,
     private val sequenceMarkService: SequenceMarkService,
     private val outboxWriter: OutboxWriter
 ) {
@@ -72,7 +75,21 @@ class GradeService(
                                             )
                                         )
                                     } else {
-                                        writeGrade(currentUser, ctx, request.studentId, enrollment.id, request)
+                                        feesApi
+                                            .assertCanModifyAcademics(
+                                                schoolId,
+                                                ctx.sheet.academicYearId,
+                                                request.studentId
+                                            )
+                                            .then(
+                                                writeGrade(
+                                                    currentUser,
+                                                    ctx,
+                                                    request.studentId,
+                                                    enrollment.id,
+                                                    request
+                                                )
+                                            )
                                     }
                                 }
                         }
