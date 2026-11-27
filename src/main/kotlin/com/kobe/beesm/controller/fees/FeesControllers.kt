@@ -2,7 +2,9 @@ package com.kobe.beesm.controller.fees
 
 import com.kobe.beesm.dto.fees.ReactivateAfterFeesRequest
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
+import com.kobe.beesm.dto.fees.SyncLevelScheduleFromDefaultsRequest
 import com.kobe.beesm.dto.fees.UpdateFeesPolicyRequest
+import com.kobe.beesm.dto.fees.UpsertTuitionScheduleDefaultsRequest
 import com.kobe.beesm.dto.fees.UpsertTuitionScheduleRequest
 import com.kobe.beesm.dto.fees.VoidFeePaymentRequest
 import com.kobe.beesm.service.fees.FeesPolicyService
@@ -51,6 +53,26 @@ class FeesController(
     @PutMapping("/schedules")
     fun upsertSchedule(@Valid @RequestBody request: UpsertTuitionScheduleRequest) =
         SecuritySupport.currentUser().flatMap { feesService.upsertSchedule(it, request) }
+
+    /** BR-F16 — modèle général (année) ; amorce les niveaux sans barème via `seedLevelIds`. */
+    @GetMapping("/schedule-defaults")
+    fun getScheduleDefaults(
+        @RequestParam academicYearId: String,
+        @RequestParam(required = false) schoolId: String?
+    ) = SecuritySupport.currentUser().flatMap {
+        feesService.getScheduleDefaults(it, academicYearId, schoolId)
+    }
+
+    @PutMapping("/schedule-defaults")
+    fun upsertScheduleDefaults(@Valid @RequestBody request: UpsertTuitionScheduleDefaultsRequest) =
+        SecuritySupport.currentUser().flatMap { feesService.upsertScheduleDefaults(it, request) }
+
+    /** Sync manuelle d’un niveau déjà personnalisé vers le modèle général (conserve extraFees). */
+    @PostMapping("/schedules/sync-defaults")
+    fun syncLevelFromDefaults(@Valid @RequestBody request: SyncLevelScheduleFromDefaultsRequest) =
+        SecuritySupport.currentUser().flatMap {
+            feesService.syncLevelScheduleFromDefaults(it, request)
+        }
 
     @PostMapping("/payments")
     fun recordPayment(@Valid @RequestBody request: RecordFeePaymentRequest) =

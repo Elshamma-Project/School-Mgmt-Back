@@ -43,6 +43,7 @@ import java.time.LocalDate
 class FeesPaymentRulesTest {
 
     private val scheduleRepository = mock<TuitionScheduleRepository>()
+    private val defaultsRepository = mock<com.kobe.beesm.repository.fees.TuitionScheduleDefaultsRepository>()
     private val paymentRepository = mock<FeePaymentRepository>()
     private val stateRepository = mock<FeeStudentFeeStateRepository>()
     private val policyRepository = mock<FeesPolicyRepository>()
@@ -57,6 +58,7 @@ class FeesPaymentRulesTest {
 
     private val service = FeesService(
         scheduleRepository,
+        defaultsRepository,
         paymentRepository,
         stateRepository,
         policyRepository,

@@ -48,6 +48,7 @@ import java.time.LocalDate
 class FeesReactivationRulesTest {
 
     private val scheduleRepository = mock<TuitionScheduleRepository>()
+    private val defaultsRepository = mock<com.kobe.beesm.repository.fees.TuitionScheduleDefaultsRepository>()
     private val paymentRepository = mock<FeePaymentRepository>()
     private val stateRepository = mock<FeeStudentFeeStateRepository>()
     private val policyRepository = mock<FeesPolicyRepository>()
@@ -62,6 +63,7 @@ class FeesReactivationRulesTest {
 
     private val service = FeesService(
         scheduleRepository,
+        defaultsRepository,
         paymentRepository,
         stateRepository,
         policyRepository,
@@ -227,6 +229,11 @@ class FeesReactivationRulesTest {
             )
         ).thenReturn(Flux.fromIterable(settledTuitionPayments()))
         whenever(
+            paymentRepository.findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                any(), any(), any(), eq(FeePaymentStatus.VOID)
+            )
+        ).thenReturn(Flux.empty())
+        whenever(
             stateRepository.findBySchoolIdAndAcademicYearIdAndStudentId(any(), any(), any())
         ).thenReturn(Mono.just(excludedState()))
 
@@ -263,6 +270,11 @@ class FeesReactivationRulesTest {
                 any(), any(), any(), eq(FeePaymentStatus.RECORDED)
             )
         ).thenReturn(Flux.fromIterable(payments))
+        whenever(
+            paymentRepository.findBySchoolIdAndAcademicYearIdAndStudentIdAndStatus(
+                any(), any(), any(), eq(FeePaymentStatus.VOID)
+            )
+        ).thenReturn(Flux.empty())
         whenever(
             stateRepository.findBySchoolIdAndAcademicYearIdAndStudentId(any(), any(), any())
         ).thenReturn(Mono.just(excludedState()))

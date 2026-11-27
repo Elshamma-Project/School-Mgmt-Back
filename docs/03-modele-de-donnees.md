@@ -64,8 +64,9 @@
 | timetable | `timetable_change_requests` | `TimetableChangeRequest` (+ `TimetableEntrySnapshot`) | Demandes de modif de créneau enseignant → admin/dir. (BR-67) ; libellés figés |
 | notification | `notification_inbox` | `InAppNotification` | Boîte de réception in-app (BR-81) ; catégories `TIMETABLE_PUBLISHED`, `TIMETABLE_CHANGE_REQUESTED`, `TIMETABLE_CHANGE_DECIDED`, `TIMETABLE_UPDATE_NEEDED`, `SESSION_SCHEDULE_CHANGED` |
 | notification | `notification_staff_signals` | `StaffSignal` | Signalements officiels enseignant → admin (BR-82) |
-| fees | `fees_tuition_schedules` | `TuitionSchedule` (+ `TuitionInstallment`) | Barème inscription + N tranches (1…12) par année/**niveau** (`levelId`, Q-67/Q-68, docs/10) ; index `uk_school_year_level`. `levelId`/`levelLabel` nullable en lecture pour purger d’anciens docs `classId` |
-| fees | `fees_payments` | `FeePayment` | Écritures de paiement (ENROLLMENT / INSTALLMENT) ; annulation = `VOID` |
+| fees | `fees_schedule_defaults` | `TuitionScheduleDefaults` | Modèle **général** année/école (inscription + N tranches) pour amorcer les niveaux (BR-F16) ; index `uk_school_year_defaults` |
+| fees | `fees_tuition_schedules` | `TuitionSchedule` (+ `TuitionInstallment`, `TuitionExtraFee`) | Barème inscription + N tranches (1…12) + **frais optionnels** `extraFees` 0…6 (examens nationaux, Q-81 / BR-F15) par année/**niveau** ; index `uk_school_year_level` |
+| fees | `fees_payments` | `FeePayment` | Écritures (ENROLLMENT / INSTALLMENT / **EXTRA** / PENALTY) ; pour EXTRA, `installmentIndex` = index du frais ; annulation = `VOID` |
 | fees | `fees_policies` | `FeesPolicy` | Rappels (jours), pénalité hebdo, grâce / exclusion (BR-F10…F14) ; 1 doc / école |
 | fees | `fees_student_states` | `FeeStudentFeeState` | Ancre insolvabilité, semaines de pénalité, exclusion (effets de bord) |
 | fees | `fees_penalty_charges` | `FeePenaltyCharge` | Lignes de pénalité hebdomadaire (idempotentes) |

@@ -74,6 +74,7 @@
 | Q-75 | Catalogue des modes de paiement | ✅ | **Figé** : inscription = **CASH** uniquement ; tranches = reçu banque. |
 | Q-76 | Annulation / correction d’un paiement | ✅ | **Figé** : `VOID` + motif ; Direction ou Admin comptable. |
 | Q-77…Q-80 | Rappels / pénalités / exclusion | ✅ | **Figé** : paramétrable Direction (hub Scolarité) ; défauts 15/10/5/3/2/1, 1000 XAF/sem., 28 j. ; réactivation = Direction seule après soldes + pénalités (Q-80). |
+| Q-81 | Frais d’examen / supplémentaires par niveau | 🟡 | **Provisoire** : `extraFees` optionnels sur le barème (0…6) ; suggestions UI FR 3ème→BEPC, 1ère→Probatoire, Tle→BAC (EN : GCE) ; paiement après tranches ; solvabilité = même mois civil. À confirmer : impact soft-block, ordre vs tranches, montants types. |
 
 ## 2. Nouvelles questions (issues des bulletins et de l'emploi du temps)
 
@@ -135,6 +136,7 @@
 | Q-77 | Jours de rappel figés ou paramétrables ? | ✅ | **Paramétrables** Direction (hub Scolarité) ; défaut 15/10/5/3/2/1 + jour J ; notifier acteurs à chaque maj. | fees |
 | Q-78 | Montant pénalité hebdo | ✅ | Défaut **1000 XAF**/semaine/enfant, **paramétrable** Direction (même hub). | fees |
 | Q-79 | Délai max avant exclusion | ✅ | Défaut **28 j.**, paramétrable Direction ; exclusion = `Student.active=false`. | fees |
+| Q-81 | Frais d’**examen** (BEPC / Probatoire / BAC, GCE…) : obligatoires ? ordre de paiement ? impact solvabilité / soft-block ? | 🟡 | **Provisoire** : optionnels sur le barème niveau ; suggestions UI selon code niveau ; séquence après tranches ; même règle mois civil que les tranches (BR-F15). | fees |
 | Q-80 | Réactivation après exclusion | ✅ | **Direction seule** ; après règlement de **toutes** les tranches + pénalités. | fees |
 
 ## 3. Décisions provisoires (résumé)

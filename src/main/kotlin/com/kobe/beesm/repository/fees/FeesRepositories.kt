@@ -6,9 +6,17 @@ import com.kobe.beesm.model.fees.FeePenaltyCharge
 import com.kobe.beesm.model.fees.FeeStudentFeeState
 import com.kobe.beesm.model.fees.FeesPolicy
 import com.kobe.beesm.model.fees.TuitionSchedule
+import com.kobe.beesm.model.fees.TuitionScheduleDefaults
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+
+interface TuitionScheduleDefaultsRepository : ReactiveMongoRepository<TuitionScheduleDefaults, String> {
+    fun findBySchoolIdAndAcademicYearId(
+        schoolId: String,
+        academicYearId: String
+    ): Mono<TuitionScheduleDefaults>
+}
 
 interface FeesPolicyRepository : ReactiveMongoRepository<FeesPolicy, String> {
     fun findBySchoolId(schoolId: String): Mono<FeesPolicy>

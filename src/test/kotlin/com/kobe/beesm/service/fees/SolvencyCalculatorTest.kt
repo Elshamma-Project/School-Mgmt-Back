@@ -196,4 +196,40 @@ class SolvencyCalculatorTest {
             SolvencyCalculator.isSettled(t1, t1)
         )
     }
+
+    @Test
+    fun `Q-81 unpaid overdue exam fee is insolvent`() {
+        val exam = SolvencyCalculator.InstallmentInput(
+            index = 1,
+            amount = BigDecimal("15000"),
+            dueDate = LocalDate.of(2026, 5, 31),
+            paidAmount = BigDecimal.ZERO
+        )
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 6, 10),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = enrollment,
+            installments = installments(paid1 = t1, paid2 = t2, paid3 = t3),
+            extraFees = listOf(exam)
+        )
+        assertEquals(SolvencyStatus.INSOLVENT, status)
+    }
+
+    @Test
+    fun `Q-81 current month unpaid exam fee is pending`() {
+        val exam = SolvencyCalculator.InstallmentInput(
+            index = 1,
+            amount = BigDecimal("15000"),
+            dueDate = LocalDate.of(2026, 6, 30),
+            paidAmount = BigDecimal.ZERO
+        )
+        val status = SolvencyCalculator.compute(
+            today = LocalDate.of(2026, 6, 10),
+            enrollmentFeeDue = enrollment,
+            enrollmentFeePaid = enrollment,
+            installments = installments(paid1 = t1, paid2 = t2, paid3 = t3),
+            extraFees = listOf(exam)
+        )
+        assertEquals(SolvencyStatus.PENDING, status)
+    }
 }

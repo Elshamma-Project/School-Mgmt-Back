@@ -3,6 +3,7 @@ package com.kobe.beesm.service.fees
 import com.kobe.beesm.dto.academic.LocalizedTextDto
 import com.kobe.beesm.dto.fees.DailyAmountDto
 import com.kobe.beesm.dto.fees.ExclusionRiskDto
+import com.kobe.beesm.dto.fees.ExtraFeeSolvencyDto
 import com.kobe.beesm.dto.fees.FeePaymentResponse
 import com.kobe.beesm.dto.fees.FeesAccessGateDto
 import com.kobe.beesm.dto.fees.FeesAccessResponse
@@ -18,8 +19,12 @@ import com.kobe.beesm.dto.fees.ReactivateAfterFeesResponse
 import com.kobe.beesm.dto.fees.RecordFeePaymentRequest
 import com.kobe.beesm.dto.fees.SolvencySnapshotDto
 import com.kobe.beesm.dto.fees.StudentFeeAccountResponse
+import com.kobe.beesm.dto.fees.SyncLevelScheduleFromDefaultsRequest
+import com.kobe.beesm.dto.fees.TuitionExtraFeeResponse
 import com.kobe.beesm.dto.fees.TuitionInstallmentResponse
+import com.kobe.beesm.dto.fees.TuitionScheduleDefaultsResponse
 import com.kobe.beesm.dto.fees.TuitionScheduleResponse
+import com.kobe.beesm.dto.fees.UpsertTuitionScheduleDefaultsRequest
 import com.kobe.beesm.dto.fees.UpsertTuitionScheduleRequest
 import com.kobe.beesm.dto.fees.VoidFeePaymentRequest
 import com.kobe.beesm.model.fees.FeeStudentFeeState
@@ -31,14 +36,18 @@ import com.kobe.beesm.model.fees.FeePaymentKind
 import com.kobe.beesm.model.fees.FeePaymentMethod
 import com.kobe.beesm.model.fees.FeePaymentStatus
 import com.kobe.beesm.model.fees.SolvencyStatus
+import com.kobe.beesm.model.fees.TuitionExtraFee
 import com.kobe.beesm.model.fees.TuitionInstallment
 import com.kobe.beesm.model.fees.TuitionSchedule
+import com.kobe.beesm.model.fees.TuitionScheduleDefaults
+import com.kobe.beesm.model.shared.LocalizedText
 import com.kobe.beesm.model.staff.StaffFunction
 import com.kobe.beesm.model.user.ProfileType
 import com.kobe.beesm.model.user.Role
 import com.kobe.beesm.repository.fees.FeePaymentRepository
 import com.kobe.beesm.repository.fees.FeeStudentFeeStateRepository
 import com.kobe.beesm.repository.fees.FeesPolicyRepository
+import com.kobe.beesm.repository.fees.TuitionScheduleDefaultsRepository
 import com.kobe.beesm.repository.fees.TuitionScheduleRepository
 import com.kobe.beesm.dto.academic.SchoolBulletinBrandDto
 import com.kobe.beesm.service.academic.api.AcademicYearApi
@@ -60,7 +69,7 @@ import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 /**
- * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F14).
+ * Module `fees` : barèmes, paiements, solvabilité (docs/10, BR-F01…F16).
  *
  * BR-F09 : saisie des paiements (reçu banque) = `DIRECTOR` / `SUPER_ADMIN`
  * ou `ADMINISTRATION` avec fonction RH `ACCOUNTANT` ; barèmes = Direction seule.
@@ -69,6 +78,7 @@ import java.time.temporal.ChronoUnit
 @Service
 class FeesService(
     private val scheduleRepository: TuitionScheduleRepository,
+    private val defaultsRepository: TuitionScheduleDefaultsRepository,
     private val paymentRepository: FeePaymentRepository,
     private val stateRepository: FeeStudentFeeStateRepository,
     private val policyRepository: FeesPolicyRepository,
@@ -124,12 +134,198 @@ class FeesService(
         }
     }
 
+    fun getScheduleDefaults(
+        currentUser: CurrentUser,
+        academicYearId: String,
+        schoolIdOverride: String? = null
+    ): Mono<TuitionScheduleDefaultsResponse> {
+        val schoolId = currentUser.requireSchoolId(schoolIdOverride)
+        return assertCanManageSchedules(currentUser, schoolId)
+            .then(
+                defaultsRepository.findBySchoolIdAndAcademicYearId(schoolId, academicYearId)
+                    .map { toDefaultsResponse(it) }
+                    .switchIfEmpty(
+                        Mono.error(
+                            NotFoundException(
+                                "SCHEDULE_DEFAULTS_NOT_FOUND",
+                                "No schedule defaults for this academic year"
+                            )
+                        )
+                    )
+            )
+    }
+
+    /**
+     * BR-F16 : enregistre le modèle général puis amorce les niveaux listés
+     * qui n’ont **pas encore** de barème (les autres restent inchangés).
+     */
+    fun upsertScheduleDefaults(
+        currentUser: CurrentUser,
+        request: UpsertTuitionScheduleDefaultsRequest
+    ): Mono<TuitionScheduleDefaultsResponse> {
+        val schoolId = currentUser.requireSchoolId(request.schoolId)
+        validateDefaultsInstallments(request)
+
+        val installmentDocs = request.installments
+            .sortedBy { it.index }
+            .map { TuitionInstallment(index = it.index, amount = it.amount, dueDate = it.dueDate) }
+            .toMutableList()
+        val currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF"
+        val seedIds = request.seedLevelIds.map { it.trim() }.filter { it.isNotEmpty() }.distinct()
+
+        return assertCanManageSchedules(currentUser, schoolId)
+            .then(academicYearApi.assertWritable(schoolId, request.academicYearId))
+            .then(
+                defaultsRepository.findBySchoolIdAndAcademicYearId(schoolId, request.academicYearId)
+                    .flatMap { existing ->
+                        existing.enrollmentFee = request.enrollmentFee
+                        existing.installments = installmentDocs
+                        existing.currency = currency
+                        defaultsRepository.save(existing)
+                    }
+                    .switchIfEmpty(
+                        Mono.defer {
+                            defaultsRepository.save(
+                                TuitionScheduleDefaults(
+                                    schoolId = schoolId,
+                                    academicYearId = request.academicYearId,
+                                    enrollmentFee = request.enrollmentFee,
+                                    installments = installmentDocs,
+                                    currency = currency
+                                )
+                            )
+                        }
+                    )
+            )
+            .flatMap { saved ->
+                if (seedIds.isEmpty()) {
+                    return@flatMap Mono.just(toDefaultsResponse(saved))
+                }
+                Flux.fromIterable(seedIds)
+                    .concatMap { levelId ->
+                        scheduleRepository
+                            .findBySchoolIdAndAcademicYearIdAndLevelId(
+                                schoolId,
+                                request.academicYearId,
+                                levelId
+                            )
+                            .map { java.util.Optional.of(it) }
+                            .defaultIfEmpty(java.util.Optional.empty())
+                            .flatMap { existing ->
+                                if (existing.isPresent) {
+                                    Mono.empty() // déjà personnalisé → pas d’écrasement auto
+                                } else {
+                                    levelApi.getSummary(schoolId, levelId)
+                                        .flatMap { level ->
+                                            val levelLabel = frozenLevelLabel(level.name, level.code)
+                                            scheduleRepository.save(
+                                                TuitionSchedule(
+                                                    schoolId = schoolId,
+                                                    academicYearId = request.academicYearId,
+                                                    levelId = levelId,
+                                                    levelLabel = levelLabel,
+                                                    enrollmentFee = saved.enrollmentFee,
+                                                    installments = saved.installments
+                                                        .map {
+                                                            TuitionInstallment(
+                                                                index = it.index,
+                                                                amount = it.amount,
+                                                                dueDate = it.dueDate
+                                                            )
+                                                        }
+                                                        .toMutableList(),
+                                                    extraFees = mutableListOf(),
+                                                    currency = saved.currency,
+                                                    active = true
+                                                )
+                                            ).map { levelId }
+                                        }
+                                }
+                            }
+                    }
+                    .collectList()
+                    .map { seeded -> toDefaultsResponse(saved, seeded) }
+            }
+    }
+
+    /**
+     * BR-F16 : recopie inscription + tranches du modèle général sur un niveau
+     * déjà configuré (conserve les frais d’examen `extraFees`).
+     */
+    fun syncLevelScheduleFromDefaults(
+        currentUser: CurrentUser,
+        request: SyncLevelScheduleFromDefaultsRequest
+    ): Mono<TuitionScheduleResponse> {
+        val schoolId = currentUser.requireSchoolId(request.schoolId)
+        return assertCanManageSchedules(currentUser, schoolId)
+            .then(academicYearApi.assertWritable(schoolId, request.academicYearId))
+            .then(
+                defaultsRepository.findBySchoolIdAndAcademicYearId(schoolId, request.academicYearId)
+                    .switchIfEmpty(
+                        Mono.error(
+                            NotFoundException(
+                                "SCHEDULE_DEFAULTS_NOT_FOUND",
+                                "Save general defaults before syncing a level"
+                            )
+                        )
+                    )
+            )
+            .flatMap { defaults ->
+                levelApi.getSummary(schoolId, request.levelId).flatMap { level ->
+                    val levelLabel = frozenLevelLabel(level.name, level.code)
+                    val installmentCopy = defaults.installments
+                        .map {
+                            TuitionInstallment(
+                                index = it.index,
+                                amount = it.amount,
+                                dueDate = it.dueDate
+                            )
+                        }
+                        .toMutableList()
+                    scheduleRepository
+                        .findBySchoolIdAndAcademicYearIdAndLevelId(
+                            schoolId,
+                            request.academicYearId,
+                            request.levelId
+                        )
+                        .flatMap { existing ->
+                            existing.levelLabel = levelLabel
+                            existing.enrollmentFee = defaults.enrollmentFee
+                            existing.installments = installmentCopy
+                            // extraFees conservés (examens propres au niveau)
+                            existing.currency = defaults.currency
+                            existing.active = true
+                            scheduleRepository.save(existing)
+                        }
+                        .switchIfEmpty(
+                            Mono.defer {
+                                scheduleRepository.save(
+                                    TuitionSchedule(
+                                        schoolId = schoolId,
+                                        academicYearId = request.academicYearId,
+                                        levelId = request.levelId,
+                                        levelLabel = levelLabel,
+                                        enrollmentFee = defaults.enrollmentFee,
+                                        installments = installmentCopy,
+                                        extraFees = mutableListOf(),
+                                        currency = defaults.currency,
+                                        active = true
+                                    )
+                                )
+                            }
+                        )
+                }
+            }
+            .map { toScheduleResponse(it) }
+    }
+
     fun upsertSchedule(
         currentUser: CurrentUser,
         request: UpsertTuitionScheduleRequest
     ): Mono<TuitionScheduleResponse> {
         val schoolId = currentUser.requireSchoolId(request.schoolId)
         validateInstallmentIndexes(request)
+        validateExtraFeeIndexes(request)
 
         return assertCanManageSchedules(currentUser, schoolId)
             .then(academicYearApi.assertWritable(schoolId, request.academicYearId))
@@ -146,6 +342,18 @@ class FeesService(
                         )
                     }
                     .toMutableList()
+                val extraFeeDocs = request.extraFees
+                    .sortedBy { it.index }
+                    .map { dto ->
+                        TuitionExtraFee(
+                            index = dto.index,
+                            code = dto.code?.trim()?.takeIf { it.isNotEmpty() }?.uppercase(),
+                            label = LocalizedText.of(dto.labelFr.trim(), dto.labelEn.trim()),
+                            amount = dto.amount,
+                            dueDate = dto.dueDate
+                        )
+                    }
+                    .toMutableList()
 
                 scheduleRepository
                     .findBySchoolIdAndAcademicYearIdAndLevelId(
@@ -157,6 +365,7 @@ class FeesService(
                         existing.levelLabel = levelLabel
                         existing.enrollmentFee = request.enrollmentFee
                         existing.installments = installmentDocs
+                        existing.extraFees = extraFeeDocs
                         existing.currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF"
                         existing.active = true
                         scheduleRepository.save(existing)
@@ -171,6 +380,7 @@ class FeesService(
                                     levelLabel = levelLabel,
                                     enrollmentFee = request.enrollmentFee,
                                     installments = installmentDocs,
+                                    extraFees = extraFeeDocs,
                                     currency = request.currency?.trim()?.ifBlank { "XAF" } ?: "XAF",
                                     active = true
                                 )
@@ -186,12 +396,22 @@ class FeesService(
         request: RecordFeePaymentRequest
     ): Mono<FeePaymentResponse> {
         val schoolId = currentUser.requireSchoolId(request.schoolId)
-        if (request.kind == FeePaymentKind.INSTALLMENT && request.installmentIndex == null) {
+        if (
+            (request.kind == FeePaymentKind.INSTALLMENT || request.kind == FeePaymentKind.EXTRA) &&
+            request.installmentIndex == null
+        ) {
             return Mono.error(
-                BusinessRuleException("INSTALLMENT_INDEX_REQUIRED", "installmentIndex is required for INSTALLMENT")
+                BusinessRuleException(
+                    "INSTALLMENT_INDEX_REQUIRED",
+                    "installmentIndex is required for ${request.kind}"
+                )
             )
         }
-        if (request.kind != FeePaymentKind.INSTALLMENT && request.installmentIndex != null) {
+        if (
+            request.kind != FeePaymentKind.INSTALLMENT &&
+            request.kind != FeePaymentKind.EXTRA &&
+            request.installmentIndex != null
+        ) {
             return Mono.error(
                 BusinessRuleException(
                     "INSTALLMENT_INDEX_FORBIDDEN",
@@ -295,7 +515,7 @@ class FeesService(
                     return@flatMap Mono.error(
                         BusinessRuleException(
                             "TUITION_NOT_SETTLED",
-                            "Enrollment and all installments must be settled before reactivation"
+                            "Enrollment, installments and extra fees must be settled before reactivation"
                         )
                     )
                 }
@@ -621,6 +841,10 @@ class FeesService(
                             unpaidByIndex[inst.index] = (unpaidByIndex[inst.index] ?: 0) + 1
                         }
                     }
+                    for (extra in account.extraFees) {
+                        totalDue = totalDue.add(extra.amount)
+                        totalCollected = totalCollected.add(extra.paidAmount)
+                    }
                 }
 
                 for (account in accounts) {
@@ -895,7 +1119,10 @@ class FeesService(
                     val installmentsSettled =
                         solvency.installments.isEmpty() ||
                             solvency.installments.all { it.settled }
-                    val tuitionSettled = enrollmentSettled && installmentsSettled
+                    val extraFeesSettled =
+                        solvency.extraFees.isEmpty() ||
+                            solvency.extraFees.all { it.settled }
+                    val tuitionSettled = enrollmentSettled && installmentsSettled && extraFeesSettled
                     val feesExcluded =
                         state?.excludedAt != null &&
                             state.exclusionReasonCode == "FEES_INSOLVENCY_EXCLUSION" &&
@@ -912,6 +1139,7 @@ class FeesService(
                         enrollmentFeeDue = solvency.enrollmentFeeDue,
                         enrollmentFeePaid = solvency.enrollmentFeePaid,
                         installments = solvency.installments,
+                        extraFees = solvency.extraFees,
                         payments = payments.map { toPaymentResponse(it) },
                         voidedPayments = voidedPayments.map { toPaymentResponse(it) },
                         feesExcluded = feesExcluded,
@@ -936,7 +1164,8 @@ class FeesService(
         val currency: String?,
         val enrollmentFeeDue: BigDecimal?,
         val enrollmentFeePaid: BigDecimal?,
-        val installments: List<InstallmentSolvencyDto>
+        val installments: List<InstallmentSolvencyDto>,
+        val extraFees: List<ExtraFeeSolvencyDto> = emptyList()
     )
 
     /** Enrollment.classId → SchoolClass.levelId → TuitionSchedule (Q-67). */
@@ -1009,11 +1238,38 @@ class FeesService(
                                                     settled = SolvencyCalculator.isSettled(inst.amount, paid)
                                                 )
                                             }
+                                        val extraFeeDtos = schedule.extraFees
+                                            .sortedBy { it.index }
+                                            .map { extra ->
+                                                val paid = sumPayments(
+                                                    payments,
+                                                    FeePaymentKind.EXTRA,
+                                                    extra.index
+                                                )
+                                                ExtraFeeSolvencyDto(
+                                                    index = extra.index,
+                                                    code = extra.code,
+                                                    labelFr = extra.label.fr?.trim().orEmpty(),
+                                                    labelEn = extra.label.en?.trim().orEmpty(),
+                                                    amount = extra.amount,
+                                                    dueDate = extra.dueDate,
+                                                    paidAmount = paid,
+                                                    settled = SolvencyCalculator.isSettled(extra.amount, paid)
+                                                )
+                                            }
                                         val status = SolvencyCalculator.compute(
                                             today = today,
                                             enrollmentFeeDue = schedule.enrollmentFee,
                                             enrollmentFeePaid = enrollmentPaid,
                                             installments = installmentDtos.map {
+                                                SolvencyCalculator.InstallmentInput(
+                                                    index = it.index,
+                                                    amount = it.amount,
+                                                    dueDate = it.dueDate,
+                                                    paidAmount = it.paidAmount
+                                                )
+                                            },
+                                            extraFees = extraFeeDtos.map {
                                                 SolvencyCalculator.InstallmentInput(
                                                     index = it.index,
                                                     amount = it.amount,
@@ -1033,7 +1289,8 @@ class FeesService(
                                             currency = schedule.currency,
                                             enrollmentFeeDue = schedule.enrollmentFee,
                                             enrollmentFeePaid = enrollmentPaid,
-                                            installments = installmentDtos
+                                            installments = installmentDtos,
+                                            extraFees = extraFeeDtos
                                         )
                                     }
                             }
@@ -1097,20 +1354,84 @@ class FeesService(
             .fold(BigDecimal.ZERO) { acc, p -> acc.add(p.amount) }
 
     private fun validateInstallmentIndexes(request: UpsertTuitionScheduleRequest) {
-        val n = request.installments.size
+        validateInstallmentList(request.installments)
+    }
+
+    private fun validateDefaultsInstallments(request: UpsertTuitionScheduleDefaultsRequest) {
+        validateInstallmentList(request.installments)
+    }
+
+    private fun validateInstallmentList(
+        installments: List<com.kobe.beesm.dto.fees.TuitionInstallmentAmountDto>
+    ) {
+        val n = installments.size
         if (n !in 1..12) {
             throw BusinessRuleException(
                 "INVALID_INSTALLMENTS",
                 "Between 1 and 12 installments are required"
             )
         }
-        val indexes = request.installments.map { it.index }.sorted()
+        val indexes = installments.map { it.index }.sorted()
         val expected = (1..n).toList()
         if (indexes != expected) {
             throw BusinessRuleException(
                 "INVALID_INSTALLMENTS",
                 "Installment indexes must be contiguous from 1 to $n"
             )
+        }
+    }
+
+    private fun toDefaultsResponse(
+        defaults: TuitionScheduleDefaults,
+        seededLevelIds: List<String> = emptyList()
+    ): TuitionScheduleDefaultsResponse {
+        val id = defaults.id?.trim().orEmpty()
+        require(id.isNotEmpty()) { "Tuition schedule defaults id missing" }
+        return TuitionScheduleDefaultsResponse(
+            id = id,
+            schoolId = defaults.schoolId,
+            academicYearId = defaults.academicYearId,
+            enrollmentFee = defaults.enrollmentFee,
+            installments = defaults.installments
+                .sortedBy { it.index }
+                .map {
+                    TuitionInstallmentResponse(
+                        index = it.index,
+                        amount = it.amount,
+                        dueDate = it.dueDate
+                    )
+                },
+            currency = defaults.currency,
+            seededLevelIds = seededLevelIds
+        )
+    }
+
+    private fun validateExtraFeeIndexes(request: UpsertTuitionScheduleRequest) {
+        val extras = request.extraFees
+        if (extras.isEmpty()) return
+        if (extras.size > 6) {
+            throw BusinessRuleException(
+                "INVALID_EXTRA_FEES",
+                "At most 6 extra fees are allowed"
+            )
+        }
+        val indexes = extras.map { it.index }.sorted()
+        val expected = (1..extras.size).toList()
+        if (indexes != expected) {
+            throw BusinessRuleException(
+                "INVALID_EXTRA_FEES",
+                "Extra fee indexes must be contiguous from 1 to ${extras.size}"
+            )
+        }
+        for (extra in extras) {
+            val fr = extra.labelFr.trim()
+            val en = extra.labelEn.trim()
+            if (fr.isEmpty() || en.isEmpty()) {
+                throw BusinessRuleException(
+                    "INVALID_EXTRA_FEES",
+                    "Extra fee labels must be provided in French and English"
+                )
+            }
         }
     }
 
@@ -1271,8 +1592,8 @@ class FeesService(
         }
 
     /**
-     * Q-68/Q-74/Q-75/Q-80 : CASH inscription ; montant exact ; ordre inscription → T1 → T2… ;
-     * pénalités = montant exact du reste dû.
+     * Q-68/Q-74/Q-75/Q-80/Q-81 : CASH inscription ; montant exact ;
+     * ordre inscription → T1 → T2… → extras → pénalités.
      */
     private fun validatePaymentRules(
         schedule: TuitionSchedule,
@@ -1328,6 +1649,10 @@ class FeesService(
             return Mono.empty()
         }
 
+        if (request.kind == FeePaymentKind.EXTRA) {
+            return validateExtraPayment(schedule, request, existingPayments)
+        }
+
         val idx = request.installmentIndex
             ?: return Mono.error(
                 BusinessRuleException("INSTALLMENT_INDEX_REQUIRED", "installmentIndex is required for INSTALLMENT")
@@ -1379,6 +1704,73 @@ class FeesService(
         return Mono.empty()
     }
 
+    /** Q-81 provisoire : extras après toutes les tranches, ordre séquentiel par index. */
+    private fun validateExtraPayment(
+        schedule: TuitionSchedule,
+        request: RecordFeePaymentRequest,
+        existingPayments: List<FeePayment>
+    ): Mono<Void> {
+        val idx = request.installmentIndex
+            ?: return Mono.error(
+                BusinessRuleException("INSTALLMENT_INDEX_REQUIRED", "installmentIndex is required for EXTRA")
+            )
+        val extra = schedule.extraFees.firstOrNull { it.index == idx }
+            ?: return Mono.error(
+                BusinessRuleException("INVALID_EXTRA_FEE_INDEX", "Extra fee index $idx not in schedule")
+            )
+
+        val enrollmentPaid = sumPayments(existingPayments, FeePaymentKind.ENROLLMENT, null)
+        if (!SolvencyCalculator.isSettled(schedule.enrollmentFee, enrollmentPaid)) {
+            return Mono.error(
+                BusinessRuleException(
+                    "ENROLLMENT_REQUIRED_FIRST",
+                    "Enrollment fee must be settled before extra fees"
+                )
+            )
+        }
+        for (inst in schedule.installments.sortedBy { it.index }) {
+            val paid = sumPayments(existingPayments, FeePaymentKind.INSTALLMENT, inst.index)
+            if (!SolvencyCalculator.isSettled(inst.amount, paid)) {
+                return Mono.error(
+                    BusinessRuleException(
+                        "INSTALLMENTS_REQUIRED_BEFORE_EXTRA",
+                        "All installments must be settled before extra fees"
+                    )
+                )
+            }
+        }
+        val priorExtras = schedule.extraFees.map { it.index }.filter { it < idx }.sorted()
+        for (prior in priorExtras) {
+            val priorDue = schedule.extraFees.first { it.index == prior }.amount
+            val priorPaid = sumPayments(existingPayments, FeePaymentKind.EXTRA, prior)
+            if (!SolvencyCalculator.isSettled(priorDue, priorPaid)) {
+                return Mono.error(
+                    BusinessRuleException(
+                        "EXTRA_FEES_MUST_BE_SEQUENTIAL",
+                        "Extra fee $prior must be settled before extra fee $idx"
+                    )
+                )
+            }
+        }
+
+        val paid = sumPayments(existingPayments, FeePaymentKind.EXTRA, idx)
+        val remaining = extra.amount.subtract(paid)
+        if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+            return Mono.error(
+                BusinessRuleException("EXTRA_FEE_ALREADY_SETTLED", "Extra fee $idx is already settled")
+            )
+        }
+        if (request.amount.compareTo(remaining) != 0) {
+            return Mono.error(
+                BusinessRuleException(
+                    "AMOUNT_MUST_MATCH_DUE",
+                    "Payment amount must equal the exact remaining due ($remaining)"
+                )
+            )
+        }
+        return Mono.empty()
+    }
+
     private fun toScheduleResponse(schedule: TuitionSchedule): TuitionScheduleResponse {
         val id = schedule.id?.trim().orEmpty()
         val levelId = schedule.levelId?.trim().orEmpty()
@@ -1396,6 +1788,18 @@ class FeesService(
                 .map {
                     TuitionInstallmentResponse(
                         index = it.index,
+                        amount = it.amount,
+                        dueDate = it.dueDate
+                    )
+                },
+            extraFees = schedule.extraFees
+                .sortedBy { it.index }
+                .map {
+                    TuitionExtraFeeResponse(
+                        index = it.index,
+                        code = it.code,
+                        labelFr = it.label.fr?.trim().orEmpty(),
+                        labelEn = it.label.en?.trim().orEmpty(),
                         amount = it.amount,
                         dueDate = it.dueDate
                     )

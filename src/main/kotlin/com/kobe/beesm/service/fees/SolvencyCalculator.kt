@@ -31,36 +31,35 @@ object SolvencyCalculator {
         today: LocalDate,
         enrollmentFeeDue: BigDecimal,
         enrollmentFeePaid: BigDecimal,
-        installments: List<InstallmentInput>
+        installments: List<InstallmentInput>,
+        /** Frais optionnels (examens…) — même règle mois civil (Q-81 provisoire). */
+        extraFees: List<InstallmentInput> = emptyList()
     ): SolvencyStatus {
         if (!isSettled(enrollmentFeeDue, enrollmentFeePaid)) {
             return SolvencyStatus.INSOLVENT
         }
-        if (installments.isEmpty()) {
+        val dated = (installments + extraFees).sortedBy { it.dueDate }
+        if (dated.isEmpty()) {
             return SolvencyStatus.SOLVENT
         }
 
         val todayYm = YearMonth.from(today)
-        val sorted = installments.sortedBy { it.dueDate }
 
-        val unpaidOverdue = sorted.any { installment ->
-            YearMonth.from(installment.dueDate).isBefore(todayYm) &&
-                !isSettled(installment.amount, installment.paidAmount)
+        val unpaidOverdue = dated.any { item ->
+            YearMonth.from(item.dueDate).isBefore(todayYm) &&
+                !isSettled(item.amount, item.paidAmount)
         }
         if (unpaidOverdue) {
             return SolvencyStatus.INSOLVENT
         }
 
-        val currentMonth = sorted.find { YearMonth.from(it.dueDate) == todayYm }
-        if (currentMonth != null) {
-            return if (isSettled(currentMonth.amount, currentMonth.paidAmount)) {
-                SolvencyStatus.SOLVENT
-            } else {
-                SolvencyStatus.PENDING
-            }
+        val currentMonthItems = dated.filter { YearMonth.from(it.dueDate) == todayYm }
+        if (currentMonthItems.isNotEmpty()) {
+            val allSettled = currentMonthItems.all { isSettled(it.amount, it.paidAmount) }
+            return if (allSettled) SolvencyStatus.SOLVENT else SolvencyStatus.PENDING
         }
 
-        // Avant le 1er mois (tranches futures) ou après le dernier (échues déjà filtrées) :
+        // Avant le 1er mois (échéances futures) ou après le dernier (échues déjà filtrées) :
         // inscription soldée + aucune échéance passée impayée → solvable.
         return SolvencyStatus.SOLVENT
     }

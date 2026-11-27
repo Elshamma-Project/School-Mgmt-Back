@@ -9,9 +9,10 @@
 1. **Chaque année scolaire**, tout élève doit être **inscrit** (`Enrollment`) **et** payer les **frais d’inscription** pour accéder à l’école (**Q-65 ✅** : blocage notes / EDT / portail parent ; Direction/Admin = consultation seule, pas de modification).
 2. La **direction** (**Q-66 ✅**) définit, **par année et par niveau** (**Q-67 ✅**) :
    - le montant d’**inscription** ;
-   - les montants et échéances de **N tranches** (**Q-68 ✅**, N = 1…12, dates **libres**).
+   - les montants et échéances de **N tranches** (**Q-68 ✅**, N = 1…12, dates **libres**) ;
+   - éventuellement des **frais supplémentaires** (0…6) pour les niveaux d’examen (**Q-81 🟡**, BR-F15) — ex. suggestions FR : 3ème → BEPC, 1ère → Probatoire, Terminale → BAC (montants / échéances saisis, jamais codés en dur).
 3. Suggestion UI des échéances : fin de mois `startDate` +(k−1) ; librement modifiable.
-4. **Paiement séquentiel** : inscription → T1 → T2… ; montant du reçu = **exactement** le reste dû (**Q-74 ✅**). Inscription = **CASH** à l’école + **reçu PDF** (**Q-69/Q-75 ✅**) ; tranches = reçu banque papier → saisie Direction/comptable.
+4. **Paiement séquentiel** : inscription → T1 → T2… → **extras** (si présents) ; montant du reçu = **exactement** le reste dû (**Q-74 ✅**). Inscription = **CASH** à l’école + **reçu PDF** (**Q-69/Q-75 ✅**) ; tranches / extras = reçu banque papier → saisie Direction/comptable.
 5. La **solvabilité** affichée est **dérivée** (**Q-70 ✅**, **Q-72 ✅** — BR-F06).
 6. Résolution barème : `Enrollment.classId` → `SchoolClass.levelId` → `TuitionSchedule`.
 
@@ -46,6 +47,7 @@ Collections préfixées `fees_*` (aucune jointure vers `student_*` / `academic_*
 | `levelLabel` | String | copie figée (FR prioritaire) |
 | `enrollmentFee` | Decimal128 | frais d’inscription |
 | `installments[1…N]` | embed | `{ index: 1..N, amount, dueDate }` — `dueDate` **saisie** (suggestion fin de mois) ; N ≤ 12 (**Q-68**) |
+| `extraFees[0…M]` | embed | optionnel ; `{ index: 1..M, code?, label FR/EN, amount, dueDate }` ; M ≤ 6 (**Q-81**, examens) |
 | `currency` | String | défaut `XAF` (Q-73) |
 | `active` | Boolean | |
 
@@ -65,8 +67,8 @@ Le compte élève / année est **calculé en service** à partir de `Enrollment`
 | `enrollmentId` | String | |
 | `classId` | String | classe au moment du paiement (figée) |
 | `scheduleId` | String | barème appliqué |
-| `kind` | `ENROLLMENT` \| `INSTALLMENT` | |
-| `installmentIndex` | Int? | 1..N si tranche |
+| `kind` | `ENROLLMENT` \| `INSTALLMENT` \| `EXTRA` \| `PENALTY` | |
+| `installmentIndex` | Int? | 1..N si tranche ; 1..M si `EXTRA` |
 | `amount` | Decimal128 | |
 | `paidAt` | Instant | |
 | `method` | enum / texte | espèces, mobile money… (Q-75) |
@@ -82,6 +84,8 @@ Pas de suppression physique : annulation = statut `VOID` + motif (Q-76).
 - **BR-F01** Un barème scolarité est unique par `(école, année, niveau)` (**Q-67**).
 - **BR-F02** Les montants et le nombre de tranches sont paramétrables depuis l’UI (FR/EN), sans seuil codé en dur (hors bornes 1…12).
 - **BR-F03** Les échéances de tranche sont **saisies** ; suggestion = dernier jour du mois de `AcademicYear.startDate` +(index−1), fuseau Douala (**Q-68**).
+- **BR-F15** (**Q-81 🟡**) Frais supplémentaires optionnels par niveau (`extraFees`) : libellés bilingues + code libre (BEPC, BAC…) ; UI propose des suggestions selon le code de niveau (FR/EN) **sans** imposer ni montant ni présence. Paiement après toutes les tranches. Solvabilité / soft-block : **même règle mois civil** que les tranches (provisoire tant que Q-81 non figée).
+- **BR-F16** Modèle général `fees_schedule_defaults` (année) : inscription + N tranches. À l’enregistrement, **amorce automatique** des niveaux **sans** barème ; niveaux déjà définis **non écrasés** — sync manuelle `POST /fees/schedules/sync-defaults` (conserve `extraFees`).
 - **BR-F04** L’inscription annuelle (`Enrollment`) ne suffit pas seule pour « accès école » si BR-F05 est actif : il faut aussi le **paiement d’inscription** (**Q-65**).
 - **BR-F05** (**Q-65 ✅**) : si inscription non soldée **ou** statut `INSOLVENT` → bloquer notes / EDT / portail pour parent, élève, enseignant ; Direction/Admin/SG = **lecture** seule (pas de modification des notes). Message métier explicite + notifications.
 - **BR-F06** (**Q-70 ✅**, **Q-72 ✅**) Solvabilité calculée dans `SolvencyCalculator` / `service/fees` uniquement (mois civil Douala) ; la liste élèves consomme `FeesApi.solvencySnapshot(...)`. Matrice § 2.
@@ -153,7 +157,7 @@ Paramétrage **réservé à la Direction** (pas Administration, pas comptable). 
 
 | Onglet | Contenu | Notes |
 |---|---|---|
-| **Barèmes** | Par **niveau** (colonnes FR / EN selon `Level.section`) : frais d’inscription + **N tranches** (montants et échéances libres, N ≤ 12) pour l’**année courante** | Q-66…Q-68 ; année verrouillée = lecture seule |
+| **Barèmes** | **1)** Paramètres généraux (modèle année) puis **2)** barèmes par niveau (FR/EN) ; amorçage auto des niveaux vides ; sync manuelle si personnalisé ; frais d’examen optionnels (BEPC / Probatoire / BAC…). | Q-66…Q-68, Q-81, BR-F16 ; année verrouillée = lecture seule |
 | **Politique** | Rappels avant échéance (jours paramétrables, défaut 15/10/5/3/2/1 + jour J), pénalité hebdomadaire (XAF), délai de grâce / avertissement / exclusion auto | Q-77…Q-79 ; chaque enregistrement notifie Direction + Administration |
 
 Réactivation après exclusion (**Q-80**) : **pas** dans ce hub — sur la **fiche élève**, une fois inscription + tranches + pénalités soldées.
@@ -187,4 +191,4 @@ Réactivation après exclusion (**Q-80**) : **pas** dans ce hub — sur la **fic
 
 ## 8. Questions
 
-**Q-65…Q-80 ✅ figées** — détail `07` (matrice solvabilité Q-70/Q-72 incluse).
+**Q-65…Q-80 ✅ figées** ; **Q-81 🟡** frais d’examen optionnels — détail `07` (matrice solvabilité Q-70/Q-72 incluse).

@@ -34,7 +34,10 @@ data class FeePayment(
     var classId: String,
     var scheduleId: String,
     var kind: FeePaymentKind,
-    /** 1..3 si [kind] == INSTALLMENT. */
+    /**
+     * Index 1..N si [kind] == INSTALLMENT (tranche) ;
+     * index 1..M si [kind] == EXTRA (frais supplémentaires Q-81).
+     */
     var installmentIndex: Int? = null,
     @Field(targetType = FieldType.DECIMAL128)
     var amount: BigDecimal,

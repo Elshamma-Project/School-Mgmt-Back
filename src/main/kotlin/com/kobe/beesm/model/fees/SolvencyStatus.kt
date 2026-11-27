@@ -20,6 +20,11 @@ enum class SolvencyStatus {
 enum class FeePaymentKind {
     ENROLLMENT,
     INSTALLMENT,
+    /**
+     * Frais supplémentaires du barème (examens, etc.) — [FeePayment.installmentIndex]
+     * porte alors l’index de [TuitionExtraFee] (Q-81 / BR-F15).
+     */
+    EXTRA,
     /** Règlement des pénalités hebdomadaires accrues (Q-80). */
     PENALTY
 }

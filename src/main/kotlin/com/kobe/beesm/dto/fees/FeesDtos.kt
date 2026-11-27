@@ -15,6 +15,44 @@ import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
 
+data class UpsertTuitionScheduleDefaultsRequest(
+    @field:NotBlank
+    val academicYearId: String,
+    @field:NotNull
+    @field:DecimalMin("0.0", inclusive = true)
+    val enrollmentFee: BigDecimal,
+    @field:NotNull
+    @field:Size(min = 1, max = 12)
+    @field:Valid
+    val installments: List<TuitionInstallmentAmountDto>,
+    val currency: String? = "XAF",
+    /**
+     * Niveaux **sans** barème à amorcer depuis ce modèle (ids fournis par l’UI).
+     * Les niveaux déjà configurés ne sont pas touchés (sync manuelle).
+     */
+    val seedLevelIds: List<@NotBlank String> = emptyList(),
+    val schoolId: String? = null
+)
+
+data class TuitionScheduleDefaultsResponse(
+    val id: String,
+    val schoolId: String,
+    val academicYearId: String,
+    val enrollmentFee: BigDecimal,
+    val installments: List<TuitionInstallmentResponse>,
+    val currency: String,
+    /** Niveaux nouvellement amorcés lors du dernier enregistrement (peut être vide en lecture). */
+    val seededLevelIds: List<String> = emptyList()
+)
+
+data class SyncLevelScheduleFromDefaultsRequest(
+    @field:NotBlank
+    val academicYearId: String,
+    @field:NotBlank
+    val levelId: String,
+    val schoolId: String? = null
+)
+
 data class UpsertTuitionScheduleRequest(
     @field:NotBlank
     val academicYearId: String,
@@ -27,6 +65,10 @@ data class UpsertTuitionScheduleRequest(
     @field:Size(min = 1, max = 12)
     @field:Valid
     val installments: List<TuitionInstallmentAmountDto>,
+    /** Frais optionnels (examens…) — 0…6 (Q-81). */
+    @field:Size(max = 6)
+    @field:Valid
+    val extraFees: List<TuitionExtraFeeDto> = emptyList(),
     val currency: String? = "XAF",
     val schoolId: String? = null
 )
@@ -42,8 +84,36 @@ data class TuitionInstallmentAmountDto(
     val dueDate: LocalDate
 )
 
+data class TuitionExtraFeeDto(
+    @field:Min(1)
+    @field:Max(6)
+    val index: Int,
+    @field:Size(max = 32)
+    val code: String? = null,
+    @field:NotBlank
+    @field:Size(max = 120)
+    val labelFr: String,
+    @field:NotBlank
+    @field:Size(max = 120)
+    val labelEn: String,
+    @field:NotNull
+    @field:DecimalMin("0.0", inclusive = true)
+    val amount: BigDecimal,
+    @field:NotNull
+    val dueDate: LocalDate
+)
+
 data class TuitionInstallmentResponse(
     val index: Int,
+    val amount: BigDecimal,
+    val dueDate: LocalDate
+)
+
+data class TuitionExtraFeeResponse(
+    val index: Int,
+    val code: String?,
+    val labelFr: String,
+    val labelEn: String,
     val amount: BigDecimal,
     val dueDate: LocalDate
 )
@@ -56,6 +126,7 @@ data class TuitionScheduleResponse(
     val levelLabel: String,
     val enrollmentFee: BigDecimal,
     val installments: List<TuitionInstallmentResponse>,
+    val extraFees: List<TuitionExtraFeeResponse> = emptyList(),
     val currency: String,
     val active: Boolean
 )
@@ -67,6 +138,7 @@ data class RecordFeePaymentRequest(
     val studentId: String,
     @field:NotNull
     val kind: FeePaymentKind,
+    /** Index tranche (INSTALLMENT) ou frais extra (EXTRA). */
     @field:Min(1)
     @field:Max(12)
     val installmentIndex: Int? = null,
@@ -113,11 +185,23 @@ data class SolvencyResponse(
     val status: SolvencyStatus,
     val enrollmentFeeDue: BigDecimal?,
     val enrollmentFeePaid: BigDecimal?,
-    val installments: List<InstallmentSolvencyDto> = emptyList()
+    val installments: List<InstallmentSolvencyDto> = emptyList(),
+    val extraFees: List<ExtraFeeSolvencyDto> = emptyList()
 )
 
 data class InstallmentSolvencyDto(
     val index: Int,
+    val amount: BigDecimal,
+    val dueDate: LocalDate,
+    val paidAmount: BigDecimal,
+    val settled: Boolean
+)
+
+data class ExtraFeeSolvencyDto(
+    val index: Int,
+    val code: String?,
+    val labelFr: String,
+    val labelEn: String,
     val amount: BigDecimal,
     val dueDate: LocalDate,
     val paidAmount: BigDecimal,
@@ -142,6 +226,7 @@ data class StudentFeeAccountResponse(
     val enrollmentFeeDue: BigDecimal?,
     val enrollmentFeePaid: BigDecimal?,
     val installments: List<InstallmentSolvencyDto>,
+    val extraFees: List<ExtraFeeSolvencyDto> = emptyList(),
     val payments: List<FeePaymentResponse>,
     /** Écritures annulées (Q-76) — hors calcul de solvabilité. */
     val voidedPayments: List<FeePaymentResponse> = emptyList(),
@@ -150,7 +235,7 @@ data class StudentFeeAccountResponse(
     val penaltyTotalAccrued: BigDecimal = BigDecimal.ZERO,
     val penaltyPaid: BigDecimal = BigDecimal.ZERO,
     val penaltySettled: Boolean = true,
-    /** Tuition (inscription + toutes tranches) soldée. */
+    /** Tuition (inscription + tranches + frais extra) soldée. */
     val tuitionSettled: Boolean = false,
     /** Direction seule : tuition + pénalités OK et exclusion fees. */
     val canReactivateAfterFees: Boolean = false
